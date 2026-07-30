@@ -6,3 +6,4 @@ django-simple-history
 python-docx
 PyPDF2
 gunicorn
+whitenoise==6.12.0
