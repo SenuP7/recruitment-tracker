@@ -1,0 +1,8 @@
+Django>=5.0,<5.1
+psycopg2-binary
+django-storages[boto3]
+boto3
+django-simple-history
+python-docx
+PyPDF2
+gunicorn
