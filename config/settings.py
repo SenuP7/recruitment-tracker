@@ -93,7 +93,7 @@ DATABASES = {
 }
 
 
-AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "recruitment-tracker-cvs-v2-844274146451")
+AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "recruitment-tracker-cvs-844274146451")
 AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "ap-southeast-1")
 AWS_DEFAULT_ACL = None
 AWS_S3_FILE_OVERWRITE = False
