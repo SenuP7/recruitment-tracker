@@ -93,6 +93,21 @@ DATABASES = {
 }
 
 
+AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "recruitment-tracker-cvs-v2-844274146451")
+AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "ap-southeast-1")
+AWS_DEFAULT_ACL = None
+AWS_S3_FILE_OVERWRITE = False
+AWS_QUERYSTRING_EXPIRE = 3600
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
+
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
