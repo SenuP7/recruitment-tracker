@@ -1,3 +1,389 @@
 from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 
-# Create your tests here.
+from io import BytesIO
+
+from docx import Document
+
+from .matching import (
+    extract_text,
+    find_skills_in_text,
+    score_cv_against_role,
+)
+
+from .models import (
+    CandidateCV,
+    CVMatchResult,
+    RoleKeywordProfile,
+    Skill,
+    Synonym,
+)
+
+
+class CVMatchingTests(TestCase):
+
+    def setUp(self):
+        # ---------------------------------------------------------
+        # CREATE SKILLS
+        # ---------------------------------------------------------
+
+        self.python = Skill.objects.create(
+            name="Python"
+        )
+
+        self.javascript = Skill.objects.create(
+            name="JavaScript"
+        )
+
+        self.django = Skill.objects.create(
+            name="Django"
+        )
+
+        self.aws = Skill.objects.create(
+            name="AWS"
+        )
+
+        # ---------------------------------------------------------
+        # CREATE SYNONYMS
+        # ---------------------------------------------------------
+
+        Synonym.objects.create(
+            skill=self.python,
+            term="Py",
+        )
+
+        Synonym.objects.create(
+            skill=self.javascript,
+            term="JS",
+        )
+
+        Synonym.objects.create(
+            skill=self.javascript,
+            term="ECMAScript",
+        )
+
+        # ---------------------------------------------------------
+        # CREATE ROLE PROFILE
+        # ---------------------------------------------------------
+
+        self.role = RoleKeywordProfile.objects.create(
+            role_name="Software Engineer"
+        )
+
+        # Required skills
+        self.role.required_skills.add(
+            self.python,
+            self.javascript,
+            self.django,
+        )
+
+        # Nice-to-have skills
+        self.role.nice_to_have_skills.add(
+            self.aws,
+        )
+
+    # -------------------------------------------------------------
+    # HELPER
+    # -------------------------------------------------------------
+
+    def create_cv(self, text):
+        """
+        Create a CV database record containing already-extracted
+        text.
+
+        We intentionally do not upload a real file here because
+        the project uses S3 storage. Unit tests should not depend
+        on AWS.
+        """
+
+        return CandidateCV.objects.create(
+            candidate_name="Test Candidate",
+            extracted_text=text,
+        )
+
+    # -------------------------------------------------------------
+    # SYNONYM MATCHING
+    # -------------------------------------------------------------
+
+    def test_synonym_matching(self):
+        """
+        JS should be recognised as JavaScript.
+        Py should be recognised as Python.
+        """
+
+        text = (
+            "Experienced with JS and Py development."
+        )
+
+        found = find_skills_in_text(text)
+
+        self.assertIn(
+            self.javascript,
+            found,
+        )
+
+        self.assertIn(
+            self.python,
+            found,
+        )
+
+    # -------------------------------------------------------------
+    # DIRECT SKILL MATCHING
+    # -------------------------------------------------------------
+
+    def test_direct_skill_matching(self):
+        """
+        Canonical skill names should be detected directly.
+        """
+
+        text = (
+            "Experienced Python, Django and AWS developer."
+        )
+
+        found = find_skills_in_text(text)
+
+        self.assertIn(
+            self.python,
+            found,
+        )
+
+        self.assertIn(
+            self.django,
+            found,
+        )
+
+        self.assertIn(
+            self.aws,
+            found,
+        )
+
+    # -------------------------------------------------------------
+    # ZERO MATCH
+    # -------------------------------------------------------------
+
+    def test_zero_match(self):
+        """
+        A CV containing none of the required skills
+        should receive a zero score.
+        """
+
+        cv = self.create_cv(
+            "Experienced graphic designer with "
+            "Photoshop and Illustrator skills."
+        )
+
+        result = score_cv_against_role(
+            cv,
+            self.role,
+        )
+
+        self.assertAlmostEqual(
+            result.score,
+            0.0,
+            places=2,
+        )
+
+        self.assertEqual(
+            result.matched_required.count(),
+            0,
+        )
+
+        self.assertEqual(
+            result.missing_required.count(),
+            3,
+        )
+
+    # -------------------------------------------------------------
+    # FULL REQUIRED MATCH
+    # -------------------------------------------------------------
+
+    def test_full_required_match(self):
+        """
+        A CV containing all required skills should receive
+        the full required-skills portion of the score.
+
+        Required skills are worth 80%, so the expected
+        score is 0.8.
+        """
+
+        cv = self.create_cv(
+            "Experienced Python, Django and JavaScript developer."
+        )
+
+        result = score_cv_against_role(
+            cv,
+            self.role,
+        )
+
+        self.assertAlmostEqual(
+            result.score,
+            0.8,
+            places=2,
+        )
+
+        self.assertEqual(
+            result.matched_required.count(),
+            3,
+        )
+
+        self.assertEqual(
+            result.missing_required.count(),
+            0,
+        )
+
+    # -------------------------------------------------------------
+    # REQUIRED + NICE-TO-HAVE MATCH
+    # -------------------------------------------------------------
+
+    def test_required_and_nice_to_have_match(self):
+        """
+        A CV containing all required skills and the
+        nice-to-have AWS skill should receive 100%.
+
+        The database stores 100% as 1.0.
+        """
+
+        cv = self.create_cv(
+            "Experienced Python, Django, JavaScript "
+            "and AWS developer."
+        )
+
+        result = score_cv_against_role(
+            cv,
+            self.role,
+        )
+
+        self.assertAlmostEqual(
+            result.score,
+            1.0,
+            places=2,
+        )
+
+        self.assertEqual(
+            result.matched_required.count(),
+            3,
+        )
+
+        self.assertEqual(
+            result.matched_nice_to_have.count(),
+            1,
+        )
+
+    # -------------------------------------------------------------
+    # PARTIAL REQUIRED MATCH
+    # -------------------------------------------------------------
+
+    def test_partial_required_match(self):
+        """
+        Two out of three required skills should produce
+        approximately 53.33%.
+
+        The database stores this as approximately 0.5333.
+        """
+
+        cv = self.create_cv(
+            "Experienced Python and Django developer."
+        )
+
+        result = score_cv_against_role(
+            cv,
+            self.role,
+        )
+
+        self.assertAlmostEqual(
+            result.score,
+            0.5333,
+            places=3,
+        )
+
+        self.assertEqual(
+            result.matched_required.count(),
+            2,
+        )
+
+        self.assertEqual(
+            result.missing_required.count(),
+            1,
+        )
+
+    # -------------------------------------------------------------
+    # RESULT IS STORED
+    # -------------------------------------------------------------
+
+    def test_result_is_stored(self):
+        """
+        Matching should create a CVMatchResult record
+        for the CV and role profile.
+        """
+
+        cv = self.create_cv(
+            "Experienced Python and Django developer."
+        )
+
+        result = score_cv_against_role(
+            cv,
+            self.role,
+        )
+
+        self.assertTrue(
+            CVMatchResult.objects.filter(
+                cv=cv,
+                role_profile=self.role,
+            ).exists()
+        )
+
+        self.assertAlmostEqual(
+            result.score,
+            0.5333,
+            places=3,
+        )
+
+    # -------------------------------------------------------------
+    # DOCX TEXT EXTRACTION
+    # -------------------------------------------------------------
+
+    def test_docx_text_extraction(self):
+        """
+        Verify that the existing DOCX extraction logic
+        correctly extracts text from a CV.
+        """
+
+        document = Document()
+
+        document.add_paragraph(
+            "Experienced Python and Django developer."
+        )
+
+        buffer = BytesIO()
+
+        document.save(buffer)
+
+        buffer.seek(0)
+
+        uploaded_file = SimpleUploadedFile(
+            "test_cv.docx",
+            buffer.read(),
+            content_type=(
+                "application/vnd.openxmlformats-officedocument"
+                ".wordprocessingml.document"
+            ),
+        )
+
+        # Create the database record first.
+        # Using an empty file value prevents the test from
+        # attempting an actual S3 upload.
+        cv = CandidateCV.objects.create(
+            candidate_name="Extraction Test Candidate",
+            file="",
+            extracted_text="",
+        )
+
+        # Attach the temporary DOCX only in memory.
+        cv.file = uploaded_file
+
+        extracted = extract_text(cv)
+
+        self.assertIn(
+            "Experienced Python and Django developer.",
+            extracted,
+    )
