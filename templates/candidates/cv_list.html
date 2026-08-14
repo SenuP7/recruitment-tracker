@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Candidate CVs</title>
+</head>
+<body>
+
+<h1>Candidate CVs</h1>
+
+{% if candidate_cvs %}
+
+    {% for cv in candidate_cvs %}
+
+        <p>
+            Candidate:
+            {{ cv.candidate }}
+        </p>
+
+        <p>
+            Uploaded:
+            {{ cv.uploaded_at }}
+        </p>
+
+        {% if cv.cv_file %}
+            <a href="{{ cv.cv_file.url }}" target="_blank">
+                View CV
+            </a>
+        {% endif %}
+
+        <hr>
+
+    {% empty %}
+
+        <p>No CVs found.</p>
+
+    {% endfor %}
+
+{% else %}
+
+    <p>No CVs found.</p>
+
+{% endif %}
+
+</body>
+</html>

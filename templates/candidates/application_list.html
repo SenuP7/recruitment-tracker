@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Applications</title>
+</head>
+<body>
+
+<h1>Applications</h1>
+
+{% if perms.candidates.add_application %}
+    <a href="{% url 'application-create' %}">
+        Add Application
+    </a>
+{% endif %}
+
+<hr>
+
+{% if applications %}
+
+    {% for application in applications %}
+
+        <h3>
+            <a href="{% url 'application-detail' application.pk %}">
+                {{ application.candidate }}
+            </a>
+        </h3>
+
+        <p>
+            Position: {{ application.position }}
+        </p>
+
+        <p>
+            Status: {{ application.status }}
+        </p>
+
+        <hr>
+
+    {% empty %}
+
+        <p>No applications found.</p>
+
+    {% endfor %}
+
+{% else %}
+
+    <p>No applications found.</p>
+
+{% endif %}
+
+</body>
+</html>

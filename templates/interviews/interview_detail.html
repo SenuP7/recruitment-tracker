@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interview Details</title>
+</head>
+<body>
+
+<h1>Interview Details</h1>
+
+<p>
+    <strong>Application:</strong>
+    {{ interview.application }}
+</p>
+
+<p>
+    <strong>Interview Type:</strong>
+    {{ interview.interview_type }}
+</p>
+
+<p>
+    <strong>Scheduled Date:</strong>
+    {{ interview.scheduled_date }}
+</p>
+
+<p>
+    <strong>Status:</strong>
+    {{ interview.status }}
+</p>
+
+<hr>
+
+{% if perms.interviews.change_interview %}
+    <a href="{% url 'interview-update' interview.pk %}">
+        Edit Interview
+    </a>
+{% endif %}
+
+{% if perms.interviews.delete_interview %}
+    <a href="{% url 'interview-delete' interview.pk %}">
+        Delete Interview
+    </a>
+{% endif %}
+
+<br><br>
+
+<a href="{% url 'feedback-detail' interview.pk %}">
+    View Feedback
+</a>
+
+<br><br>
+
+<a href="{% url 'interview-list' %}">
+    Back to Interviews
+</a>
+
+</body>
+</html>

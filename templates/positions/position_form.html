@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Position Form</title>
+</head>
+<body>
+
+{% if object %}
+    <h1>Edit Position</h1>
+{% else %}
+    <h1>Create Position</h1>
+{% endif %}
+
+<form method="post">
+
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <button type="submit">
+        Save Position
+    </button>
+
+</form>
+
+<br>
+
+<a href="{% url 'position-list' %}">
+    Cancel
+</a>
+
+</body>
+</html>

@@ -62,7 +62,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -84,11 +84,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", "recruitment_tracker"),
-        "USER": os.environ.get("DB_USER"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
-        "HOST": os.environ.get("DB_HOST"),
-        "PORT": os.environ.get("DB_PORT", "5432"),
+        "NAME": "recruitment_tracker",
+        "USER": "dbadmin",
+        "PASSWORD": "ANSY2026",
+        "HOST": "recruitment-tracker-db.cpik2u60ea8f.ap-southeast-1.rds.amazonaws.com",
+        "PORT": "5432",
     }
 }
 
@@ -149,3 +149,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = "/accounts/login/"
+LOGIN_REDIRECT_URL = "/accounts/profile/"
+LOGOUT_REDIRECT_URL = "/accounts/login/"

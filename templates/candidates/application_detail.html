@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Application Details</title>
+</head>
+<body>
+
+<h1>Application Details</h1>
+
+<p>
+    <strong>Candidate:</strong>
+    {{ application.candidate }}
+</p>
+
+<p>
+    <strong>Position:</strong>
+    {{ application.position }}
+</p>
+
+<p>
+    <strong>Status:</strong>
+    {{ application.status }}
+</p>
+
+<p>
+    <strong>Applied:</strong>
+    {{ application.applied_at }}
+</p>
+
+<hr>
+
+{% if perms.candidates.change_application %}
+    <a href="{% url 'application-update' application.pk %}">
+        Edit Application
+    </a>
+{% endif %}
+
+{% if perms.candidates.delete_application %}
+    <a href="{% url 'application-delete' application.pk %}">
+        Delete Application
+    </a>
+{% endif %}
+
+<br><br>
+
+<a href="{% url 'application-list' %}">
+    Back to Applications
+</a>
+
+</body>
+</html>

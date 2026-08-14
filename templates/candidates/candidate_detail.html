@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Candidate Details</title>
+</head>
+<body>
+
+<h1>Candidate Details</h1>
+
+<p><strong>First Name:</strong> {{ candidate.first_name }}</p>
+<p><strong>Last Name:</strong> {{ candidate.last_name }}</p>
+<p><strong>Email:</strong> {{ candidate.email }}</p>
+<p><strong>Phone:</strong> {{ candidate.phone }}</p>
+<p><strong>Department:</strong> {{ candidate.department }}</p>
+<p><strong>Status:</strong> {{ candidate.current_status }}</p>
+<p><strong>Created:</strong> {{ candidate.created_at }}</p>
+
+<hr>
+
+{% if perms.candidates.change_candidate %}
+    <a href="{% url 'candidate-update' candidate.pk %}">
+        Edit Candidate
+    </a>
+{% endif %}
+
+{% if perms.candidates.delete_candidate %}
+    <a href="{% url 'candidate-delete' candidate.pk %}">
+        Delete Candidate
+    </a>
+{% endif %}
+
+<br><br>
+
+<a href="{% url 'candidate-list' %}">Back to Candidates</a>
+
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interview Feedback</title>
+</head>
+<body>
+
+<h1>Interview Feedback</h1>
+
+<p>
+    <strong>Interview:</strong>
+    {{ feedback.interview }}
+</p>
+
+<p>
+    <strong>Rating:</strong>
+    {{ feedback.rating }}
+</p>
+
+<p>
+    <strong>Comments:</strong>
+    {{ feedback.comments }}
+</p>
+
+<p>
+    <strong>Recommendation:</strong>
+    {{ feedback.recommendation }}
+</p>
+
+<p>
+    <strong>Created:</strong>
+    {{ feedback.created_at }}
+</p>
+
+<hr>
+
+{% if perms.interviews.change_interviewfeedback %}
+    <a href="{% url 'feedback-update' feedback.pk %}">
+        Edit Feedback
+    </a>
+{% endif %}
+
+{% if perms.interviews.delete_interviewfeedback %}
+    <a href="{% url 'feedback-delete' feedback.pk %}">
+        Delete Feedback
+    </a>
+{% endif %}
+
+<br><br>
+
+<a href="{% url 'interview-detail' feedback.interview.pk %}">
+    Back to Interview
+</a>
+
+</body>
+</html>
