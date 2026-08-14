@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Position Details</title>
+</head>
+<body>
+
+<h1>Position Details</h1>
+
+<p><strong>Title:</strong> {{ position.title }}</p>
+
+<p><strong>Description:</strong> {{ position.description }}</p>
+
+<p><strong>Minimum Experience:</strong> {{ position.minimum_experience }}</p>
+
+<p><strong>Department:</strong> {{ position.department }}</p>
+
+<p><strong>Open:</strong> {{ position.is_open }}</p>
+
+<p><strong>Created:</strong> {{ position.created_at }}</p>
+
+<hr>
+
+{% if perms.positions.change_position %}
+    <a href="{% url 'position-update' position.pk %}">
+        Edit Position
+    </a>
+{% endif %}
+
+{% if perms.positions.delete_position %}
+    <a href="{% url 'position-delete' position.pk %}">
+        Delete Position
+    </a>
+{% endif %}
+
+<br><br>
+
+<a href="{% url 'position-list' %}">
+    Back to Positions
+</a>
+
+</body>
+</html>

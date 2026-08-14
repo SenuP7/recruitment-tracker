@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Candidates</title>
+</head>
+<body>
+
+<h1>Candidates</h1>
+
+<p>
+    Logged in as: {{ request.user.username }}
+</p>
+
+{% if perms.candidates.add_candidate %}
+    <a href="{% url 'candidate-create' %}">Add Candidate</a>
+{% endif %}
+
+<hr>
+
+{% if candidates %}
+
+    {% for candidate in candidates %}
+
+        <h3>
+            <a href="{% url 'candidate-detail' candidate.pk %}">
+                {{ candidate.first_name }} {{ candidate.last_name }}
+            </a>
+        </h3>
+
+        <p>Email: {{ candidate.email }}</p>
+        <p>Status: {{ candidate.current_status }}</p>
+
+        <hr>
+
+    {% empty %}
+
+        <p>No candidates found.</p>
+
+    {% endfor %}
+
+{% else %}
+
+    <p>No candidates found.</p>
+
+{% endif %}
+
+</body>
+</html>

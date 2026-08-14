@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delete Position</title>
+</head>
+<body>
+
+<h1>Delete Position</h1>
+
+<p>
+    Are you sure you want to delete
+    <strong>{{ position.title }}</strong>?
+</p>
+
+<form method="post">
+
+    {% csrf_token %}
+
+    <button type="submit">
+        Yes, Delete
+    </button>
+
+</form>
+
+<br>
+
+<a href="{% url 'position-detail' position.pk %}">
+    Cancel
+</a>
+
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interviews</title>
+</head>
+<body>
+
+<h1>Interviews</h1>
+
+<p>
+    Logged in as: {{ request.user.username }}
+</p>
+
+{% if perms.interviews.add_interview %}
+    <a href="{% url 'interview-create' %}">
+        Create Interview
+    </a>
+{% endif %}
+
+<hr>
+
+{% if interviews %}
+
+    {% for interview in interviews %}
+
+        <h3>
+            <a href="{% url 'interview-detail' interview.pk %}">
+                {{ interview.application }}
+            </a>
+        </h3>
+
+        <p>
+            Type: {{ interview.interview_type }}
+        </p>
+
+        <p>
+            Date: {{ interview.scheduled_date }}
+        </p>
+
+        <p>
+            Status: {{ interview.status }}
+        </p>
+
+        <p>
+            <a href="{% url 'feedback-detail' interview.pk %}">
+                View Feedback
+            </a>
+        </p>
+
+        <hr>
+
+    {% empty %}
+
+        <p>No interviews found.</p>
+
+    {% endfor %}
+
+{% else %}
+
+    <p>No interviews found.</p>
+
+{% endif %}
+
+</body>
+</html>

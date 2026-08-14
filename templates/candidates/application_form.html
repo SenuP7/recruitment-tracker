@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Application Form</title>
+</head>
+<body>
+
+{% if object %}
+    <h1>Edit Application</h1>
+{% else %}
+    <h1>Create Application</h1>
+{% endif %}
+
+<form method="post">
+
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <button type="submit">
+        Save Application
+    </button>
+
+</form>
+
+<br>
+
+<a href="{% url 'application-list' %}">
+    Cancel
+</a>
+
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Positions</title>
+</head>
+<body>
+
+<h1>Job Positions</h1>
+
+<p>Logged in as: {{ request.user.username }}</p>
+
+{% if perms.positions.add_position %}
+    <a href="{% url 'position-create' %}">Add Position</a>
+{% endif %}
+
+<hr>
+
+{% if positions %}
+
+    {% for position in positions %}
+
+        <h3>
+            <a href="{% url 'position-detail' position.pk %}">
+                {{ position.title }}
+            </a>
+        </h3>
+
+        <p>Description: {{ position.description }}</p>
+        <p>Minimum Experience: {{ position.minimum_experience }}</p>
+        <p>Department: {{ position.department }}</p>
+        <p>Open: {{ position.is_open }}</p>
+
+        <hr>
+
+    {% empty %}
+
+        <p>No positions found.</p>
+
+    {% endfor %}
+
+{% else %}
+
+    <p>No positions found.</p>
+
+{% endif %}
+
+</body>
+</html>
