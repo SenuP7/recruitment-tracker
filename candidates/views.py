@@ -8,7 +8,7 @@ from django.views.generic import (
     DeleteView,
 )
 
-from .models import Candidate, CandidateCV, Application
+from .models import Candidate, Application
 
 
 # ============================================================
@@ -23,6 +23,7 @@ class CandidateListView(
     model = Candidate
     template_name = "candidates/candidate_list.html"
     context_object_name = "candidates"
+
     permission_required = "candidates.view_candidate"
     raise_exception = True
 
@@ -35,6 +36,7 @@ class CandidateDetailView(
     model = Candidate
     template_name = "candidates/candidate_detail.html"
     context_object_name = "candidate"
+
     permission_required = "candidates.view_candidate"
     raise_exception = True
 
@@ -94,42 +96,6 @@ class CandidateDeleteView(
 
     permission_required = "candidates.delete_candidate"
     success_url = reverse_lazy("candidate-list")
-    raise_exception = True
-
-
-# ============================================================
-# CANDIDATE CV VIEWS
-# ============================================================
-
-class CandidateCVListView(
-    LoginRequiredMixin,
-    PermissionRequiredMixin,
-    ListView
-):
-    model = CandidateCV
-    template_name = "candidates/cv_list.html"
-    context_object_name = "candidate_cvs"
-
-    permission_required = "candidates.view_candidatecv"
-    raise_exception = True
-
-
-class CandidateCVCreateView(
-    LoginRequiredMixin,
-    PermissionRequiredMixin,
-    CreateView
-):
-    model = CandidateCV
-    template_name = "candidates/cv_form.html"
-
-    fields = [
-        "candidate",
-        "cv_file",
-        "is_active",
-    ]
-
-    permission_required = "candidates.add_candidatecv"
-    success_url = reverse_lazy("cv-list")
     raise_exception = True
 
 

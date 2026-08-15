@@ -11,6 +11,8 @@ from .matching import (
     score_cv_against_role,
 )
 
+from candidates.models import Candidate
+
 from .models import (
     CandidateCV,
     CVMatchResult,
@@ -26,6 +28,13 @@ class CVMatchingTests(TestCase):
         # ---------------------------------------------------------
         # CREATE SKILLS
         # ---------------------------------------------------------
+
+        self.candidate = Candidate.objects.create(
+            first_name="Test",
+            last_name="Candidate",
+            email="test@example.com",
+            phone="0712345678",
+        )
 
         self.python = Skill.objects.create(
             name="Python"
@@ -88,18 +97,16 @@ class CVMatchingTests(TestCase):
 
     def create_cv(self, text):
         """
-        Create a CV database record containing already-extracted
-        text.
+        Create a CV database record containing already-extracted text.
 
-        We intentionally do not upload a real file here because
-        the project uses S3 storage. Unit tests should not depend
-        on AWS.
+        No real file is uploaded because the tests do not need
+        external storage.
         """
-
         return CandidateCV.objects.create(
-            candidate_name="Test Candidate",
+            candidate=self.candidate,
+            file="test_cv.pdf",
             extracted_text=text,
-        )
+    )
 
     # -------------------------------------------------------------
     # SYNONYM MATCHING
@@ -373,9 +380,9 @@ class CVMatchingTests(TestCase):
         # Using an empty file value prevents the test from
         # attempting an actual S3 upload.
         cv = CandidateCV.objects.create(
-            candidate_name="Extraction Test Candidate",
-            file="",
-            extracted_text="",
+        candidate=self.candidate,
+        file="test_cv.docx",
+        extracted_text="",
         )
 
         # Attach the temporary DOCX only in memory.
