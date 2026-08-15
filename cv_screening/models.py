@@ -36,15 +36,28 @@ class RoleKeywordProfile(models.Model):
 
 
 class CandidateCV(models.Model):
-    """One uploaded CV. File itself lives in S3 (see settings_additions.py);
-    extracted_text is cached here so re-matching doesn't require re-parsing."""
-    candidate_name = models.CharField(max_length=200)
-    file = models.FileField(upload_to="cvs/")
-    extracted_text = models.TextField(blank=True)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
+    candidate = models.ForeignKey(
+        "candidates.Candidate",
+        on_delete=models.CASCADE,
+        related_name="screening_cvs",
+        null=True,
+        blank=True
+    )
+
+    file = models.FileField(
+        upload_to="cvs/"
+    )
+
+    extracted_text = models.TextField(
+        blank=True
+    )
+
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
     def __str__(self):
-        return self.candidate_name
+        return f"{self.candidate} CV"
 
 
 class CVMatchResult(models.Model):
