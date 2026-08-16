@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CV Screening Result</title>
+</head>
+<body>
+
+    <h1>CV Screening Result</h1>
+
+    <h2>
+        Candidate:
+        {{ cv.candidate.first_name }} {{ cv.candidate.last_name }}
+    </h2>
+
+    <h3>Role: {{ result.role_profile.role_name }}</h3>
+
+    <p>
+        <strong>CV:</strong>
+        
+        <a href="{% url 'cv_screening:view_cv' cv.id %}" target="_blank">
+            View Uploaded CV
+        </a>
+    </p>
+
+    <hr>
+
+    <h2>Match Score</h2>
+
+    <p>
+        <strong>{% widthratio result.score 1 100 %}%</strong>
+    </p>
+
+    <h2>Matched Required Skills</h2>
+
+    {% if result.matched_required.all %}
+        <ul>
+            {% for skill in result.matched_required.all %}
+                <li>{{ skill.name }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No required skills matched.</p>
+    {% endif %}
+
+    <h2>Matched Nice-to-Have Skills</h2>
+
+    {% if result.matched_nice_to_have.all %}
+        <ul>
+            {% for skill in result.matched_nice_to_have.all %}
+                <li>{{ skill.name }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No nice-to-have skills matched.</p>
+    {% endif %}
+
+    <h2>Missing Required Skills</h2>
+
+    {% if result.missing_required.all %}
+        <ul>
+            {% for skill in result.missing_required.all %}
+                <li>{{ skill.name }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No required skills are missing.</p>
+    {% endif %}
+
+    <br>
+
+    <a href="/cv-screening/upload/{{ result.role_profile.id }}/">
+        Screen Another CV
+    </a>
+
+</body>
+</html>
