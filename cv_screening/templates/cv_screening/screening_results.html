@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CV Screening Results</title>
+</head>
+<body>
+
+    <h1>CV Screening Results</h1>
+
+    {% if results %}
+
+        <table border="1" cellpadding="10">
+            <thead>
+                <tr>
+                    <th>Candidate</th>
+                    <th>Role</th>
+                    <th>Match Score</th>
+                    <th>Missing Required Skills</th>
+                    <th>Screened At</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for result in results %}
+
+                    <tr>
+
+                        <td>
+                            <a href="{% url 'screening-result-detail' result.id %}">
+                                {{ result.cv.candidate.first_name }}
+                                {{ result.cv.candidate.last_name }}
+                            </a>
+                        </td>
+
+                        <td>
+                            {{ result.role_profile.role_name }}
+                        </td>
+
+                        <td>
+                            <strong>
+                                {% widthratio result.score 1 100 %}%
+                            </strong>
+                        </td>
+
+                        <td>
+                            {% for skill in result.missing_required.all %}
+                                {{ skill.name }}{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                None
+                            {% endfor %}
+                        </td>
+
+                        <td>
+                            {{ result.computed_at }}
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+        </table>
+
+    {% else %}
+
+        <p>No CV screening results yet.</p>
+
+    {% endif %}
+
+    <br>
+
+    <a href="/admin/cv_screening/">
+        Back to CV Screening Admin
+    </a>
+
+</body>
+</html>

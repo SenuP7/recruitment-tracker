@@ -82,4 +82,4 @@ class CVMatchResult(models.Model):
         unique_together = ("cv", "role_profile")
 
     def __str__(self):
-        return f"{self.cv.candidate_name} vs {self.role_profile.role_name}: {self.score:.0%}"
+        return f"{self.cv.candidate} vs {self.role_profile.role_name}: {self.score:.0%}"
