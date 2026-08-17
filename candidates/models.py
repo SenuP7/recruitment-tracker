@@ -48,14 +48,17 @@ class Application(models.Model):
     )
 
     STATUS_CHOICES = [
-        ("Applied", "Applied"),
-        ("CV Screening", "CV Screening"),
-        ("HR Interview", "HR Interview"),
-        ("Technical Interview", "Technical Interview"),
-        ("Senior Review", "Senior Review"),
-        ("Accepted", "Accepted"),
-        ("Rejected", "Rejected"),
-    ]
+    ("Applied", "Applied"),
+    ("CV Screening", "CV Screening"),
+    ("CV Screening Passed", "CV Screening Passed"),
+    ("CV Screening Failed", "CV Screening Failed"),
+    ("HR Interview", "HR Interview"),
+    ("Technical Interview", "Technical Interview"),
+    ("Senior Review", "Senior Review"),
+    ("Accepted", "Accepted"),
+    ("Rejected", "Rejected"),
+]
+    
 
     status = models.CharField(
         max_length=30,

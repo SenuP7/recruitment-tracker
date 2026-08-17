@@ -81,5 +81,22 @@ class CVMatchResult(models.Model):
     class Meta:
         unique_together = ("cv", "role_profile")
 
+    def match_category(self):
+        if self.score >= 0.8:
+            return "Excellent Match"
+
+        elif self.score >= 0.6:
+            return "Good Match"
+
+        elif self.score >= 0.4:
+            return "Needs Review"
+
+        else:
+            return "Poor Match"
+
+    @property
+    def percentage_score(self):
+        return round(self.score * 100)
+
     def __str__(self):
         return f"{self.cv.candidate} vs {self.role_profile.role_name}: {self.score:.0%}"

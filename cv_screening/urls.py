@@ -31,4 +31,16 @@ urlpatterns = [
         views.view_cv,
         name="view_cv",
     ),
+
+    path(
+    "results/delete/<int:result_id>/",
+    views.delete_cv_result,
+    name="delete-cv-result"
+    ),
+
+    path(
+    "application/<int:application_id>/",
+    views.upload_application_cv,
+    name="application-upload-cv"
+    ),
 ]

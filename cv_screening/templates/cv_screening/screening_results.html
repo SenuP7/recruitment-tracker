@@ -1,78 +1,306 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>CV Screening Results</title>
+
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #999;
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #eee;
+        }
+
+        .excellent {
+            color: green;
+            font-weight: bold;
+        }
+
+        .good {
+            color: blue;
+            font-weight: bold;
+        }
+
+        .review {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .poor {
+            color: red;
+            font-weight: bold;
+        }
+
+        .btn {
+            text-decoration: none;
+            padding: 5px 10px;
+            border: 1px solid black;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+
+    </style>
+
 </head>
+
 <body>
 
-    <h1>CV Screening Results</h1>
 
-    {% if results %}
+<h1>CV Screening Results</h1>
 
-        <table border="1" cellpadding="10">
-            <thead>
-                <tr>
-                    <th>Candidate</th>
-                    <th>Role</th>
-                    <th>Match Score</th>
-                    <th>Missing Required Skills</th>
-                    <th>Screened At</th>
-                </tr>
-            </thead>
 
-            <tbody>
+{% if results %}
 
-                {% for result in results %}
+<table>
 
-                    <tr>
+<thead>
 
-                        <td>
-                            <a href="{% url 'screening-result-detail' result.id %}">
-                                {{ result.cv.candidate.first_name }}
-                                {{ result.cv.candidate.last_name }}
-                            </a>
-                        </td>
+<tr>
+    <th>Candidate</th>
+    <th>Role</th>
+    <th>Score</th>
+    <th>Match Category</th>
+    <th>Matched Skills</th>
+    <th>Missing Skills</th>
+    <th>Actions</th>
+    <th>Screened At</th>
+</tr>
 
-                        <td>
-                            {{ result.role_profile.role_name }}
-                        </td>
+</thead>
 
-                        <td>
-                            <strong>
-                                {% widthratio result.score 1 100 %}%
-                            </strong>
-                        </td>
 
-                        <td>
-                            {% for skill in result.missing_required.all %}
-                                {{ skill.name }}{% if not forloop.last %}, {% endif %}
-                            {% empty %}
-                                None
-                            {% endfor %}
-                        </td>
+<tbody>
 
-                        <td>
-                            {{ result.computed_at }}
-                        </td>
 
-                    </tr>
+{% for result in results %}
 
-                {% endfor %}
+<tr>
 
-            </tbody>
-        </table>
 
-    {% else %}
+<td>
 
-        <p>No CV screening results yet.</p>
+<a href="{% url 'cv_screening:screening-result-detail' result.id %}">
 
-    {% endif %}
+{{ result.cv.candidate.first_name }}
+{{ result.cv.candidate.last_name }}
 
-    <br>
+</a>
 
-    <a href="/admin/cv_screening/">
-        Back to CV Screening Admin
-    </a>
+</td>
+
+
+
+<td>
+
+{{ result.role_profile.role_name }}
+
+</td>
+
+
+
+<td>
+
+<strong>
+
+{{ result.percentage_score }}%
+
+</strong>
+
+</td>
+
+<td>
+
+{% if result.match_category == "Excellent Match" %}
+
+<span class="excellent">
+{{ result.match_category }}
+</span>
+
+{% elif result.match_category == "Good Match" %}
+
+<span class="good">
+{{ result.match_category }}
+</span>
+
+{% elif result.match_category == "Needs Review" %}
+
+<span class="review">
+{{ result.match_category }}
+</span>
+
+{% else %}
+
+<span class="poor">
+{{ result.match_category }}
+</span>
+
+{% endif %}
+
+</td>
+
+<td>
+
+
+<strong>
+Required:
+</strong>
+
+<ul>
+
+{% for skill in result.matched_required.all %}
+
+<li>
+{{ skill.name }}
+</li>
+
+{% empty %}
+
+<li>
+None
+</li>
+
+{% endfor %}
+
+</ul>
+
+
+
+<strong>
+Nice-to-have:
+</strong>
+
+
+<ul>
+
+{% for skill in result.matched_nice_to_have.all %}
+
+<li>
+{{ skill.name }}
+</li>
+
+{% empty %}
+
+<li>
+None
+</li>
+
+{% endfor %}
+
+</ul>
+
+
+</td>
+
+
+
+
+<td>
+
+
+<ul>
+
+{% for skill in result.missing_required.all %}
+
+<li>
+{{ skill.name }}
+</li>
+
+
+{% empty %}
+
+<li>
+None
+</li>
+
+{% endfor %}
+
+</ul>
+
+
+</td>
+
+
+
+
+<td>
+
+
+<a class="btn"
+href="{% url 'cv_screening:screening-result-detail' result.id %}">
+View Result
+</a>
+
+
+<br>
+
+
+<a class="btn"
+href="{% url 'cv_screening:view_cv' result.cv.id %}"
+target="_blank">
+
+View CV
+
+</a>
+
+<br>
+
+<a class="btn"
+href="{% url 'cv_screening:delete-cv-result' result.id %}"
+onclick="return confirm('Delete this CV screening result?');">
+
+Delete
+
+</a>
+
+
+</td>
+
+
+
+
+<td>
+
+{{ result.computed_at }}
+
+</td>
+
+
+
+</tr>
+
+
+{% endfor %}
+
+
+</tbody>
+
+
+</table>
+
+
+{% else %}
+
+
+<p>
+No CV screening results yet.
+</p>
+
+
+{% endif %}
+
+
 
 </body>
+
 </html>
