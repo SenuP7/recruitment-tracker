@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<title>Application CV Screening</title>
+</head>
+
+
+<body>
+
+
+<h1>CV Screening</h1>
+
+
+<h2>
+Candidate:
+{{ application.candidate.first_name }}
+{{ application.candidate.last_name }}
+</h2>
+
+
+<h3>
+Position:
+{{ application.position.title }}
+</h3>
+
+
+<h3>
+Screening Profile:
+{{ role_profile.role_name }}
+</h3>
+
+
+<form method="post" enctype="multipart/form-data">
+
+{% csrf_token %}
+
+
+<label>
+Upload CV:
+</label>
+
+
+<input 
+type="file"
+name="cv_file"
+accept=".pdf,.doc,.docx"
+required
+>
+
+
+<br><br>
+
+
+<button type="submit">
+Screen CV
+</button>
+
+
+</form>
+
+
+</body>
+
+</html>

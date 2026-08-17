@@ -7,6 +7,9 @@ from .matching import extract_text, score_cv_against_role
 from .models import CandidateCV, RoleKeywordProfile, CVMatchResult
 from candidates.models import Candidate
 
+from django.shortcuts import redirect
+from candidates.models import Application
+
 
 @login_required
 def upload_cv(request, role_profile_id):
@@ -163,6 +166,80 @@ def upload_cv(request, role_profile_id):
     )
 
 @login_required
+def upload_application_cv(request, application_id):
+
+    application = get_object_or_404(
+        Application,
+        id=application_id
+    )
+
+    position = application.position
+
+    role_profile = position.screening_profile
+
+    if not role_profile:
+        return render(
+            request,
+            "cv_screening/error.html",
+            {
+                "message": "No screening profile assigned to this position."
+            }
+        )
+
+
+    if request.method == "POST":
+
+        uploaded_file = request.FILES.get("cv_file")
+
+
+        cv = CandidateCV.objects.create(
+            candidate=application.candidate,
+            file=uploaded_file,
+        )
+
+
+        extract_text(cv)
+
+
+        result = score_cv_against_role(
+            cv,
+            role_profile
+        )
+
+        # Update application status based on score
+
+        if result.score >= 0.7:
+            application.status = "CV Screening Passed"
+
+        elif result.score < 0.4:
+            application.status = "CV Screening Failed"
+
+        else:
+            application.status = "CV Screening"
+
+        application.save()
+
+
+        return render(
+            request,
+            "cv_screening/match_result.html",
+            {
+                "cv": cv,
+                "result": result,
+            }
+        )
+
+
+    return render(
+        request,
+        "cv_screening/application_upload.html",
+        {
+            "application": application,
+            "role_profile": role_profile,
+        }
+    )
+
+@login_required
 def screening_results(request):
 
     results = CVMatchResult.objects.select_related(
@@ -173,7 +250,7 @@ def screening_results(request):
         "matched_required",
         "matched_nice_to_have",
         "missing_required",
-    ).order_by("-score", "-computed_at")
+    ).order_by("-score")
 
     return render(
         request,
@@ -220,3 +297,24 @@ def view_cv(request, cv_id):
     )
 
     return response
+
+@login_required
+def delete_cv_result(request, result_id):
+
+    result = get_object_or_404(
+        CVMatchResult,
+        id=result_id
+    )
+
+    cv = result.cv
+
+    # Delete uploaded file
+    if cv.file:
+        cv.file.delete()
+
+    # Delete CV
+    cv.delete()
+
+    return redirect(
+        "cv_screening:screening-results"
+    )
