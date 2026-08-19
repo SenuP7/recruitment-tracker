@@ -2,75 +2,265 @@
 <html>
 <head>
     <title>CV Screening Result</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f4f6f8;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 900px;
+            margin: auto;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #1f2937;
+        }
+
+        h2 {
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 8px;
+        }
+
+        .score-box {
+            text-align: center;
+            padding: 20px;
+            background: #eef2ff;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .score {
+            font-size: 45px;
+            font-weight: bold;
+        }
+
+        .skill-box {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .section {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .matched {
+            background: #ecfdf5;
+        }
+
+        .missing {
+            background: #fef2f2;
+        }
+
+        li {
+            margin: 8px;
+        }
+
+        a.button {
+            display: inline-block;
+            padding: 10px 15px;
+            background: #2563eb;
+            color:white;
+            text-decoration:none;
+            border-radius:5px;
+            margin-top:20px;
+        }
+
+    </style>
 </head>
+
 <body>
 
-    <h1>CV Screening Result</h1>
+<div class="container">
 
-    <h2>
-        Candidate:
-        {{ cv.candidate.first_name }} {{ cv.candidate.last_name }}
-    </h2>
+<h1>CV Screening Result</h1>
 
-    <h3>Role: {{ result.role_profile.role_name }}</h3>
 
-    <p>
-        <strong>CV:</strong>
-        
-        <a href="{% url 'cv_screening:view_cv' cv.id %}" target="_blank">
-            View Uploaded CV
-        </a>
-    </p>
+<h2>
+Candidate:
+{{ cv.candidate.first_name }}
+{{ cv.candidate.last_name }}
+</h2>
 
-    <hr>
 
-    <h2>Match Score</h2>
+<h3>
+Role:
+{{ result.role_profile.role_name }}
+</h3>
 
-    <p>
-        <strong>{% widthratio result.score 1 100 %}%</strong>
-    </p>
 
-    <h2>Matched Required Skills</h2>
+<p>
+<a href="{% url 'cv_screening:view_cv' cv.id %}" target="_blank">
+View Uploaded CV
+</a>
+</p>
 
-    {% if result.matched_required.all %}
-        <ul>
-            {% for skill in result.matched_required.all %}
-                <li>{{ skill.name }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No required skills matched.</p>
-    {% endif %}
 
-    <h2>Matched Nice-to-Have Skills</h2>
+<div class="score-box">
 
-    {% if result.matched_nice_to_have.all %}
-        <ul>
-            {% for skill in result.matched_nice_to_have.all %}
-                <li>{{ skill.name }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No nice-to-have skills matched.</p>
-    {% endif %}
+<h2>Match Score</h2>
 
-    <h2>Missing Required Skills</h2>
+<div class="score">
 
-    {% if result.missing_required.all %}
-        <ul>
-            {% for skill in result.missing_required.all %}
-                <li>{{ skill.name }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No required skills are missing.</p>
-    {% endif %}
+{% widthratio result.score 1 100 %}%
 
-    <br>
+</div>
 
-    <a href="/cv-screening/upload/{{ result.role_profile.id }}/">
-        Screen Another CV
-    </a>
+
+<div class="progress-container">
+
+    <div 
+    class="progress-bar"
+    style="width:{% widthratio result.score 1 100 %}%;">
+    </div>
+
+</div>
+
+
+<div class="category">
+
+{% if result.score >= 0.8 %}
+
+<strong>Strong Match</strong>
+
+{% elif result.score >= 0.5 %}
+
+<strong>Good Match</strong>
+
+{% else %}
+
+<strong>Needs Review</strong>
+
+{% endif %}
+
+</div>
+
+</div>
+
+
+
+<div class="skill-box">
+
+
+<div class="section matched">
+
+<h2>
+Matched Required Skills
+</h2>
+
+
+{% if result.matched_required.all %}
+
+<ul>
+
+{% for skill in result.matched_required.all %}
+
+<li>
+✓ {{ skill.name }}
+</li>
+
+{% endfor %}
+
+</ul>
+
+
+{% else %}
+
+<p>No required skills matched.</p>
+
+{% endif %}
+
+
+<h2>
+Matched Nice-to-have Skills
+</h2>
+
+
+{% if result.matched_nice_to_have.all %}
+
+<ul>
+
+{% for skill in result.matched_nice_to_have.all %}
+
+<li>
+✓ {{ skill.name }}
+</li>
+
+{% endfor %}
+
+</ul>
+
+
+{% else %}
+
+<p>No nice-to-have skills matched.</p>
+
+{% endif %}
+
+
+</div>
+
+
+
+<div class="section missing">
+
+<h2>
+Missing Required Skills
+</h2>
+
+
+{% if result.missing_required.all %}
+
+<ul>
+
+{% for skill in result.missing_required.all %}
+
+<li>
+⚠ {{ skill.name }}
+</li>
+
+{% endfor %}
+
+</ul>
+
+
+{% else %}
+
+<p>
+No missing required skills.
+</p>
+
+
+{% endif %}
+
+
+</div>
+
+
+</div>
+
+
+
+<a class="button"
+href="/cv-screening/upload/{{ result.role_profile.id }}/">
+
+Screen Another CV
+
+</a>
+
+
+</div>
+
 
 </body>
 </html>
