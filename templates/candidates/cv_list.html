@@ -1,45 +1,36 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Candidate CVs</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Candidate CVs</h1>
+{% block title %}Candidate CVs{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <h1>Candidate CVs <span class="count-pill">{{ candidate_cvs|length }}</span></h1>
+</div>
 
 {% if candidate_cvs %}
-
-    {% for cv in candidate_cvs %}
-
-        <p>
-            Candidate:
-            {{ cv.candidate }}
-        </p>
-
-        <p>
-            Uploaded:
-            {{ cv.uploaded_at }}
-        </p>
-
-        {% if cv.cv_file %}
-            <a href="{{ cv.cv_file.url }}" target="_blank">
-                View CV
-            </a>
-        {% endif %}
-
-        <hr>
-
-    {% empty %}
-
-        <p>No CVs found.</p>
-
-    {% endfor %}
-
+    <div class="row-list">
+        {% for cv in candidate_cvs %}
+            <div class="row-card">
+                <div class="row-lead">
+                    <div class="avatar">{{ cv.candidate.first_name|first }}{{ cv.candidate.last_name|first }}</div>
+                    <div class="row-main">
+                        <h3>{{ cv.candidate }}</h3>
+                        <div class="row-meta">
+                            <span class="mono">Uploaded {{ cv.uploaded_at|date:"d M Y, H:i" }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row-side">
+                    {% if cv.cv_file %}
+                        <a href="{{ cv.cv_file.url }}" target="_blank" class="btn btn-secondary btn-sm">View CV</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 {% else %}
-
-    <p>No CVs found.</p>
-
+    <div class="empty-state">No CVs found.</div>
 {% endif %}
 
-</body>
-</html>
+{% endblock %}

@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'candidates',
     'cv_screening',
     'interviews',
-    'notifications'
+    'notifications',
+    'dashboard',
 ]
 
 MIDDLEWARE = [
@@ -147,7 +148,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Colombo'
 
 USE_I18N = True
 

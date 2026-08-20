@@ -1,56 +1,52 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Interview Feedback</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Interview Feedback</h1>
+{% block title %}Interview Feedback{% endblock %}
 
-<p>
-    <strong>Interview:</strong>
-    {{ feedback.interview }}
-</p>
+{% block content %}
 
-<p>
-    <strong>Rating:</strong>
-    {{ feedback.rating }}
-</p>
+<div class="page-head">
+    <h1>
+        <span class="avatar avatar-lg avatar-inline">{{ feedback.interview.application.candidate.first_name|first }}{{ feedback.interview.application.candidate.last_name|first }}</span>
+        Interview Feedback
+    </h1>
+</div>
 
-<p>
-    <strong>Comments:</strong>
-    {{ feedback.comments }}
-</p>
+<div class="detail-layout">
+    <div class="detail-card">
+        <div class="field-row">
+            <strong>Interview</strong>
+            <span class="field-value">{{ feedback.interview }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Rating</strong>
+            <span class="field-value mono">{{ feedback.rating }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Comments</strong>
+            <span class="field-value">{{ feedback.comments }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Recommendation</strong>
+            <span class="field-value"><span class="badge" data-status="{{ feedback.recommendation }}">{{ feedback.recommendation }}</span></span>
+        </div>
+        <div class="field-row">
+            <strong>Created</strong>
+            <span class="field-value mono">{{ feedback.created_at }}</span>
+        </div>
+    </div>
 
-<p>
-    <strong>Recommendation:</strong>
-    {{ feedback.recommendation }}
-</p>
+    <div class="sidebar-card">
+        <h2>Actions</h2>
+        <div class="actions-bar">
+            {% if perms.interviews.change_interviewfeedback %}
+                <a href="{% url 'feedback-update' feedback.pk %}" class="btn btn-primary">Edit Feedback</a>
+            {% endif %}
+            {% if perms.interviews.delete_interviewfeedback %}
+                <a href="{% url 'feedback-delete' feedback.pk %}" class="btn btn-danger">Delete Feedback</a>
+            {% endif %}
+            <a href="{% url 'interview-detail' feedback.interview.pk %}" class="btn btn-secondary">Back to Interview</a>
+        </div>
+    </div>
+</div>
 
-<p>
-    <strong>Created:</strong>
-    {{ feedback.created_at }}
-</p>
-
-<hr>
-
-{% if perms.interviews.change_interviewfeedback %}
-    <a href="{% url 'feedback-update' feedback.pk %}">
-        Edit Feedback
-    </a>
-{% endif %}
-
-{% if perms.interviews.delete_interviewfeedback %}
-    <a href="{% url 'feedback-delete' feedback.pk %}">
-        Delete Feedback
-    </a>
-{% endif %}
-
-<br><br>
-
-<a href="{% url 'interview-detail' feedback.interview.pk %}">
-    Back to Interview
-</a>
-
-</body>
-</html>
+{% endblock %}

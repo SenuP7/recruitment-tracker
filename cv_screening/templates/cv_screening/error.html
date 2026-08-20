@@ -1,22 +1,15 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
-    <title>Error</title>
-</head>
+{% block title %}Error{% endblock %}
 
-<body>
+{% block content %}
 
-<h1>CV Screening Error</h1>
+<div class="page-head">
+    <h1>CV Screening Error</h1>
+</div>
 
-<p>
-{{ message }}
-</p>
+<p class="alert alert-error">{{ message }}</p>
 
-<a href="/cv-screening/results/">
-Back to Results
-</a>
+<a href="/cv-screening/results/" class="btn btn-secondary">Back to Results</a>
 
-</body>
-
-</html>
+{% endblock %}

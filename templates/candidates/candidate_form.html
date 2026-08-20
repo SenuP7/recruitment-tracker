@@ -1,31 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Candidate Form</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-{% if object %}
-    <h1>Edit Candidate</h1>
-{% else %}
-    <h1>Add Candidate</h1>
-{% endif %}
+{% block title %}{% if object %}Edit Candidate{% else %}Add Candidate{% endif %}{% endblock %}
 
-<form method="post">
+{% block content %}
 
-    {% csrf_token %}
+<div class="page-head">
+    {% if object %}
+        <h1>Edit Candidate</h1>
+    {% else %}
+        <h1>Add Candidate</h1>
+    {% endif %}
+</div>
 
-    {{ form.as_p }}
+<div class="panel">
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="actions-bar">
+            <button type="submit" class="btn-primary">Save</button>
+            <a href="{% url 'candidate-list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
 
-    <button type="submit">Save</button>
-
-</form>
-
-<br>
-
-<a href="{% url 'candidate-list' %}">
-    Cancel
-</a>
-
-</body>
-</html>
+{% endblock %}

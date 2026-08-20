@@ -1,51 +1,52 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Application Details</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Application Details</h1>
+{% block title %}Application Details{% endblock %}
 
-<p>
-    <strong>Candidate:</strong>
-    {{ application.candidate }}
-</p>
+{% block content %}
 
-<p>
-    <strong>Position:</strong>
-    {{ application.position }}
-</p>
+<div class="page-head">
+    <h1>
+        <span class="avatar avatar-lg avatar-inline">{{ application.candidate.first_name|first }}{{ application.candidate.last_name|first }}</span>
+        {{ application.candidate }}
+    </h1>
+</div>
 
-<p>
-    <strong>Status:</strong>
-    {{ application.status }}
-</p>
+<div class="detail-layout">
+    <div class="detail-card">
+        <div class="field-row">
+            <strong>Candidate</strong>
+            <span class="field-value">{{ application.candidate }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Position</strong>
+            <span class="field-value">{{ application.position }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Department</strong>
+            <span class="field-value">{{ application.position.department }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Status</strong>
+            <span class="field-value"><span class="badge" data-status="{{ application.status }}">{{ application.status }}</span></span>
+        </div>
+        <div class="field-row">
+            <strong>Applied</strong>
+            <span class="field-value mono">{{ application.applied_at }}</span>
+        </div>
+    </div>
 
-<p>
-    <strong>Applied:</strong>
-    {{ application.applied_at }}
-</p>
+    <div class="sidebar-card">
+        <h2>Actions</h2>
+        <div class="actions-bar">
+            {% if perms.candidates.change_application %}
+                <a href="{% url 'application-update' application.pk %}" class="btn btn-primary">Edit Application</a>
+            {% endif %}
+            {% if perms.candidates.delete_application %}
+                <a href="{% url 'application-delete' application.pk %}" class="btn btn-danger">Delete Application</a>
+            {% endif %}
+            <a href="{% url 'application-list' %}" class="btn btn-secondary">Back to Applications</a>
+        </div>
+    </div>
+</div>
 
-<hr>
-
-{% if perms.candidates.change_application %}
-    <a href="{% url 'application-update' application.pk %}">
-        Edit Application
-    </a>
-{% endif %}
-
-{% if perms.candidates.delete_application %}
-    <a href="{% url 'application-delete' application.pk %}">
-        Delete Application
-    </a>
-{% endif %}
-
-<br><br>
-
-<a href="{% url 'application-list' %}">
-    Back to Applications
-</a>
-
-</body>
-</html>
+{% endblock %}

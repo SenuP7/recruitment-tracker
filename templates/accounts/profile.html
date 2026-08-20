@@ -1,111 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends "base.html" %}
 
-    <title>My Profile - Recruitment Tracker</title>
+{% block title %}My Profile{% endblock %}
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-            margin: 0;
-            padding: 40px;
-        }
+{% block content %}
 
-        .container {
-            max-width: 700px;
-            margin: auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            margin-top: 0;
-        }
-
-        .info {
-            margin-top: 20px;
-        }
-
-        .row {
-            padding: 12px 0;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .label {
-            font-weight: bold;
-        }
-
-        .actions {
-            margin-top: 25px;
-        }
-
-        a {
-            display: inline-block;
-            padding: 10px 15px;
-            margin-right: 10px;
-            text-decoration: none;
-            border-radius: 5px;
-            background: #2563eb;
-            color: white;
-        }
-
-        a.logout {
-            background: #dc2626;
-        }
-    </style>
-</head>
-
-<body>
-
-<div class="container">
-
-    <h1>My Profile</h1>
-
-    <div class="info">
-
-        <div class="row">
-            <span class="label">Username:</span>
-            {{ profile_user.username }}
-        </div>
-
-        <div class="row">
-            <span class="label">First Name:</span>
-            {{ profile_user.first_name }}
-        </div>
-
-        <div class="row">
-            <span class="label">Last Name:</span>
-            {{ profile_user.last_name }}
-        </div>
-
-        <div class="row">
-            <span class="label">Email:</span>
-            {{ profile_user.email }}
-        </div>
-
-        <div class="row">
-            <span class="label">Groups:</span>
-
-            {% for group in profile_user.groups.all %}
-                {{ group.name }}{% if not forloop.last %}, {% endif %}
-            {% empty %}
-                No group assigned
-            {% endfor %}
-        </div>
-
-    </div>
-
-    <div class="actions">
-        <a href="/">Home</a>
-        <a href="/accounts/logout/" class="logout">Logout</a>
-    </div>
-
+<div class="page-head">
+    <h1>
+        <span class="avatar avatar-lg avatar-inline">
+            {% if profile_user.first_name %}{{ profile_user.first_name|first }}{{ profile_user.last_name|first }}{% else %}{{ profile_user.username|slice:":2"|upper }}{% endif %}
+        </span>
+        My Profile
+    </h1>
 </div>
 
-</body>
-</html>
+<div class="detail-layout">
+    <div class="detail-card">
+        <div class="field-row">
+            <strong>Username</strong>
+            <span class="field-value mono">{{ profile_user.username }}</span>
+        </div>
+        <div class="field-row">
+            <strong>First Name</strong>
+            <span class="field-value">{{ profile_user.first_name }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Last Name</strong>
+            <span class="field-value">{{ profile_user.last_name }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Email</strong>
+            <span class="field-value mono">{{ profile_user.email }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Groups</strong>
+            <span class="field-value">
+                {% for group in profile_user.groups.all %}
+                    {{ group.name }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    No group assigned
+                {% endfor %}
+            </span>
+        </div>
+    </div>
+
+    <div class="sidebar-card">
+        <h2>Actions</h2>
+        <div class="actions-bar profile-actions">
+            <a href="{% url 'candidate-list' %}" class="btn btn-primary">Home</a>
+            <a href="{% url 'logout' %}" class="btn logout">Logout</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

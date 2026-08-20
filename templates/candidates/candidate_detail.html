@@ -1,37 +1,60 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Candidate Details</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Candidate Details</h1>
+{% block title %}Candidate Details{% endblock %}
 
-<p><strong>First Name:</strong> {{ candidate.first_name }}</p>
-<p><strong>Last Name:</strong> {{ candidate.last_name }}</p>
-<p><strong>Email:</strong> {{ candidate.email }}</p>
-<p><strong>Phone:</strong> {{ candidate.phone }}</p>
-<p><strong>Department:</strong> {{ candidate.department }}</p>
-<p><strong>Status:</strong> {{ candidate.current_status }}</p>
-<p><strong>Created:</strong> {{ candidate.created_at }}</p>
+{% block content %}
 
-<hr>
+<div class="page-head">
+    <h1>
+        <span class="avatar avatar-lg avatar-inline">{{ candidate.first_name|first }}{{ candidate.last_name|first }}</span>
+        {{ candidate.first_name }} {{ candidate.last_name }}
+    </h1>
+</div>
 
-{% if perms.candidates.change_candidate %}
-    <a href="{% url 'candidate-update' candidate.pk %}">
-        Edit Candidate
-    </a>
-{% endif %}
+<div class="detail-layout">
+    <div class="detail-card">
+        <div class="field-row">
+            <strong>First Name</strong>
+            <span class="field-value">{{ candidate.first_name }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Last Name</strong>
+            <span class="field-value">{{ candidate.last_name }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Email</strong>
+            <span class="field-value mono">{{ candidate.email }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Phone</strong>
+            <span class="field-value mono">{{ candidate.phone }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Department</strong>
+            <span class="field-value">{{ candidate.department }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Status</strong>
+            <span class="field-value"><span class="badge" data-status="{{ candidate.current_status }}">{{ candidate.current_status }}</span></span>
+        </div>
+        <div class="field-row">
+            <strong>Created</strong>
+            <span class="field-value mono">{{ candidate.created_at }}</span>
+        </div>
+    </div>
 
-{% if perms.candidates.delete_candidate %}
-    <a href="{% url 'candidate-delete' candidate.pk %}">
-        Delete Candidate
-    </a>
-{% endif %}
+    <div class="sidebar-card">
+        <h2>Actions</h2>
+        <div class="actions-bar">
+            {% if perms.candidates.change_candidate %}
+                <a href="{% url 'candidate-update' candidate.pk %}" class="btn btn-primary">Edit Candidate</a>
+            {% endif %}
+            {% if perms.candidates.delete_candidate %}
+                <a href="{% url 'candidate-delete' candidate.pk %}" class="btn btn-danger">Delete Candidate</a>
+            {% endif %}
+            <a href="{% url 'candidate-list' %}" class="btn btn-secondary">Back to Candidates</a>
+        </div>
+    </div>
+</div>
 
-<br><br>
-
-<a href="{% url 'candidate-list' %}">Back to Candidates</a>
-
-</body>
-</html>
+{% endblock %}

@@ -1,48 +1,43 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Candidates</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Candidates</h1>
+{% block title %}Candidates{% endblock %}
 
-<p>
-    Logged in as: {{ request.user.username }}
-</p>
+{% block content %}
 
-{% if perms.candidates.add_candidate %}
-    <a href="{% url 'candidate-create' %}">Add Candidate</a>
-{% endif %}
-
-<hr>
+<div class="page-head">
+    <h1>Candidates <span class="count-pill">{{ candidates|length }}</span></h1>
+    {% if perms.candidates.add_candidate %}
+        <a href="{% url 'candidate-create' %}" class="btn btn-primary">Add Candidate</a>
+    {% endif %}
+</div>
 
 {% if candidates %}
-
-    {% for candidate in candidates %}
-
-        <h3>
-            <a href="{% url 'candidate-detail' candidate.pk %}">
-                {{ candidate.first_name }} {{ candidate.last_name }}
-            </a>
-        </h3>
-
-        <p>Email: {{ candidate.email }}</p>
-        <p>Status: {{ candidate.current_status }}</p>
-
-        <hr>
-
-    {% empty %}
-
-        <p>No candidates found.</p>
-
-    {% endfor %}
-
+    <div class="row-list">
+        {% for candidate in candidates %}
+            <div class="row-card">
+                <div class="row-lead">
+                    <div class="avatar">{{ candidate.first_name|first }}{{ candidate.last_name|first }}</div>
+                    <div class="row-main">
+                        <h3>
+                            <a href="{% url 'candidate-detail' candidate.pk %}">
+                                {{ candidate.first_name }} {{ candidate.last_name }}
+                            </a>
+                        </h3>
+                        <div class="row-meta">
+                            <span class="mono">{{ candidate.email }}</span>
+                            <span>{{ candidate.department|default:"No department" }}</span>
+                            <span class="mono">{{ candidate.phone }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row-side">
+                    <span class="badge" data-status="{{ candidate.current_status }}">{{ candidate.current_status }}</span>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 {% else %}
-
-    <p>No candidates found.</p>
-
+    <div class="empty-state">No candidates found.</div>
 {% endif %}
 
-</body>
-</html>
+{% endblock %}

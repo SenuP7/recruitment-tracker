@@ -1,71 +1,18 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
-    <title>CV Screening Results</title>
+{% block title %}CV Screening Results{% endblock %}
 
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+{% block content %}
 
-        th, td {
-            border: 1px solid #999;
-            padding: 10px;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        th {
-            background-color: #eee;
-        }
-
-        .excellent {
-            color: green;
-            font-weight: bold;
-        }
-
-        .good {
-            color: blue;
-            font-weight: bold;
-        }
-
-        .review {
-            color: orange;
-            font-weight: bold;
-        }
-
-        .poor {
-            color: red;
-            font-weight: bold;
-        }
-
-        .btn {
-            text-decoration: none;
-            padding: 5px 10px;
-            border: 1px solid black;
-            border-radius: 4px;
-            display: inline-block;
-            margin-bottom: 5px;
-        }
-
-    </style>
-
-</head>
-
-<body>
-
-
-<h1>CV Screening Results</h1>
-
+<div class="page-head">
+    <h1>CV Screening Results <span class="count-pill">{{ results|length }}</span></h1>
+</div>
 
 {% if results %}
-
+<div class="table-scroll">
 <table>
 
 <thead>
-
 <tr>
     <th>Candidate</th>
     <th>Role</th>
@@ -76,231 +23,89 @@
     <th>Actions</th>
     <th>Screened At</th>
 </tr>
-
 </thead>
 
-
 <tbody>
-
-
 {% for result in results %}
-
 <tr>
-
-
-<td>
-
-<a href="{% url 'cv_screening:screening-result-detail' result.id %}">
-
-{{ result.cv.candidate.first_name }}
-{{ result.cv.candidate.last_name }}
-
-</a>
-
-</td>
-
-
-
-<td>
-
-{{ result.role_profile.role_name }}
-
-</td>
-
-
-
-<td>
-
-<strong>
-
-{{ result.percentage_score }}%
-
-</strong>
-
-</td>
-
-<td>
-
-{% if result.match_category == "Excellent Match" %}
-
-<span class="excellent">
-{{ result.match_category }}
-</span>
-
-{% elif result.match_category == "Good Match" %}
-
-<span class="good">
-{{ result.match_category }}
-</span>
-
-{% elif result.match_category == "Needs Review" %}
-
-<span class="review">
-{{ result.match_category }}
-</span>
-
-{% else %}
-
-<span class="poor">
-{{ result.match_category }}
-</span>
-
-{% endif %}
-
-</td>
-
-<td>
-
-
-<strong>
-Required:
-</strong>
-
-<ul>
-
-{% for skill in result.matched_required.all %}
-
-<li>
-{{ skill.name }}
-</li>
-
-{% empty %}
-
-<li>
-None
-</li>
-
-{% endfor %}
-
-</ul>
-
-
-
-<strong>
-Nice-to-have:
-</strong>
-
-
-<ul>
-
-{% for skill in result.matched_nice_to_have.all %}
-
-<li>
-{{ skill.name }}
-</li>
-
-{% empty %}
-
-<li>
-None
-</li>
-
-{% endfor %}
-
-</ul>
-
-
-</td>
-
-
-
-
-<td>
-
-
-<ul>
-
-{% for skill in result.missing_required.all %}
-
-<li>
-{{ skill.name }}
-</li>
-
-
-{% empty %}
-
-<li>
-None
-</li>
-
-{% endfor %}
-
-</ul>
-
-
-</td>
-
-
-
-
-<td>
-
-
-<a class="btn"
-href="{% url 'cv_screening:screening-result-detail' result.id %}">
-View Result
-</a>
-
-
-<br>
-
-
-<a class="btn"
-href="{% url 'cv_screening:view_cv' result.cv.id %}"
-target="_blank">
-
-View CV
-
-</a>
-
-<br>
-
-<a class="btn"
-href="{% url 'cv_screening:delete-cv-result' result.id %}"
-onclick="return confirm('Delete this CV screening result?');">
-
-Delete
-
-</a>
-
-
-</td>
-
-
-
-
-<td>
-
-{{ result.computed_at }}
-
-</td>
-
-
-
+    <td>
+        <div class="row-lead">
+            <div class="avatar avatar-sm">{{ result.cv.candidate.first_name|first }}{{ result.cv.candidate.last_name|first }}</div>
+            <a href="{% url 'cv_screening:screening-result-detail' result.id %}">
+                {{ result.cv.candidate.first_name }} {{ result.cv.candidate.last_name }}
+            </a>
+        </div>
+    </td>
+
+    <td>{{ result.role_profile.role_name }}</td>
+
+    <td class="mono"><strong>{{ result.percentage_score }}%</strong></td>
+
+    <td>
+        {% if result.match_category == "Excellent Match" %}
+            <span class="excellent">{{ result.match_category }}</span>
+        {% elif result.match_category == "Good Match" %}
+            <span class="good">{{ result.match_category }}</span>
+        {% elif result.match_category == "Needs Review" %}
+            <span class="review">{{ result.match_category }}</span>
+        {% else %}
+            <span class="poor">{{ result.match_category }}</span>
+        {% endif %}
+    </td>
+
+    <td>
+        <strong>Required</strong>
+        <ul class="skill-chips">
+            {% for skill in result.matched_required.all %}
+                <li class="skill-chip required">{{ skill.name }}</li>
+            {% empty %}
+                <li class="skill-chip">None</li>
+            {% endfor %}
+        </ul>
+
+        <strong>Nice-to-have</strong>
+        <ul class="skill-chips">
+            {% for skill in result.matched_nice_to_have.all %}
+                <li class="skill-chip nice">{{ skill.name }}</li>
+            {% empty %}
+                <li class="skill-chip">None</li>
+            {% endfor %}
+        </ul>
+    </td>
+
+    <td>
+        <ul class="skill-chips">
+            {% for skill in result.missing_required.all %}
+                <li class="skill-chip missing">{{ skill.name }}</li>
+            {% empty %}
+                <li class="skill-chip">None</li>
+            {% endfor %}
+        </ul>
+    </td>
+
+    <td>
+        <div class="actions-stack">
+            <a class="btn btn-secondary btn-sm" href="{% url 'cv_screening:screening-result-detail' result.id %}">View Result</a>
+            <a class="btn btn-secondary btn-sm" href="{% url 'cv_screening:view_cv' result.cv.id %}" target="_blank">View CV</a>
+            <a class="btn btn-danger btn-sm" href="{% url 'cv_screening:delete-cv-result' result.id %}" onclick="return confirm('Delete this CV screening result?');">Delete</a>
+        </div>
+    </td>
+
+    <td>
+        <div class="datetime-stack">
+            <div class="weekday">{{ result.computed_at|date:"l" }}</div>
+            <div>{{ result.computed_at|date:"d M Y" }}</div>
+            <div class="time">{{ result.computed_at|time:"H:i" }}</div>
+        </div>
+    </td>
 </tr>
-
-
 {% endfor %}
-
-
 </tbody>
 
-
 </table>
-
-
+</div>
 {% else %}
-
-
-<p>
-No CV screening results yet.
-</p>
-
-
+    <div class="empty-state">No CV screening results yet.</div>
 {% endif %}
 
-
-
-</body>
-
-</html>
+{% endblock %}

@@ -1,0 +1,90 @@
+<div class="page-head">
+    <h2 class="mt-0">Candidates <span class="count-pill">{{ page_obj.paginator.count }}</span></h2>
+</div>
+
+{% if rows %}
+<div class="table-scroll">
+<table>
+<thead>
+<tr>
+    <th>Candidate</th>
+    <th>Email</th>
+    <th>Department</th>
+    <th>Applied Position</th>
+    <th>Application Status</th>
+    <th>CV Score</th>
+    <th>Match Category</th>
+    <th>Applied Date</th>
+    <th>Actions</th>
+</tr>
+</thead>
+<tbody>
+{% for row in rows %}
+<tr>
+    <td>
+        <div class="row-lead">
+            <div class="avatar avatar-sm">{{ row.application.candidate.first_name|first }}{{ row.application.candidate.last_name|first }}</div>
+            {{ row.application.candidate.first_name }} {{ row.application.candidate.last_name }}
+        </div>
+    </td>
+    <td class="mono">{{ row.application.candidate.email }}</td>
+    <td>{{ row.application.candidate.department|default:"—" }}</td>
+    <td>{{ row.application.position.title }}</td>
+    <td><span class="badge" data-status="{{ row.application.status }}">{{ row.application.status }}</span></td>
+    <td class="mono">
+        {% if row.score_percent is not None %}{{ row.score_percent }}%{% else %}—{% endif %}
+    </td>
+    <td>
+        {% if row.match_category == "Excellent Match" %}
+            <span class="excellent">{{ row.match_category }}</span>
+        {% elif row.match_category == "Good Match" %}
+            <span class="good">{{ row.match_category }}</span>
+        {% elif row.match_category == "Needs Review" %}
+            <span class="review">{{ row.match_category }}</span>
+        {% elif row.match_category == "Poor Match" %}
+            <span class="poor">{{ row.match_category }}</span>
+        {% else %}
+            <span class="meta-line">No CV yet</span>
+        {% endif %}
+    </td>
+    <td class="mono">{{ row.application.applied_at|date:"d M Y" }}</td>
+    <td>
+        <div class="actions-stack">
+            <a class="btn btn-secondary btn-sm" href="{% url 'candidate-detail' row.application.candidate.pk %}">View Candidate</a>
+            <a class="btn btn-secondary btn-sm" href="{% url 'application-detail' row.application.pk %}">View Application</a>
+            {% if row.application.cv_result_id %}
+                <a class="btn btn-secondary btn-sm" href="{% url 'cv_screening:screening-result-detail' row.application.cv_result_id %}">View CV Result</a>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+        <a class="btn btn-secondary btn-sm"
+           href="?page={{ page_obj.previous_page_number }}"
+           hx-get="{% url 'dashboard:dashboard-results' %}?page={{ page_obj.previous_page_number }}"
+           hx-include="#dashboard-filters"
+           hx-target="#dashboard-results"
+           hx-push-url="true">Previous</a>
+    {% endif %}
+    <span class="meta-line">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+        <a class="btn btn-secondary btn-sm"
+           href="?page={{ page_obj.next_page_number }}"
+           hx-get="{% url 'dashboard:dashboard-results' %}?page={{ page_obj.next_page_number }}"
+           hx-include="#dashboard-filters"
+           hx-target="#dashboard-results"
+           hx-push-url="true">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+    <div class="empty-state">No candidates match the current filters.</div>
+{% endif %}

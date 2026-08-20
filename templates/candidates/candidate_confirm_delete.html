@@ -1,34 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Delete Candidate</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Delete Candidate</h1>
+{% block title %}Delete Candidate{% endblock %}
 
-<p>
-    Are you sure you want to delete
-    <strong>
-        {{ candidate.first_name }} {{ candidate.last_name }}
-    </strong>?
-</p>
+{% block content %}
 
-<form method="post">
+<div class="page-head">
+    <h1>Delete Candidate</h1>
+</div>
 
-    {% csrf_token %}
+<div class="panel">
+    <p>
+        Are you sure you want to delete
+        <strong>{{ candidate.first_name }} {{ candidate.last_name }}</strong>?
+    </p>
 
-    <button type="submit">
-        Yes, Delete
-    </button>
+    <form method="post">
+        {% csrf_token %}
+        <div class="actions-bar">
+            <button type="submit" class="btn-danger">Yes, Delete</button>
+            <a href="{% url 'candidate-detail' candidate.pk %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
 
-</form>
-
-<br>
-
-<a href="{% url 'candidate-detail' candidate.pk %}">
-    Cancel
-</a>
-
-</body>
-</html>
+{% endblock %}

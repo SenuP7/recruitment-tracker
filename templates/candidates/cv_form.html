@@ -1,23 +1,19 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Upload CV</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Upload Candidate CV</h1>
+{% block title %}Upload CV{% endblock %}
 
-<form method="post" enctype="multipart/form-data">
+{% block content %}
 
-    {% csrf_token %}
+<div class="page-head">
+    <h1>Upload Candidate CV</h1>
+</div>
 
-    {{ form.as_p }}
+<div class="panel">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-primary">Upload CV</button>
+    </form>
+</div>
 
-    <button type="submit">
-        Upload CV
-    </button>
-
-</form>
-
-</body>
-</html>
+{% endblock %}
