@@ -15,24 +15,16 @@
 
 <header class="topbar">
     <div class="topbar-inner">
-        <a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% elif perms.candidates.view_candidate %}{% url 'candidate-list' %}{% else %}{% url 'profile' %}{% endif %}" class="brand">Recruitment<span>Tracker</span></a>
+        <a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'candidate-list' %}{% endif %}" class="brand">Recruitment<span>Tracker</span></a>
 
         <nav class="nav-links">
             {% if can_access_dashboard %}
                 <a href="{% url 'dashboard:dashboard' %}">Dashboard</a>
             {% endif %}
-            {% if perms.candidates.view_candidate %}
-                <a href="{% url 'candidate-list' %}">Candidates</a>
-            {% endif %}
-            {% if perms.candidates.view_application %}
-                <a href="{% url 'application-list' %}">Applications</a>
-            {% endif %}
-            {% if perms.positions.view_position %}
-                <a href="{% url 'position-list' %}">Positions</a>
-            {% endif %}
-            {% if perms.interviews.view_interview %}
-                <a href="{% url 'interview-list' %}">Interviews</a>
-            {% endif %}
+            <a href="{% url 'candidate-list' %}">Candidates</a>
+            <a href="{% url 'application-list' %}">Applications</a>
+            <a href="{% url 'position-list' %}">Positions</a>
+            <a href="{% url 'interview-list' %}">Interviews</a>
             {% if can_access_cv_screening %}
                 <a href="{% url 'cv_screening:screening-results' %}">CV Screening</a>
             {% endif %}
