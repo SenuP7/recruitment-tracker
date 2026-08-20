@@ -1,8 +1,8 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 from django.http import FileResponse
 
+from accounts.decorators import RECRUITMENT_STAFF_GROUPS, group_required
 from .matching import extract_text, score_cv_against_role
 from .models import CandidateCV, RoleKeywordProfile, CVMatchResult
 from candidates.models import Candidate
@@ -11,7 +11,7 @@ from django.shortcuts import redirect
 from candidates.models import Application
 
 
-@login_required
+@group_required(*RECRUITMENT_STAFF_GROUPS)
 def upload_cv(request, role_profile_id):
 
     role_profile = get_object_or_404(
@@ -165,7 +165,7 @@ def upload_cv(request, role_profile_id):
         }
     )
 
-@login_required
+@group_required(*RECRUITMENT_STAFF_GROUPS)
 def upload_application_cv(request, application_id):
 
     application = get_object_or_404(
@@ -239,7 +239,7 @@ def upload_application_cv(request, application_id):
         }
     )
 
-@login_required
+@group_required(*RECRUITMENT_STAFF_GROUPS)
 def screening_results(request):
 
     results = CVMatchResult.objects.select_related(
@@ -261,7 +261,7 @@ def screening_results(request):
     )
 
 
-@login_required
+@group_required(*RECRUITMENT_STAFF_GROUPS)
 def screening_result_detail(request, result_id):
 
     result = get_object_or_404(
@@ -286,7 +286,7 @@ def screening_result_detail(request, result_id):
         }
     )
 
-@login_required
+@group_required(*RECRUITMENT_STAFF_GROUPS)
 def view_cv(request, cv_id):
     cv = get_object_or_404(CandidateCV, id=cv_id)
 
@@ -298,7 +298,7 @@ def view_cv(request, cv_id):
 
     return response
 
-@login_required
+@group_required(*RECRUITMENT_STAFF_GROUPS)
 def delete_cv_result(request, result_id):
 
     result = get_object_or_404(

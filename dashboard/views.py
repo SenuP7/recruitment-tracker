@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.views import View
 
+from accounts.decorators import RECRUITMENT_STAFF_GROUPS
 from accounts.mixins import GroupRequiredMixin
 
 from . import filters as dashboard_filters
@@ -13,15 +14,13 @@ from .utils import match_category_for_score, paginate, percentage
 class DashboardAccessMixin(GroupRequiredMixin):
     """Reuses accounts.mixins.GroupRequiredMixin as-is, with one addition:
     superusers bypass the group check (they have no group memberships by
-    Django convention, but should always have full dashboard access)."""
+    Django convention, but should always have full dashboard access).
 
-    allowed_groups = [
-        "Recruiter",
-        "HR Interviewer",
-        "Senior Reviewer",
-        "Leadership Manager",
-        "Technical Interviewer",
-    ]
+    Same allowed-group list as cv_screening's @group_required -- both are
+    "recruitment staff only" gates, sourced from one shared constant so
+    they can't drift apart."""
+
+    allowed_groups = list(RECRUITMENT_STAFF_GROUPS)
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated and request.user.is_superuser:

@@ -1,4 +1,6 @@
-from django.test import TestCase
+from django.contrib.auth.models import Group, User
+from django.test import Client, TestCase
+from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from io import BytesIO
@@ -394,3 +396,115 @@ class CVMatchingTests(TestCase):
             "Experienced Python and Django developer.",
             extracted,
     )
+
+
+class CVScreeningAccessControlTests(TestCase):
+    """Regression tests: the Candidate group (and anyone in no recognized
+    group) must not be able to reach any CV screening view. Every view in
+    cv_screening/views.py used to be gated only by @login_required --
+    meaning any authenticated user, including a Candidate-group login,
+    could view every candidate's screening results, match details, and
+    download any uploaded CV file directly. Fixed via
+    accounts.decorators.group_required, the same "recruitment staff only"
+    gate used by the dashboard."""
+
+    def setUp(self):
+        self.group_candidate, _ = Group.objects.get_or_create(name="Candidate")
+        self.group_recruiter, _ = Group.objects.get_or_create(name="Recruiter")
+
+        self.candidate_user = User.objects.create_user(
+            "cv_access_candidate", password="pass12345"
+        )
+        self.candidate_user.groups.add(self.group_candidate)
+
+        self.recruiter_user = User.objects.create_user(
+            "cv_access_recruiter", password="pass12345"
+        )
+        self.recruiter_user.groups.add(self.group_recruiter)
+
+        self.candidate = Candidate.objects.create(
+            first_name="Access",
+            last_name="Test",
+            email="access.test@example.com",
+            phone="0710000000",
+        )
+        self.skill = Skill.objects.create(name="Access Test Skill")
+        self.role_profile = RoleKeywordProfile.objects.create(
+            role_name="Access Test Role"
+        )
+        self.role_profile.required_skills.add(self.skill)
+
+        self.cv = CandidateCV.objects.create(
+            candidate=self.candidate, file="test_cv.docx"
+        )
+        self.result = CVMatchResult.objects.create(
+            cv=self.cv, role_profile=self.role_profile, score=0.9
+        )
+
+    def test_candidate_group_cannot_view_screening_results_list(self):
+        client = Client()
+        client.login(username="cv_access_candidate", password="pass12345")
+        response = client.get(reverse("cv_screening:screening-results"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_candidate_group_cannot_view_screening_result_detail(self):
+        client = Client()
+        client.login(username="cv_access_candidate", password="pass12345")
+        response = client.get(
+            reverse("cv_screening:screening-result-detail", args=[self.result.id])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_candidate_group_cannot_download_cv_file(self):
+        client = Client()
+        client.login(username="cv_access_candidate", password="pass12345")
+        response = client.get(reverse("cv_screening:view_cv", args=[self.cv.id]))
+        self.assertEqual(response.status_code, 403)
+
+    def test_candidate_group_cannot_delete_screening_result(self):
+        client = Client()
+        client.login(username="cv_access_candidate", password="pass12345")
+        response = client.get(
+            reverse("cv_screening:delete-cv-result", args=[self.result.id])
+        )
+        self.assertEqual(response.status_code, 403)
+        # And the result must still exist -- the denial must happen before
+        # any deletion logic runs.
+        self.assertTrue(CVMatchResult.objects.filter(id=self.result.id).exists())
+
+    def test_candidate_group_cannot_reach_upload_form(self):
+        client = Client()
+        client.login(username="cv_access_candidate", password="pass12345")
+        response = client.get(
+            reverse("cv_screening:upload-cv", args=[self.role_profile.id])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_anonymous_user_redirected_not_denied(self):
+        """Anonymous should get the normal login redirect (via the
+        decorator's built-in login_required), not a 403 -- 403 is only for
+        an authenticated user in the wrong group."""
+        client = Client()
+        response = client.get(reverse("cv_screening:screening-results"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response.url)
+
+    def test_recruiter_group_can_still_view_screening_results(self):
+        client = Client()
+        client.login(username="cv_access_recruiter", password="pass12345")
+        response = client.get(reverse("cv_screening:screening-results"))
+        self.assertEqual(response.status_code, 200)
+
+    # Note: view_cv's 200-OK path isn't tested here -- it opens the file
+    # from S3Boto3Storage (this project's DEFAULT_FILE_STORAGE), which
+    # would make an S3 call under test. test_candidate_group_cannot_download_cv_file
+    # above proves the denial happens before the view body (and any file
+    # I/O) ever runs; test_recruiter_group_can_still_view_screening_results
+    # proves the allow-path isn't blocked, on a view with no file I/O.
+
+    def test_superuser_can_still_access_cv_screening(self):
+        admin = User.objects.create_superuser("cv_access_admin", password="pass12345")
+        client = Client()
+        client.login(username="cv_access_admin", password="pass12345")
+        response = client.get(reverse("cv_screening:screening-results"))
+        self.assertEqual(response.status_code, 200)
