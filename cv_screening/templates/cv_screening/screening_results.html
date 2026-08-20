@@ -31,9 +31,7 @@
     <td>
         <div class="row-lead">
             <div class="avatar avatar-sm">{{ result.cv.candidate.first_name|first }}{{ result.cv.candidate.last_name|first }}</div>
-            <a href="{% url 'cv_screening:screening-result-detail' result.id %}">
-                {{ result.cv.candidate.first_name }} {{ result.cv.candidate.last_name }}
-            </a>
+            {{ result.cv.candidate.first_name }} {{ result.cv.candidate.last_name }}
         </div>
     </td>
 

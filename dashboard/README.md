@@ -47,16 +47,20 @@ render candidate_table.html
 ```
 
 Stats (`services.get_overview_stats`) and the pipeline strip
-(`services.get_pipeline_counts`) are computed from the **RBAC-scoped**
-queryset directly (not the filtered one) -- they show the user's overall
-recruitment picture; the table is the filterable/searchable detail view.
+(`services.get_pipeline_counts`) both take the **same RBAC-scoped AND
+filtered** Application queryset as the table -- all three sections are
+built from one queryset, so applying a filter updates the overview cards,
+the pipeline strip, and the table together. Nothing on the page stays
+frozen while the rest of it changes.
 
 The overview cards deliberately only show the 3 numbers the pipeline
 strip *doesn't* already cover (Total Candidates, Total Applications, Open
-Positions). CV Screening / CV Screening Passed / CV Screening Failed /
-Accepted / Rejected are stages in the 9-step pipeline strip below them --
-repeating those same counts as separate KPI cards would just be the same
-number shown twice. One place per number.
+Positions -- the latter two derived from whichever candidates/positions
+are actually present in the filtered queryset). CV Screening / CV
+Screening Passed / CV Screening Failed / Accepted / Rejected are stages
+in the 9-step pipeline strip below them -- repeating those same counts as
+separate KPI cards would just be the same number shown twice. One place
+per number.
 
 Query cost per page load: 1 query for the RBAC-scoped+annotated+filtered
 page of applications (with `select_related` covering candidate,
