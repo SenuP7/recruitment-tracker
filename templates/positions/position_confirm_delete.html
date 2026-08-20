@@ -1,32 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Delete Position</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Delete Position</h1>
+{% block title %}Delete Position{% endblock %}
 
-<p>
-    Are you sure you want to delete
-    <strong>{{ position.title }}</strong>?
-</p>
+{% block content %}
 
-<form method="post">
+<div class="page-head">
+    <h1>Delete Position</h1>
+</div>
 
-    {% csrf_token %}
+<div class="panel">
+    <p>Are you sure you want to delete <strong>{{ position.title }}</strong>?</p>
 
-    <button type="submit">
-        Yes, Delete
-    </button>
+    <form method="post">
+        {% csrf_token %}
+        <div class="actions-bar">
+            <button type="submit" class="btn-danger">Yes, Delete</button>
+            <a href="{% url 'position-detail' position.pk %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
 
-</form>
-
-<br>
-
-<a href="{% url 'position-detail' position.pk %}">
-    Cancel
-</a>
-
-</body>
-</html>
+{% endblock %}

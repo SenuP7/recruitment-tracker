@@ -1,33 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Application Form</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-{% if object %}
-    <h1>Edit Application</h1>
-{% else %}
-    <h1>Create Application</h1>
-{% endif %}
+{% block title %}{% if object %}Edit Application{% else %}Create Application{% endif %}{% endblock %}
 
-<form method="post">
+{% block content %}
 
-    {% csrf_token %}
+<div class="page-head">
+    {% if object %}
+        <h1>Edit Application</h1>
+    {% else %}
+        <h1>Create Application</h1>
+    {% endif %}
+</div>
 
-    {{ form.as_p }}
+<div class="panel">
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="actions-bar">
+            <button type="submit" class="btn-primary">Save Application</button>
+            <a href="{% url 'application-list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
 
-    <button type="submit">
-        Save Application
-    </button>
-
-</form>
-
-<br>
-
-<a href="{% url 'application-list' %}">
-    Cancel
-</a>
-
-</body>
-</html>
+{% endblock %}

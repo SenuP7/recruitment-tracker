@@ -1,0 +1,10 @@
+{% if department_missing %}
+    <div class="empty-state">
+        Your account is not assigned to a department, so no candidate data can be shown.
+        Contact an administrator to have a department assigned to your profile.
+    </div>
+{% else %}
+    {% include "dashboard/components/stats_cards.html" %}
+    {% include "dashboard/components/pipeline.html" %}
+    {% include "dashboard/components/candidate_table.html" %}
+{% endif %}

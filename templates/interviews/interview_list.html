@@ -1,65 +1,41 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Interviews</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Interviews</h1>
+{% block title %}Interviews{% endblock %}
 
-<p>
-    Logged in as: {{ request.user.username }}
-</p>
+{% block content %}
 
-{% if perms.interviews.add_interview %}
-    <a href="{% url 'interview-create' %}">
-        Create Interview
-    </a>
-{% endif %}
-
-<hr>
+<div class="page-head">
+    <h1>Interviews <span class="count-pill">{{ interviews|length }}</span></h1>
+    {% if perms.interviews.add_interview %}
+        <a href="{% url 'interview-create' %}" class="btn btn-primary">Create Interview</a>
+    {% endif %}
+</div>
 
 {% if interviews %}
-
-    {% for interview in interviews %}
-
-        <h3>
-            <a href="{% url 'interview-detail' interview.pk %}">
-                {{ interview.application }}
-            </a>
-        </h3>
-
-        <p>
-            Type: {{ interview.interview_type }}
-        </p>
-
-        <p>
-            Date: {{ interview.scheduled_date }}
-        </p>
-
-        <p>
-            Status: {{ interview.status }}
-        </p>
-
-        <p>
-            <a href="{% url 'feedback-detail' interview.pk %}">
-                View Feedback
-            </a>
-        </p>
-
-        <hr>
-
-    {% empty %}
-
-        <p>No interviews found.</p>
-
-    {% endfor %}
-
+    <div class="row-list">
+        {% for interview in interviews %}
+            <div class="row-card">
+                <div class="row-lead">
+                    <div class="avatar">{{ interview.application.candidate.first_name|first }}{{ interview.application.candidate.last_name|first }}</div>
+                    <div class="row-main">
+                        <h3>
+                            <a href="{% url 'interview-detail' interview.pk %}">{{ interview.application }}</a>
+                        </h3>
+                        <div class="row-meta">
+                            <span>{{ interview.interview_type }}</span>
+                            <span class="mono">{{ interview.scheduled_date|date:"d M Y, H:i" }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row-side">
+                    <span class="badge" data-status="{{ interview.status }}">{{ interview.status }}</span>
+                    <a href="{% url 'feedback-detail' interview.pk %}" class="btn btn-secondary btn-sm">Feedback</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 {% else %}
-
-    <p>No interviews found.</p>
-
+    <div class="empty-state">No interviews found.</div>
 {% endif %}
 
-</body>
-</html>
+{% endblock %}

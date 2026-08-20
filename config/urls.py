@@ -17,4 +17,5 @@ urlpatterns = [
     path("cv-screening/", include("cv_screening.urls")),
     path("positions/", include("positions.urls")),
     path("interviews/", include("interviews.urls")),
+    path("dashboard/", include("dashboard.urls")),
 ]

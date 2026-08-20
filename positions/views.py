@@ -24,6 +24,9 @@ class PositionListView(
     template_name = "positions/position_list.html"
     context_object_name = "positions"
 
+    def get_queryset(self):
+        return Position.objects.filter(is_open=True)
+
     permission_required = "positions.view_position"
     raise_exception = True
 

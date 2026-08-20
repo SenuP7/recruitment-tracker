@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_head %}
+<script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <h1>Recruitment Dashboard</h1>
+</div>
+
+<form
+    id="dashboard-filters"
+    hx-get="{% url 'dashboard:dashboard-results' %}"
+    hx-target="#dashboard-results"
+    hx-trigger="change, keyup changed delay:400ms from:input[type=search], submit"
+    hx-push-url="true"
+    hx-swap="innerHTML"
+    class="panel dashboard-filters"
+>
+    <div class="filter-grid">
+        <p>
+            <label for="filter-search">Search</label>
+            <input type="search" id="filter-search" name="search" placeholder="Candidate name or email" value="{{ active_filters.search|default:'' }}">
+        </p>
+
+        <p>
+            <label for="filter-department">Department</label>
+            <select id="filter-department" name="department">
+                <option value="">All departments</option>
+                {% for department in filter_choices.departments %}
+                    <option value="{{ department.id }}" {% if active_filters.department == department.id|stringformat:"s" %}selected{% endif %}>{{ department.name }}</option>
+                {% endfor %}
+            </select>
+        </p>
+
+        <p>
+            <label for="filter-position">Position</label>
+            <select id="filter-position" name="position">
+                <option value="">All positions</option>
+                {% for position in filter_choices.positions %}
+                    <option value="{{ position.id }}" {% if active_filters.position == position.id|stringformat:"s" %}selected{% endif %}>{{ position.title }}</option>
+                {% endfor %}
+            </select>
+        </p>
+
+        <p>
+            <label for="filter-status">Application Status</label>
+            <select id="filter-status" name="status">
+                <option value="">All stages</option>
+                {% for value, label in filter_choices.statuses %}
+                    <option value="{{ value }}" {% if active_filters.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </p>
+
+        <p>
+            <label for="filter-category">Match Category</label>
+            <select id="filter-category" name="category">
+                <option value="">Any score</option>
+                {% for value, label in filter_choices.categories %}
+                    <option value="{{ value }}" {% if active_filters.category == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </p>
+
+        <p>
+            <label for="filter-score-min">Min Score %</label>
+            <input type="number" id="filter-score-min" name="score_min" min="0" max="100" placeholder="0" value="{{ active_filters.score_min|default:'' }}">
+        </p>
+
+        <p>
+            <label for="filter-score-max">Max Score %</label>
+            <input type="number" id="filter-score-max" name="score_max" min="0" max="100" placeholder="100" value="{{ active_filters.score_max|default:'' }}">
+        </p>
+    </div>
+
+    <div class="actions-bar">
+        <button type="submit" class="btn-primary">Apply Filters</button>
+        <a href="{% url 'dashboard:dashboard' %}" class="btn btn-secondary">Reset</a>
+    </div>
+</form>
+
+<div id="dashboard-results">
+    {% include "dashboard/components/results.html" %}
+</div>
+
+{% endblock %}

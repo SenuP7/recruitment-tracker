@@ -1,43 +1,56 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Position Details</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Position Details</h1>
+{% block title %}Position Details{% endblock %}
 
-<p><strong>Title:</strong> {{ position.title }}</p>
+{% block content %}
 
-<p><strong>Description:</strong> {{ position.description }}</p>
+<div class="page-head">
+    <h1>
+        <span class="icon-box icon-box-lg icon-box-inline">{{ position.title|first }}</span>
+        {{ position.title }}
+    </h1>
+</div>
 
-<p><strong>Minimum Experience:</strong> {{ position.minimum_experience }}</p>
+<div class="detail-layout">
+    <div class="detail-card">
+        <div class="field-row">
+            <strong>Title</strong>
+            <span class="field-value">{{ position.title }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Description</strong>
+            <span class="field-value">{{ position.description }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Minimum Experience</strong>
+            <span class="field-value mono">{{ position.minimum_experience }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Department</strong>
+            <span class="field-value">{{ position.department }}</span>
+        </div>
+        <div class="field-row">
+            <strong>Open</strong>
+            <span class="field-value"><span class="badge" data-status="{{ position.is_open }}">{{ position.is_open }}</span></span>
+        </div>
+        <div class="field-row">
+            <strong>Created</strong>
+            <span class="field-value mono">{{ position.created_at }}</span>
+        </div>
+    </div>
 
-<p><strong>Department:</strong> {{ position.department }}</p>
+    <div class="sidebar-card">
+        <h2>Actions</h2>
+        <div class="actions-bar">
+            {% if perms.positions.change_position %}
+                <a href="{% url 'position-update' position.pk %}" class="btn btn-primary">Edit Position</a>
+            {% endif %}
+            {% if perms.positions.delete_position %}
+                <a href="{% url 'position-delete' position.pk %}" class="btn btn-danger">Delete Position</a>
+            {% endif %}
+            <a href="{% url 'position-list' %}" class="btn btn-secondary">Back to Positions</a>
+        </div>
+    </div>
+</div>
 
-<p><strong>Open:</strong> {{ position.is_open }}</p>
-
-<p><strong>Created:</strong> {{ position.created_at }}</p>
-
-<hr>
-
-{% if perms.positions.change_position %}
-    <a href="{% url 'position-update' position.pk %}">
-        Edit Position
-    </a>
-{% endif %}
-
-{% if perms.positions.delete_position %}
-    <a href="{% url 'position-delete' position.pk %}">
-        Delete Position
-    </a>
-{% endif %}
-
-<br><br>
-
-<a href="{% url 'position-list' %}">
-    Back to Positions
-</a>
-
-</body>
-</html>
+{% endblock %}

@@ -1,61 +1,44 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>CV Screening</title>
-</head>
-<body>
-    {% if messages %}
-        {% for message in messages %}
-            <p style="color: red;">{{ message }}</p>
-        {% endfor %}
-    {% endif %}
+{% extends "base.html" %}
 
+{% block title %}CV Screening{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
     <h1>CV Screening</h1>
+</div>
 
-    <h2>Role: {{ role_profile.role_name }}</h2>
+{% if messages %}
+    {% for message in messages %}
+        <p class="alert alert-error">{{ message }}</p>
+    {% endfor %}
+{% endif %}
+
+<div class="panel">
+    <p class="meta-line mb-4">Role: <strong>{{ role_profile.role_name }}</strong></p>
 
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
-        <label for="candidate">Candidate:</label>
-
-        <select
-            id="candidate"
-            name="candidate"
-            required
-        >
-            <option value="">-- Select Candidate --</option>
-
-            {% for candidate in candidates %}
-                <option value="{{ candidate.id }}">
-                    {{ candidate.first_name }} {{ candidate.last_name }}
-                </option>
-            {% endfor %}
-
-        </select>
-
-        <br><br>
-
-        <label for="cv_file">Upload CV:</label>
-
-        <input
-            type="file"
-            id="cv_file"
-            name="cv_file"
-            accept=".pdf,.docx"
-            required
-        >
-
         <p>
-            Accepted formats: PDF, DOCX<br>
-            Maximum file size: 5 MB
+            <label for="candidate">Candidate</label>
+            <select id="candidate" name="candidate" required>
+                <option value="">-- Select Candidate --</option>
+                {% for candidate in candidates %}
+                    <option value="{{ candidate.id }}">{{ candidate.first_name }} {{ candidate.last_name }}</option>
+                {% endfor %}
+            </select>
         </p>
 
-        <br><br>
+        <p>
+            <label for="cv_file">Upload CV</label>
+            <input type="file" id="cv_file" name="cv_file" accept=".pdf,.docx" required>
+        </p>
 
-        <button type="submit">Screen CV</button>
+        <p class="meta-line">Accepted formats: PDF, DOCX &middot; Maximum file size: 5 MB</p>
 
+        <button type="submit" class="btn-primary">Screen CV</button>
     </form>
+</div>
 
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,8 @@
+<div class="pipeline-strip">
+    {% for step in pipeline %}
+        <div class="pipeline-step">
+            <div class="pipeline-count">{{ step.count }}</div>
+            <div class="pipeline-label">{{ step.stage }}</div>
+        </div>
+    {% endfor %}
+</div>

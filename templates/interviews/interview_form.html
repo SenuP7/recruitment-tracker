@@ -1,33 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Interview Form</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-{% if object %}
-    <h1>Edit Interview</h1>
-{% else %}
-    <h1>Create Interview</h1>
-{% endif %}
+{% block title %}{% if object %}Edit Interview{% else %}Create Interview{% endif %}{% endblock %}
 
-<form method="post">
+{% block content %}
 
-    {% csrf_token %}
+<div class="page-head">
+    {% if object %}
+        <h1>Edit Interview</h1>
+    {% else %}
+        <h1>Create Interview</h1>
+    {% endif %}
+</div>
 
-    {{ form.as_p }}
+<div class="panel">
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="actions-bar">
+            <button type="submit" class="btn-primary">Save Interview</button>
+            <a href="{% url 'interview-list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
 
-    <button type="submit">
-        Save Interview
-    </button>
-
-</form>
-
-<br>
-
-<a href="{% url 'interview-list' %}">
-    Cancel
-</a>
-
-</body>
-</html>
+{% endblock %}

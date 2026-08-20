@@ -1,51 +1,43 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Applications</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Applications</h1>
+{% block title %}Applications{% endblock %}
 
-{% if perms.candidates.add_application %}
-    <a href="{% url 'application-create' %}">
-        Add Application
-    </a>
-{% endif %}
+{% block content %}
 
-<hr>
+<div class="page-head">
+    <h1>Applications <span class="count-pill">{{ applications|length }}</span></h1>
+    {% if perms.candidates.add_application %}
+        <a href="{% url 'application-create' %}" class="btn btn-primary">Add Application</a>
+    {% endif %}
+</div>
 
 {% if applications %}
-
-    {% for application in applications %}
-
-        <h3>
-            <a href="{% url 'application-detail' application.pk %}">
-                {{ application.candidate }}
-            </a>
-        </h3>
-
-        <p>
-            Position: {{ application.position }}
-        </p>
-
-        <p>
-            Status: {{ application.status }}
-        </p>
-
-        <hr>
-
-    {% empty %}
-
-        <p>No applications found.</p>
-
-    {% endfor %}
-
+    <div class="row-list">
+        {% for application in applications %}
+            <div class="row-card">
+                <div class="row-lead">
+                    <div class="avatar">{{ application.candidate.first_name|first }}{{ application.candidate.last_name|first }}</div>
+                    <div class="row-main">
+                        <h3>
+                            <a href="{% url 'application-detail' application.pk %}">
+                                {{ application.candidate }}
+                            </a>
+                        </h3>
+                        <div class="row-meta">
+                            <span>{{ application.position }}</span>
+                            <span>{{ application.position.department }}</span>
+                            <span class="mono">{{ application.applied_at|date:"d M Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row-side">
+                    <span class="badge" data-status="{{ application.status }}">{{ application.status }}</span>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 {% else %}
-
-    <p>No applications found.</p>
-
+    <div class="empty-state">No applications found.</div>
 {% endif %}
 
-</body>
-</html>
+{% endblock %}
