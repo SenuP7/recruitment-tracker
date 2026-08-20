@@ -46,7 +46,7 @@
     <div class="sidebar-card">
         <h2>Actions</h2>
         <div class="actions-bar profile-actions">
-            <a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'candidate-list' %}{% endif %}" class="btn btn-primary">Home</a>
+            <a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% elif perms.candidates.view_candidate %}{% url 'candidate-list' %}{% else %}{% url 'profile' %}{% endif %}" class="btn btn-primary">Home</a>
             <form method="post" action="{% url 'logout' %}" class="logout-form">
                 {% csrf_token %}
                 <button type="submit" class="btn logout">Logout</button>
