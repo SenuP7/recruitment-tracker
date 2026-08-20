@@ -1,21 +1,21 @@
-"""Exposes whether the current user can reach the dashboard, so shared
-templates (the nav bar) can link to it only for users who won't get a 403 --
-e.g. the Candidate group has no dashboard access, but still sees the shared
-topbar on pages it IS permitted to view."""
+"""Exposes whether the current user can reach recruitment-staff-only areas
+(the dashboard, CV screening), so shared templates (the nav bar) only link
+to them for users who won't get a 403 -- e.g. the Candidate group has
+access to neither, but still sees the shared topbar on pages it IS
+permitted to view.
 
-from .views import DashboardAccessMixin
+Both flags are computed from the same accounts.decorators.RECRUITMENT_STAFF_GROUPS
+that actually gates DashboardAccessMixin and cv_screening's @group_required
+views, so the nav can never show a link the user would then get denied on."""
+
+from accounts.decorators import user_in_groups
 
 
 def dashboard_access(request):
     user = getattr(request, "user", None)
+    allowed = user is not None and user_in_groups(user)
 
-    if user is None or not user.is_authenticated:
-        return {"can_access_dashboard": False}
-
-    if user.is_superuser:
-        return {"can_access_dashboard": True}
-
-    allowed = set(DashboardAccessMixin.allowed_groups)
-    user_groups = set(user.groups.values_list("name", flat=True))
-
-    return {"can_access_dashboard": bool(allowed & user_groups)}
+    return {
+        "can_access_dashboard": allowed,
+        "can_access_cv_screening": allowed,
+    }

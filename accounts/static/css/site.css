@@ -188,6 +188,7 @@ li { margin-bottom: 2px; font-size: var(--text-sm); }
   align-items: center;
   gap: var(--space-3);
 }
+.logout-form { margin: 0; display: flex; }
 .user-chip {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -709,8 +710,8 @@ tbody tr:hover td { background: var(--paper); }
 /* ---- Profile page ----------------------------------------------------------- */
 
 .profile-actions { display: flex; gap: var(--space-2); margin-top: var(--space-5); }
-.profile-actions a.logout { background: var(--surface); color: var(--danger); border: 1px solid var(--danger-border); }
-.profile-actions a.logout:hover { background: var(--danger-bg); }
+.profile-actions .logout { background: var(--surface); color: var(--danger); border: 1px solid var(--danger-border); }
+.profile-actions .logout:hover { background: var(--danger-bg); }
 
 /* ---- CV screening match_result specifics --------------------------------- */
 

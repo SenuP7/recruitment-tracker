@@ -25,13 +25,18 @@
             <a href="{% url 'application-list' %}">Applications</a>
             <a href="{% url 'position-list' %}">Positions</a>
             <a href="{% url 'interview-list' %}">Interviews</a>
-            <a href="{% url 'cv_screening:screening-results' %}">CV Screening</a>
+            {% if can_access_cv_screening %}
+                <a href="{% url 'cv_screening:screening-results' %}">CV Screening</a>
+            {% endif %}
         </nav>
 
         {% if request.user.is_authenticated %}
             <div class="topbar-user">
                 <a href="{% url 'profile' %}" class="user-chip">{{ request.user.username }}</a>
-                <a href="{% url 'logout' %}" class="btn btn-ghost btn-sm">Logout</a>
+                <form method="post" action="{% url 'logout' %}" class="logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
+                </form>
             </div>
         {% endif %}
     </div>
