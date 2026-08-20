@@ -15,10 +15,12 @@
 
 <header class="topbar">
     <div class="topbar-inner">
-        <a href="{% url 'candidate-list' %}" class="brand">Recruitment<span>Tracker</span></a>
+        <a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'candidate-list' %}{% endif %}" class="brand">Recruitment<span>Tracker</span></a>
 
         <nav class="nav-links">
-            <a href="{% url 'dashboard:dashboard' %}">Dashboard</a>
+            {% if can_access_dashboard %}
+                <a href="{% url 'dashboard:dashboard' %}">Dashboard</a>
+            {% endif %}
             <a href="{% url 'candidate-list' %}">Candidates</a>
             <a href="{% url 'application-list' %}">Applications</a>
             <a href="{% url 'position-list' %}">Positions</a>

@@ -8,11 +8,8 @@ already allowed.
 
 from django.db.models import Count, OuterRef, Subquery
 
-from candidates.models import Candidate
 from cv_screening.models import CVMatchResult
 from positions.models import Position
-
-from .rbac import get_dashboard_scope, scoped_applications_queryset
 
 PIPELINE_STAGES = [
     "Applied",
@@ -52,34 +49,29 @@ def _status_counts(queryset):
     )
 
 
-def get_overview_stats(user):
+def get_overview_stats(applications):
     """The 3 top-line numbers that aren't already broken out by the
     pipeline strip (CV Screening/Passed/Failed/Accepted/Rejected all
-    live there instead, to avoid showing the same count twice)."""
-    scope, department = get_dashboard_scope(user)
-    applications = scoped_applications_queryset(user)
+    live there instead, to avoid showing the same count twice).
 
-    if scope == "all":
-        total_candidates = Candidate.objects.count()
-        open_positions = Position.objects.filter(is_open=True).count()
-    elif scope == "department":
-        total_candidates = Candidate.objects.filter(department=department).count()
-        open_positions = Position.objects.filter(
-            is_open=True, department=department
-        ).count()
-    else:
-        total_candidates = 0
-        open_positions = 0
+    Takes the already RBAC-scoped-and-filtered Application queryset (the
+    same one the table and pipeline use) so every number on the page
+    reacts to the active filters together -- nothing stays frozen while
+    the table below it changes."""
+    open_positions = Position.objects.filter(
+        is_open=True,
+        id__in=applications.values("position_id"),
+    ).distinct().count()
 
     return {
-        "total_candidates": total_candidates,
+        "total_candidates": applications.values("candidate_id").distinct().count(),
         "total_applications": applications.count(),
         "open_positions": open_positions,
     }
 
 
-def get_pipeline_counts(user):
-    counts = _status_counts(scoped_applications_queryset(user))
+def get_pipeline_counts(applications):
+    counts = _status_counts(applications)
     return [
         {"stage": stage, "count": counts.get(stage, 0)} for stage in PIPELINE_STAGES
     ]

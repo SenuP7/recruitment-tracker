@@ -1,4 +1,4 @@
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group, Permission, User
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -26,8 +26,23 @@ class DashboardTestBase(TestCase):
         # get_or_create so this is safe to run against any DB state)
         # ---------------------------------------------------------
         self.group_recruiter, _ = Group.objects.get_or_create(name="Recruiter")
+        self.group_recruiter.permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label="candidates",
+                codename__in=["view_candidate", "view_application"],
+            )
+        )
         self.group_tech, _ = Group.objects.get_or_create(name="Technical Interviewer")
         self.group_candidate, _ = Group.objects.get_or_create(name="Candidate")
+        # Matches the real DB's Candidate group permissions, so tests that
+        # exercise permission-gated views (e.g. candidate-list) behave the
+        # same way a real Candidate-group account would.
+        self.group_candidate.permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label="candidates",
+                codename__in=["view_candidate", "view_application"],
+            )
+        )
 
         # ---------------------------------------------------------
         # USERS
@@ -222,6 +237,24 @@ class FilterTests(DashboardTestBase):
         )
         self.assertEqual(response.status_code, 200)
 
+    def test_overview_stats_reflect_active_filters(self):
+        unfiltered = self.client.get(self.dashboard_url)
+        self.assertEqual(unfiltered.context["stats"]["total_candidates"], 2)
+        self.assertEqual(unfiltered.context["stats"]["total_applications"], 2)
+
+        filtered = self.client.get(
+            self.dashboard_url, {"department": self.dept_engineering.id}
+        )
+        self.assertEqual(filtered.context["stats"]["total_candidates"], 1)
+        self.assertEqual(filtered.context["stats"]["total_applications"], 1)
+        self.assertEqual(filtered.context["stats"]["open_positions"], 1)
+
+    def test_pipeline_counts_reflect_active_filters(self):
+        filtered = self.client.get(self.dashboard_url, {"status": "Applied"})
+        pipeline = {step["stage"]: step["count"] for step in filtered.context["pipeline"]}
+        self.assertEqual(pipeline["Applied"], 1)
+        self.assertEqual(pipeline["CV Screening Passed"], 0)
+
     def test_search_by_name(self):
         response = self.client.get(self.dashboard_url, {"search": "Sec Candidate"})
         candidate_ids = {row["application"].candidate_id for row in response.context["rows"]}
@@ -310,3 +343,22 @@ class PaginationTests(DashboardTestBase):
         client.login(username="recruiter_t", password="pass12345")
         response = client.get(self.results_url, {"page": 2})
         self.assertEqual(response.status_code, 200)
+
+
+class NavLinkAccessTests(DashboardTestBase):
+    """The shared nav's logo/Dashboard link must never point somewhere
+    the current user would get a 403 from -- see context_processors.py."""
+
+    def test_recruiter_gets_dashboard_link(self):
+        client = Client()
+        client.login(username="recruiter_t", password="pass12345")
+        response = client.get(reverse("candidate-list"))
+        self.assertTrue(response.context["can_access_dashboard"])
+        self.assertContains(response, reverse("dashboard:dashboard"))
+
+    def test_candidate_group_does_not_get_dashboard_link(self):
+        client = Client()
+        client.login(username="candidate_t", password="pass12345")
+        response = client.get(reverse("candidate-list"))
+        self.assertFalse(response.context["can_access_dashboard"])
+        self.assertNotContains(response, reverse("dashboard:dashboard"))

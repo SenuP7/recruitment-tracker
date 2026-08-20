@@ -38,6 +38,12 @@ def build_dashboard_context(request):
     applications = annotate_latest_cv_result(applications)
     applications = dashboard_filters.apply_filters(applications, request.GET)
 
+    # Stats and pipeline are computed from this same RBAC-scoped-and-filtered
+    # queryset as the table below, so every number on the page reacts to the
+    # active filters together instead of the overview staying frozen.
+    stats = services.get_overview_stats(applications)
+    pipeline = services.get_pipeline_counts(applications)
+
     page = paginate(applications, request.GET.get("page"), per_page=25)
 
     rows = [
@@ -50,8 +56,8 @@ def build_dashboard_context(request):
     ]
 
     return {
-        "stats": services.get_overview_stats(request.user),
-        "pipeline": services.get_pipeline_counts(request.user),
+        "stats": stats,
+        "pipeline": pipeline,
         "rows": rows,
         "page_obj": page,
         "filter_choices": dashboard_filters.get_filter_choices(),
