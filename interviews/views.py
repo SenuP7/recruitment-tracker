@@ -8,6 +8,7 @@ from django.views.generic import (
     DeleteView,
 )
 
+from .forms import InterviewForm
 from .models import Interview, InterviewFeedback
 
 
@@ -48,13 +49,7 @@ class InterviewCreateView(
 ):
     model = Interview
     template_name = "interviews/interview_form.html"
-
-    fields = [
-        "application",
-        "interview_type",
-        "scheduled_date",
-        "status",
-    ]
+    form_class = InterviewForm
 
     permission_required = "interviews.add_interview"
     success_url = reverse_lazy("interview-list")
@@ -68,13 +63,7 @@ class InterviewUpdateView(
 ):
     model = Interview
     template_name = "interviews/interview_form.html"
-
-    fields = [
-        "application",
-        "interview_type",
-        "scheduled_date",
-        "status",
-    ]
+    form_class = InterviewForm
 
     permission_required = "interviews.change_interview"
     success_url = reverse_lazy("interview-list")
