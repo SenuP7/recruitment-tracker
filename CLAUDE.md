@@ -5,9 +5,6 @@ HR Interviewer, Technical Interviewer, Senior Reviewer, Leadership Manager,
 Candidate. Apps: `accounts`, `candidates`, `positions`, `cv_screening`,
 `interviews`, `notifications` (stub, no views/urls — unused), `dashboard`.
 
-Branch: `recruitment-tracker-dashboard` (pushed to `origin`, tracked).
-Latest commit at time of writing: `71ae719`.
-
 ## Commit message convention
 
 **Never add `Co-Authored-By` or `Claude-Session` trailers to commits.** User
@@ -18,44 +15,24 @@ preference, stated explicitly — plain descriptive commit messages only.
 Use `DATABASE_URL="" python manage.py test` — the real `DATABASE_URL` points
 at a remote Postgres that hangs trying to create a throwaway test database
 there. The empty override falls back to local SQLite (fast, safe, doesn't
-touch the real DB). 46 tests currently, all passing.
+touch the real DB).
 
 ## What's been built this session
 
 **1. Full visual redesign** — Stripe-inspired design system from scratch.
-`accounts/static/css/site.css` holds all design tokens/components.
 `templates/base.html` is a shared nav shell (didn't exist before — every
 page used to be a disconnected standalone HTML file); all 27 templates now
-extend it. Indigo/violet accent (`#635BFF`), cool navy/slate neutrals, Inter
-typography throughout. Status badges use `data-status="{{ value }}"`
-attributes matched against exact model choice strings in CSS — no template
-logic added, just attribute output. `TIME_ZONE` fixed from `'UTC'` to
-`'Asia/Colombo'` (one-line settings fix, corrected all timestamps sitewide).
+extend it. Status badges use `data-status="{{ value }}"` attributes matched
+against exact model choice strings in CSS — no template logic added, just
+attribute output.
 
-**2. `dashboard` app** — built from scratch, RBAC-secured, HTMX-filtered
-(no new JS framework, `htmx.org` via CDN only). `dashboard/rbac.py` is the
-single security boundary all querysets flow through:
-Recruiter/HR/Senior Reviewer/Leadership Manager/superuser get full access,
-Technical Interviewer is department-scoped, everyone else gets nothing.
-Overview cards + pipeline strip + table all derive from the same
-RBAC-scoped-and-filtered queryset (they used to be frozen/unfiltered —
-fixed). 23 tests.
+**2. `dashboard` app** — built from scratch, RBAC-secured, HTMX-filtered.
+See `dashboard/CLAUDE.md`.
 
-**3. Fixed two real pre-existing bugs** (present since the project's
-initial commit, not caused by the dashboard):
-- **Logout was completely broken.** Django 5's `LogoutView` only accepts
-  POST; the Logout controls were plain GET `<a href>` links. Fixed by
-  converting both (`templates/base.html`, `templates/accounts/profile.html`)
-  to `<form method="post">` with `{% csrf_token %}`.
-- **CV screening had zero access control** — every view in
-  `cv_screening/views.py` was gated only by `@login_required`, so any
-  authenticated user (including Candidate group) could view/download any
-  CV or delete screening results. Fixed via `accounts/decorators.py`
-  (`group_required()` — function-view equivalent of the existing
-  `GroupRequiredMixin`, same semantics, not a second permission system),
-  applied to all 6 `cv_screening` views. `RECRUITMENT_STAFF_GROUPS`
-  constant there is now the single source of truth for "who counts as
-  recruitment staff," shared with `dashboard`'s access check.
+Two real pre-existing bugs (logout broken, CV screening had zero access
+control) were also fixed this session — see the docstrings in
+`accounts/tests.py` and `cv_screening/tests.py` (`CVScreeningAccessControlTests`)
+for the full root-cause writeups.
 
 ## RBAC / permissions — current correct state (2026-08-20)
 
