@@ -113,7 +113,48 @@
                     <div class="dl-row"><dt>Email</dt><dd><a class="mono" href="mailto:{{ candidate.email }}">{{ candidate.email }}</a></dd></div>
                     <div class="dl-row"><dt>Phone</dt><dd class="mono">{{ candidate.phone|default:"—" }}</dd></div>
                     <div class="dl-row"><dt>Department</dt><dd>{{ candidate.department|default:"—" }}</dd></div>
+                    <div class="dl-row"><dt>Source</dt><dd>{{ candidate.get_source_display }}</dd></div>
                 </dl>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="user-round-check"></i> Portal access</h2></div>
+            <div class="card-body stack">
+                {% if candidate.user_id %}
+                    <p class="faint" style="font-size: var(--text-sm)">
+                        {% if candidate.user.is_active %}
+                            This candidate can sign in and follow their own applications.
+                        {% else %}
+                            Their account exists but is disabled, so they can't sign in.
+                        {% endif %}
+                    </p>
+                    <p class="mono" style="font-size: var(--text-xs)">{{ candidate.user.username }}</p>
+                {% elif pending_invite %}
+                    <p class="faint" style="font-size: var(--text-sm)">
+                        Invited {{ pending_invite.created_at|date:"j M Y" }} to {{ pending_invite.email }}. The link works until {{ pending_invite.expires_at|date:"j M Y, H:i" }}.
+                    </p>
+                    {% if can_invite %}
+                        <div class="buttons">
+                            <form method="post" action="{% url 'candidate-invite' candidate.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm"><i data-lucide="send"></i> Resend</button>
+                            </form>
+                            <form method="post" action="{% url 'candidate-invite-revoke' candidate.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm"><i data-lucide="x"></i> Cancel invite</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <p class="faint" style="font-size: var(--text-sm)">No account yet. An invite emails them a link to set a password and follow their application.</p>
+                    {% if can_invite %}
+                        <form method="post" action="{% url 'candidate-invite' candidate.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm btn-block"><i data-lucide="send"></i> Invite to portal</button>
+                        </form>
+                    {% endif %}
+                {% endif %}
             </div>
         </section>
 

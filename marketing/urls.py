@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import careers, views
 from .views import PublicPageView, StatusView
 
 
@@ -14,6 +14,11 @@ def page(route, name, nav_key=None):
 
 urlpatterns = [
     page("", "landing"),
+    path("careers/", careers.CareersListView.as_view(), name="careers"),
+    path("careers/<int:pk>/", careers.CareersDetailView.as_view(), name="careers-detail"),
+    path("careers/<int:pk>/apply/", careers.CareersApplyView.as_view(), name="careers-apply"),
+    path("apply/confirm/<str:token>/", careers.ApplicationConfirmView.as_view(), name="application-confirm"),
+
     page("help/", "help", nav_key="help"),
     path("status/", StatusView.as_view(), name="status"),
     page("security/", "security", nav_key="security"),

@@ -21,6 +21,7 @@ urlpatterns = [
     path("positions/", include("positions.urls")),
     path("interviews/", include("interviews.urls")),
     path("dashboard/", include("dashboard.urls")),
+    path("portal/", include("portal.urls")),
 
     # Public site: landing, help, status, legal pages, robots/sitemap/security.txt.
     path("", include("marketing.urls")),

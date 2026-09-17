@@ -1,0 +1,18 @@
+Hi {candidate_name},
+
+Thanks for applying for the {job_title} role at {company_name}. One more
+step: confirm this email address so we know the application is really from
+you.
+
+{confirm_url}
+
+The link works until {expires_at}. If you don't use it, the application is
+discarded and nothing is kept.
+
+Once you've confirmed, you can set a password and follow your application
+online: where it is in the process, and any interviews we book with you.
+
+If you didn't apply, ignore this email. Nothing has been created.
+
+Thanks,
+The Recruitment Team

@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Your applications{% endblock %} · Candidflow</title>
+    <meta name="robots" content="noindex, nofollow">
+    {% include "components/head_icons.html" %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    <script>
+        try { if (localStorage.getItem("candidflow-theme") === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}
+    </script>
+</head>
+
+<body class="portal-page">
+
+<header class="portal-topbar">
+    <div class="portal-wrap">
+        <a href="{% url 'portal:overview' %}" class="brand">{% include "components/brand_mark.html" %}<span class="brand-word">Candid<span>flow</span></span></a>
+        <div class="portal-user">
+            {% if candidate %}<span class="faint">{{ candidate.full_name }}</span>{% endif %}
+            <button type="button" class="icon-btn" data-theme-toggle title="Switch theme" aria-label="Switch theme">
+                <i data-lucide="sun-moon"></i>
+            </button>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary btn-sm"><i data-lucide="log-out"></i> Log out</button>
+            </form>
+        </div>
+    </div>
+</header>
+
+<main class="portal-wrap portal-main">
+    {% if messages %}
+        <div class="toasts" role="status">
+            {% for message in messages %}
+                <div class="toast toast-{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="portal-foot">
+    <div class="portal-wrap">
+        <span class="faint">Questions about your application? Email <a href="mailto:help@candidflow.example">help@candidflow.example</a>.</span>
+        <span class="portal-foot-links">
+            <a href="{% url 'candidate-notice' %}">How we use your data</a>
+            <a href="{% url 'privacy' %}">Privacy</a>
+        </span>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script src="{% static 'js/app-shell.js' %}"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+
+</body>
+</html>

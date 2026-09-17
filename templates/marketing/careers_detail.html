@@ -1,0 +1,77 @@
+{% extends "marketing/public_base.html" %}
+
+{% block title %}{{ position.title }} · Candidflow{% endblock %}
+{% block og_title %}{{ position.title }} · Candidflow{% endblock %}
+{% block meta_description %}{{ position.description|striptags|truncatewords:25 }}{% endblock %}
+
+{% block content %}
+<header class="doc-hero">
+    <div class="wrap">
+        <p class="eyebrow"><a href="{% url 'careers' %}"><i data-lucide="arrow-left"></i> All open roles</a></p>
+        <h1>{{ position.title }}</h1>
+        <p class="doc-meta">
+            {% if position.department %}<span>{{ position.department.name }}</span>{% endif %}
+            {% if position.minimum_experience %}<span> · {{ position.minimum_experience }}+ years experience</span>{% endif %}
+        </p>
+    </div>
+</header>
+
+<div class="wrap careers-detail">
+    <article class="prose">
+        <section>
+            <h2>About the role</h2>
+            {{ position.description|linebreaks }}
+        </section>
+
+        {% if required_skills or nice_skills %}
+            <section>
+                <h2>What we're looking for</h2>
+                {% if required_skills %}
+                    <h3>Required</h3>
+                    <ul>{% for skill in required_skills %}<li>{{ skill.name }}</li>{% endfor %}</ul>
+                {% endif %}
+                {% if nice_skills %}
+                    <h3>Nice to have</h3>
+                    <ul>{% for skill in nice_skills %}<li>{{ skill.name }}</li>{% endfor %}</ul>
+                {% endif %}
+                <p class="callout">Name these plainly in your CV if they apply to you. We check CVs for them to help sort the queue, but a person reads every application and decides.</p>
+            </section>
+        {% endif %}
+
+        <section>
+            <h2>How hiring works here</h2>
+            <ol>
+                <li>You apply and confirm your email address.</li>
+                <li>A recruiter reviews your CV and decides whether it passes screening.</li>
+                <li>If it does, we book interviews with you and keep you posted by email.</li>
+                <li>You can follow every step, and withdraw at any point, from your own account.</li>
+            </ol>
+        </section>
+    </article>
+
+    <aside class="careers-apply-rail">
+        <div class="careers-apply-card">
+            <h2>Apply for this role</h2>
+            <p>Takes a couple of minutes. You'll need your CV as a PDF or Word file.</p>
+            <a href="{% url 'careers-apply' position.pk %}" class="btn btn-primary">Apply now <span class="arrow">→</span></a>
+            <p class="faint">We email you a link to confirm. Nothing is shared with the hiring team until you do.</p>
+        </div>
+
+        {% if other_positions %}
+            <div class="careers-other">
+                <h2>Other open roles</h2>
+                <ul>
+                    {% for other in other_positions %}
+                        <li><a href="{% url 'careers-detail' other.pk %}">{{ other.title }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+{% endblock %}

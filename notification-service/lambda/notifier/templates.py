@@ -28,6 +28,21 @@ EVENT_TEMPLATE_REGISTRY = {
         body_file="interview_scheduled.txt",
         required_fields=("candidate_name", "job_title", "interview_type", "scheduled_date"),
     ),
+    "application_confirm": TemplateSpec(
+        subject_template="Confirm your application for {job_title}",
+        body_file="application_confirm.txt",
+        required_fields=("candidate_name", "company_name", "job_title", "confirm_url", "expires_at"),
+    ),
+    "portal_invite": TemplateSpec(
+        subject_template="Set up your {company_name} account",
+        body_file="portal_invite.txt",
+        required_fields=("candidate_name", "company_name", "invite_url", "expires_at"),
+    ),
+    "password_reset": TemplateSpec(
+        subject_template="Reset your {company_name} password",
+        body_file="password_reset.txt",
+        required_fields=("recipient_name", "company_name", "reset_url", "valid_hours"),
+    ),
 }
 
 

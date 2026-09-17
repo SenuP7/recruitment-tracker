@@ -6,6 +6,8 @@ from .views import (
     CandidateCreateView,
     CandidateUpdateView,
     CandidateDeleteView,
+    CandidateInviteView,
+    CandidateInviteRevokeView,
     ApplicationListView,
     ApplicationDetailView,
     ApplicationCreateView,
@@ -45,6 +47,18 @@ urlpatterns = [
         "<int:pk>/delete/",
         CandidateDeleteView.as_view(),
         name="candidate-delete"
+    ),
+
+    path(
+        "<int:pk>/invite/",
+        CandidateInviteView.as_view(),
+        name="candidate-invite"
+    ),
+
+    path(
+        "<int:pk>/invite/revoke/",
+        CandidateInviteRevokeView.as_view(),
+        name="candidate-invite-revoke"
     ),
 
     # Applications

@@ -1,0 +1,82 @@
+{% extends "marketing/public_base.html" %}
+
+{% block title %}Apply for {{ position.title }} · Candidflow{% endblock %}
+{% block robots %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<header class="doc-hero">
+    <div class="wrap">
+        <p class="eyebrow"><a href="{% url 'careers-detail' position.pk %}"><i data-lucide="arrow-left"></i> Back to the role</a></p>
+        <h1>Apply for {{ position.title }}</h1>
+        <p class="doc-lede">We ask for as little as we can: how to reach you, and your CV.</p>
+    </div>
+</header>
+
+<div class="wrap apply-page">
+    <form method="post" enctype="multipart/form-data" class="apply-form" novalidate>
+        {% csrf_token %}
+
+        {% if errors.form %}
+            <div class="callout apply-error" role="alert"><i data-lucide="alert-circle"></i> {{ errors.form }}</div>
+        {% endif %}
+
+        <div class="apply-row">
+            <div class="apply-field">
+                <label for="id_first_name">First name</label>
+                <input type="text" id="id_first_name" name="first_name" value="{{ data.first_name|default:'' }}" autocomplete="given-name" required>
+                {% if errors.first_name %}<p class="apply-hint error-text">{{ errors.first_name }}</p>{% endif %}
+            </div>
+            <div class="apply-field">
+                <label for="id_last_name">Last name</label>
+                <input type="text" id="id_last_name" name="last_name" value="{{ data.last_name|default:'' }}" autocomplete="family-name" required>
+                {% if errors.last_name %}<p class="apply-hint error-text">{{ errors.last_name }}</p>{% endif %}
+            </div>
+        </div>
+
+        <div class="apply-field">
+            <label for="id_email">Email address</label>
+            <input type="email" id="id_email" name="email" value="{{ data.email|default:'' }}" autocomplete="email" required>
+            <p class="apply-hint">We send everything about your application here, so double-check it.</p>
+            {% if errors.email %}<p class="apply-hint error-text">{{ errors.email }}</p>{% endif %}
+        </div>
+
+        <div class="apply-field">
+            <label for="id_phone">Phone number <span class="faint">(optional)</span></label>
+            <input type="tel" id="id_phone" name="phone" value="{{ data.phone|default:'' }}" autocomplete="tel">
+        </div>
+
+        <div class="apply-field">
+            <label for="id_cv_file">Your CV</label>
+            <input type="file" id="id_cv_file" name="cv_file" accept=".pdf,.docx" required>
+            <p class="apply-hint">PDF or Word (.docx), up to 5 MB. A scanned image can't be read, so send a text-based file.</p>
+            {% if errors.cv_file %}<p class="apply-hint error-text">{{ errors.cv_file }}</p>{% endif %}
+        </div>
+
+        <div class="apply-field">
+            <label for="id_message">Anything you'd like us to know <span class="faint">(optional)</span></label>
+            <textarea id="id_message" name="message" rows="5" maxlength="{{ max_message_length }}">{{ data.message|default:'' }}</textarea>
+            <p class="apply-hint">Why this role suits you, or anything your CV doesn't cover.</p>
+            {% if errors.message %}<p class="apply-hint error-text">{{ errors.message }}</p>{% endif %}
+        </div>
+
+        <div class="apply-check">
+            <input type="checkbox" id="id_accept_terms" name="accept_terms" {% if data %}{% endif %}>
+            <label for="id_accept_terms">
+                I've read the <a href="{% url 'candidate-notice' %}">candidate notice</a> explaining how my data is used, and I accept the <a href="{% url 'terms' %}">terms of use</a>.
+            </label>
+        </div>
+        {% if errors.accept_terms %}<p class="apply-hint error-text">{{ errors.accept_terms }}</p>{% endif %}
+
+        <button type="submit" class="btn btn-primary">Send my application</button>
+
+        <p class="apply-foot faint">
+            Nothing reaches the hiring team until you click the link we email you. If you don't, your details and CV are deleted.
+        </p>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+{% endblock %}

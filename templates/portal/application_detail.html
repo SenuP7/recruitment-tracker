@@ -1,0 +1,94 @@
+{% extends "portal/base.html" %}
+
+{% block title %}{{ application.position.title }}{% endblock %}
+
+{% block content %}
+<p class="eyebrow"><a href="{% url 'portal:overview' %}"><i data-lucide="arrow-left"></i> All applications</a></p>
+
+<header class="record-header">
+    <div>
+        <h1>{{ application.position.title }}</h1>
+        <p class="page-subtitle">
+            {% if application.position.department %}{{ application.position.department.name }} · {% endif %}
+            Applied {{ application.applied_at|date:"j F Y" }}
+        </p>
+    </div>
+    <span class="badge" data-status="{{ application.status }}">{{ application.get_status_display }}</span>
+</header>
+
+<section class="card">
+    <div class="card-head"><h2 class="card-title">Where your application is</h2></div>
+    <div class="card-body">
+        <ol class="stepper">
+            {% for step in journey %}
+                <li class="step" data-state="{{ step.state }}">
+                    <span class="step-dot"></span>
+                    <span class="step-label">{{ step.label }}</span>
+                </li>
+            {% endfor %}
+        </ol>
+        {% if application.status == "Withdrawn" %}
+            <p class="faint">You withdrew this application, so we're no longer considering it.</p>
+        {% elif application.status == "CV Screening" %}
+            <p class="faint">Your CV is with the recruitment team. We'll email you when there's an update.</p>
+        {% endif %}
+    </div>
+</section>
+
+<div class="portal-columns">
+    <section class="card">
+        <div class="card-head"><h2 class="card-title">Your interviews</h2></div>
+        {% if interviews %}
+            <ul class="list">
+                {% for interview in interviews %}
+                    <li class="list-row">
+                        <span class="date-chip">
+                            <em>{{ interview.scheduled_date|date:"M" }}</em>
+                            <b>{{ interview.scheduled_date|date:"j" }}</b>
+                        </span>
+                        <div class="list-main">
+                            <strong>{{ interview.interview_type }} interview</strong>
+                            <span class="faint">{{ interview.scheduled_date|date:"l j F, H:i" }}</span>
+                        </div>
+                        <span class="badge" data-status="{{ interview.status }}">{{ interview.status }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="card-body">
+                <p class="faint">No interviews scheduled yet. You'll get an email as soon as one is booked.</p>
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <div class="card-head"><h2 class="card-title">Your CV</h2></div>
+        <div class="card-body stack">
+            {% if cv %}
+                <p><i data-lucide="file-text"></i> Uploaded {{ cv.uploaded_at|date:"j M Y" }}</p>
+            {% else %}
+                <p class="faint">We don't have a CV from you yet.</p>
+            {% endif %}
+
+            {% if can_upload_cv %}
+                <a href="{% url 'portal:cv-upload' application.pk %}" class="btn btn-secondary btn-sm">
+                    <i data-lucide="upload"></i> {% if cv %}Replace CV{% else %}Upload CV{% endif %}
+                </a>
+                <p class="faint">You can change your CV until the team has finished screening it.</p>
+            {% else %}
+                <p class="faint">Screening is finished for this application, so the CV can't be changed here. Email us if something's wrong with it.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+{% if can_withdraw %}
+    <section class="card portal-withdraw">
+        <div class="card-body">
+            <h2 class="card-title">No longer interested?</h2>
+            <p class="faint">You can withdraw this application. We'll cancel any interviews booked with you and stop considering you for this role.</p>
+            <a href="{% url 'portal:withdraw' application.pk %}" class="btn btn-secondary btn-sm">Withdraw application</a>
+        </div>
+    </section>
+{% endif %}
+{% endblock %}

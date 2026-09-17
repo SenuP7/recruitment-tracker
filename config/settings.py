@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'notifications',
     'dashboard',
     'marketing',
+    'portal',
 ]
 
 MIDDLEWARE = [
@@ -59,6 +60,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'portal.middleware.CandidatePortalMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -181,8 +183,14 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = "/accounts/login/"
-LOGIN_REDIRECT_URL = "/accounts/profile/"
 LOGOUT_REDIRECT_URL = "/"
 
 # Shown in the public footer and on the Status page.
 CANDIDFLOW_VERSION = os.environ.get("CANDIDFLOW_VERSION", "1.0.0")
+
+# Used in the subject line and body of candidate-facing emails.
+CANDIDFLOW_COMPANY_NAME = os.environ.get("CANDIDFLOW_COMPANY_NAME", "Candidflow")
+
+# Staff land on the dashboard or their profile, candidates in the portal --
+# accounts.views.PostLoginRedirectView decides which.
+LOGIN_REDIRECT_URL = "/accounts/after-login/"

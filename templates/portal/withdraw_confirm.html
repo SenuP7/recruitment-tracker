@@ -1,0 +1,36 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Withdraw application{% endblock %}
+
+{% block content %}
+<p class="eyebrow"><a href="{% url 'portal:application-detail' application.pk %}"><i data-lucide="arrow-left"></i> Back to application</a></p>
+
+<div class="confirm-wrap">
+    <section class="card confirm-card">
+        <div class="card-body stack" style="gap: var(--space-5)">
+            <span class="empty-icon"><i data-lucide="log-out"></i></span>
+            <div>
+                <h1>Withdraw this application?</h1>
+                <p class="page-subtitle">You're withdrawing from <strong>{{ application.position.title }}</strong>.</p>
+            </div>
+
+            <div class="confirm-impact">
+                <p class="skill-heading">What happens next</p>
+                <ul class="confirm-list">
+                    <li><i data-lucide="corner-down-right"></i> Any interviews booked with you for this role are cancelled.</li>
+                    <li><i data-lucide="corner-down-right"></i> The recruitment team is told you've withdrawn.</li>
+                    <li><i data-lucide="corner-down-right"></i> You can't undo this yourself, but you can apply for other roles.</li>
+                </ul>
+            </div>
+        </div>
+
+        <form method="post" class="form-actions">
+            {% csrf_token %}
+            <div class="buttons">
+                <a href="{% url 'portal:application-detail' application.pk %}" class="btn btn-secondary">Keep my application</a>
+                <button type="submit" class="btn btn-primary">Yes, withdraw</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

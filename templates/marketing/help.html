@@ -49,11 +49,11 @@
             <div class="faq-list">
                 <details>
                     <summary>How do I get an account?</summary>
-                    <p>Accounts are created by an administrator. There's no public sign-up. Ask your manager to request one through <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a>, stating the role and department you need.</p>
+                    <p>Staff accounts are created by an administrator. Ask your manager to request one through <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a>, stating the role and department you need. Candidates don't need one of these: applying online creates a candidate account for you.</p>
                 </details>
                 <details>
                     <summary>I forgot my password.</summary>
-                    <p>Passwords can't be reset from the sign-in page yet. Email <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a> from your work address and an administrator will set a new one for you.</p>
+                    <p>Use the "Forgot your password?" link on either sign-in page. We'll email you a link to set a new one. If the email doesn't arrive, contact <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a>.</p>
                 </details>
                 <details>
                     <summary>Why can't I see the dashboard or CV screening?</summary>
@@ -69,7 +69,7 @@
                 </details>
                 <details>
                     <summary>How is the CV match score worked out?</summary>
-                    <p>The CV's text is checked for each skill the position lists, including known alternative names (for example "JS" for JavaScript). Required skills make up 80% of the score and nice-to-have skills 20%. A score of 70% or more passes screening automatically, below 40% fails, and anything in between is left for review. Keyword matching can miss experience described in other words, so check the result before relying on it.</p>
+                    <p>The CV's text is checked for each skill the position lists, including known alternative names (for example "JS" for JavaScript). Required skills make up 80% of the score and nice-to-have skills 20%. The score never sets the outcome: a recruiter reads the CV and confirms whether it passed screening. Keyword matching can miss experience described in other words, so treat a low score as a prompt to look, not a verdict.</p>
                 </details>
                 <details>
                     <summary>Which CV files can I upload?</summary>
@@ -93,8 +93,8 @@
             </div>
             <div class="faq-list">
                 <details>
-                    <summary>Why did I get an email from Candidflow?</summary>
-                    <p>We use Candidflow to manage applications. It emails you when your application changes stage or an interview is scheduled, and never sends marketing. See the <a href="{% url 'candidate-notice' %}">candidate notice</a>.</p>
+                    <summary>How do I apply, and what happens next?</summary>
+                    <p>Pick a role on our <a href="{% url 'careers' %}">open roles</a> page and send the short form with your CV. We email you a link to confirm the address is yours; until you click it, nothing reaches the hiring team. After that you can set a password and follow your application, and we'll email you when it changes stage or an interview is booked. We never send marketing. See the <a href="{% url 'candidate-notice' %}">candidate notice</a>.</p>
                 </details>
                 <details>
                     <summary>My CV didn't pass screening. Can a person look at it?</summary>

@@ -1,0 +1,88 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Your applications{% endblock %}
+
+{% block content %}
+<header class="portal-hero">
+    <p class="eyebrow">Your applications</p>
+    <h1>Hello {{ candidate.first_name }}.</h1>
+    <p class="page-subtitle">
+        {% if open_count %}
+            You have {{ open_count }} application{{ open_count|pluralize }} in progress.
+        {% else %}
+            You have no applications in progress right now.
+        {% endif %}
+    </p>
+</header>
+
+{% if todo %}
+    <section class="card portal-todo">
+        <div class="card-body">
+            <h2 class="card-title"><i data-lucide="alert-circle"></i> Needs your attention</h2>
+            <ul class="portal-todo-list">
+                {% for card in todo %}
+                    <li>
+                        <span>Add your CV for <strong>{{ card.application.position.title }}</strong> so we can review it.</span>
+                        <a href="{% url 'portal:cv-upload' card.application.pk %}" class="btn btn-primary btn-sm">Upload CV</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </section>
+{% endif %}
+
+{% if upcoming_interviews %}
+    <section class="card">
+        <div class="card-head"><h2 class="card-title">Upcoming interviews</h2></div>
+        <ul class="list">
+            {% for interview in upcoming_interviews %}
+                <li class="list-row">
+                    <span class="date-chip">
+                        <em>{{ interview.scheduled_date|date:"M" }}</em>
+                        <b>{{ interview.scheduled_date|date:"j" }}</b>
+                    </span>
+                    <div class="list-main">
+                        <strong>{{ interview.interview_type }} interview</strong>
+                        <span class="faint">{{ interview.scheduled_date|date:"l j F, H:i" }}</span>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+{% endif %}
+
+<section class="portal-applications">
+    <h2 class="section-title">All applications</h2>
+
+    {% for card in cards %}
+        <article class="card portal-app-card">
+            <div class="card-body">
+                <div class="portal-app-head">
+                    <div>
+                        <h3><a href="{% url 'portal:application-detail' card.application.pk %}">{{ card.application.position.title }}</a></h3>
+                        <p class="faint">
+                            {% if card.application.position.department %}{{ card.application.position.department.name }} · {% endif %}
+                            Applied {{ card.application.applied_at|date:"j M Y" }}
+                        </p>
+                    </div>
+                    <span class="badge" data-status="{{ card.application.status }}">{{ card.application.get_status_display }}</span>
+                </div>
+
+                {% if card.next_interview %}
+                    <p class="portal-app-note"><i data-lucide="calendar"></i> {{ card.next_interview.interview_type }} interview on {{ card.next_interview.scheduled_date|date:"j M, H:i" }}</p>
+                {% elif card.needs_cv %}
+                    <p class="portal-app-note"><i data-lucide="file-up"></i> We don't have your CV for this one yet.</p>
+                {% endif %}
+
+                <a href="{% url 'portal:application-detail' card.application.pk %}" class="btn btn-secondary btn-sm">View application</a>
+            </div>
+        </article>
+    {% empty %}
+        <div class="empty">
+            <span class="empty-icon"><i data-lucide="inbox"></i></span>
+            <h3>Nothing here yet</h3>
+            <p>When we record an application for you, it'll show up on this page.</p>
+        </div>
+    {% endfor %}
+</section>
+{% endblock %}

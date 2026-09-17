@@ -44,6 +44,14 @@
         <li><strong>Account details:</strong> username, name, email address, role and department. Passwords are only ever stored as one-way hashes.</li>
         <li><strong>Activity records:</strong> feedback you write, a log of every edit or deletion of feedback (who made it, when, and what changed), and in-app notifications sent to you.</li>
     </ul>
+    <h3>When you apply online</h3>
+    <ul>
+        <li>What you type into the application form: your name, email address, optional phone number, an optional message, and your CV.</li>
+        <li>The IP address you submitted from. It's used only to stop the form being flooded with automated submissions, and it's erased the moment you confirm your application.</li>
+        <li>The date you confirmed you'd read the candidate notice and terms.</li>
+    </ul>
+    <p>An unconfirmed application isn't part of our recruitment records. It sits unused, is never shown to the hiring team, and is deleted along with the CV if you don't confirm it. See <a href="#retention">retention</a>.</p>
+
     <h3>Technical data</h3>
     <ul>
         <li>Essential cookies that keep you signed in and protect forms. See the <a href="{% url 'cookies' %}">cookie notice</a>.</li>
@@ -72,19 +80,14 @@
 <section id="automated-screening">
     <h2>4. Automated CV screening</h2>
     <p>When a CV is uploaded against an application, Candidflow compares its text against the skills the position requires (80% of the score) and the skills that are nice to have (20%), including recognised alternative names for each skill. This produces a match score.</p>
-    <p>The score can set the screening outcome <strong>without a person reviewing it first</strong>:</p>
+    <p><strong>The score does not decide anything on its own.</strong> A member of the recruitment team reads the CV and records whether it passes screening. The score is there to help them prioritise, and the system will not mark an application as passed or failed until a person does it.</p>
+    <p>That means no decision about your application is based solely on automated processing, so the restrictions in Article 22 of UK GDPR don't apply. You are still told when your application changes stage, and you can:</p>
     <ul>
-        <li>A score of <strong>70% or more</strong> marks the application as <em>CV Screening Passed</em>.</li>
-        <li>A score <strong>below 40%</strong> marks it as <em>CV Screening Failed</em>.</li>
-        <li>Anything in between stays <em>in screening</em> for the recruitment team to review.</li>
-    </ul>
-    <p>A change of status sends you an email. Because a failed outcome can be reached automatically, it counts as a decision based solely on automated processing under Article 22 of UK GDPR. You have the right to:</p>
-    <ul>
-        <li>ask for a member of the recruitment team to review the outcome,</li>
+        <li>ask us why an outcome was reached,</li>
         <li>give us your point of view, for example skills the keyword match missed, and</li>
-        <li>contest the decision.</li>
+        <li>ask for the decision to be looked at again.</li>
     </ul>
-    <p>To do any of these, email <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a> with the position you applied for. A recruiter will look at your CV and tell you the result.</p>
+    <p>Email <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a> with the position you applied for.</p>
 </section>
 
 <section id="sharing">
@@ -118,6 +121,7 @@
                 <tr><td>Successful candidates</td><td>Moved to employee records when you start. The recruitment record is deleted 12 months after the decision.</td></tr>
                 <tr><td>Feedback edit and deletion log</td><td>Same period as the application it relates to</td></tr>
                 <tr><td>Email delivery records</td><td>12 months after sending</td></tr>
+                <tr><td>Applications you never confirmed</td><td>Unusable after 3 days and deleted, with the CV, within 30 days</td></tr>
                 <tr><td>Staff accounts</td><td>Disabled when you leave, deleted 12 months later</td></tr>
             </tbody>
         </table>

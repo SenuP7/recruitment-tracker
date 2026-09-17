@@ -1,0 +1,49 @@
+{% extends "accounts/auth_base.html" %}
+
+{% block title %}Candidate sign-in · Candidflow{% endblock %}
+{% block aside_heading %}Follow your application.{% endblock %}
+{% block aside_text %}Sign in to see where each application stands, when your interviews are, and to send us an updated CV.{% endblock %}
+{% block aside_points %}
+    <li><i data-lucide="route"></i> Every stage, as it happens</li>
+    <li><i data-lucide="calendar"></i> Your interview dates</li>
+    <li><i data-lucide="file-up"></i> Your CV, replaceable during screening</li>
+{% endblock %}
+{% block aside_footnote %}Candidate sign-in{% endblock %}
+
+{% block panel %}
+<a href="{% url 'careers' %}" class="back-link"><i data-lucide="arrow-left"></i> Open roles</a>
+
+<h1>Candidate sign-in</h1>
+<p class="lede">Use the email address you applied with.</p>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="field">
+        <label for="id_username">Email address</label>
+        <input type="email" name="username" id="id_username" autocomplete="username" autofocus required>
+    </div>
+
+    <div class="field">
+        <label for="id_password">Password</label>
+        <input type="password" name="password" id="id_password" autocomplete="current-password" required>
+    </div>
+
+    {% if form.errors %}
+        <div class="error" role="alert">
+            <i data-lucide="alert-circle"></i>
+            <span>{% for error in form.non_field_errors %}{{ error }}{% empty %}Check your email address and password.{% endfor %}</span>
+        </div>
+    {% endif %}
+
+    <input type="hidden" name="next" value="{{ next }}">
+
+    <button type="submit" class="btn btn-primary">Sign in</button>
+</form>
+
+<p class="auth-foot">
+    <a href="{% url 'password_reset' %}">Forgot your password?</a>
+    <span class="faint">Haven't applied yet? <a href="{% url 'careers' %}">See our open roles</a>.</span>
+    <span class="faint">Part of the recruitment team? <a href="{% url 'login' %}">Staff sign-in</a>.</span>
+</p>
+{% endblock %}

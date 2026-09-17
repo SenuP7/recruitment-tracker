@@ -1,0 +1,24 @@
+{% extends "marketing/public_base.html" %}
+
+{% block title %}Link no longer works · Candidflow{% endblock %}
+{% block robots %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<div class="wrap apply-sent">
+    <span class="apply-sent-icon" aria-hidden="true"><i data-lucide="link-2-off"></i></span>
+    <h1>This link no longer works</h1>
+    <p class="doc-lede">Confirmation links last 3 days and can only be used once. If yours has expired, the application wasn't kept — but you're welcome to apply again.</p>
+
+    <div class="buttons">
+        <a href="{% url 'careers' %}" class="btn btn-primary">See open roles</a>
+        <a href="{% url 'portal:login' %}" class="btn btn-secondary">Sign in</a>
+    </div>
+
+    <p class="faint">Already confirmed once? Your application is safe — just sign in to see it.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+{% endblock %}

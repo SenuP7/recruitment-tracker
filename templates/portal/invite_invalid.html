@@ -1,0 +1,29 @@
+{% extends "accounts/auth_base.html" %}
+
+{% block title %}Link no longer works · Candidflow{% endblock %}
+{% block aside_heading %}That link has expired.{% endblock %}
+{% block aside_text %}Invite links last a limited time and can only be used once. Asking for a new one takes a moment.{% endblock %}
+{% block aside_points %}
+    <li><i data-lucide="timer"></i> Links expire after a few days</li>
+    <li><i data-lucide="repeat"></i> A new invite replaces the old one</li>
+{% endblock %}
+{% block aside_footnote %}Candidate account{% endblock %}
+
+{% block panel %}
+{% if email_taken %}
+    <h1>You may already have an account</h1>
+    <p class="lede">There's already an account using this email address. Try logging in, or reset your password if you've forgotten it.</p>
+    <div class="buttons">
+        <a href="{% url 'login' %}" class="btn btn-primary">Log in</a>
+        <a href="{% url 'password_reset' %}" class="btn btn-secondary">Reset password</a>
+    </div>
+{% else %}
+    <h1>This link no longer works</h1>
+    <p class="lede">It may have expired, been used already, or been replaced by a newer invite. Email us and we'll send a fresh one.</p>
+    <a href="mailto:help@candidflow.example" class="btn btn-primary">Email help@candidflow.example</a>
+{% endif %}
+
+<p class="auth-foot">
+    <span class="faint">Already set up? <a href="{% url 'login' %}">Log in here</a>.</span>
+</p>
+{% endblock %}

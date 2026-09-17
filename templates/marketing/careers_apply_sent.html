@@ -1,0 +1,29 @@
+{% extends "marketing/public_base.html" %}
+
+{% block title %}Check your email · Candidflow{% endblock %}
+{% block robots %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<div class="wrap apply-sent">
+    <span class="apply-sent-icon" aria-hidden="true"><i data-lucide="mail-check"></i></span>
+    <h1>Check your email</h1>
+    <p class="doc-lede">We've sent a link to <strong>{{ email }}</strong>. Click it to confirm your application for {{ position.title }}.</p>
+
+    <div class="callout">
+        <p>Until you confirm, nothing is sent to the hiring team and nothing is kept. The link works for 3 days.</p>
+    </div>
+
+    <ul class="apply-next">
+        <li><i data-lucide="inbox"></i> It usually arrives within a few minutes — check your spam folder too.</li>
+        <li><i data-lucide="key-round"></i> After confirming, you can set a password and follow your application.</li>
+        <li><i data-lucide="life-buoy"></i> Nothing arrived? Email <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a>.</li>
+    </ul>
+
+    <a href="{% url 'careers' %}" class="btn btn-secondary">Back to open roles</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+{% endblock %}

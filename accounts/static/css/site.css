@@ -622,6 +622,49 @@ body.auth-page { min-height: 100vh; display: grid; grid-template-columns: minmax
 .login-panel .error { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-4); font-size: var(--text-sm); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); }
 .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--text-tertiary); font-weight: 500; }
 .back-link:hover { color: var(--text-secondary); }
+.auth-foot { margin-top: var(--space-6); display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-xs); }
+.auth-foot a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 3px; }
+.auth-foot a:hover { color: var(--text); }
+.login-panel .buttons { margin-top: var(--space-6); }
+
+/* ---- Candidate portal ------------------------------------------------------------------ */
+/* A deliberately plain, single-column surface: candidates get one page about
+   themselves, not the staff shell with its sidebar and pipeline views. */
+
+body.portal-page { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
+.portal-wrap { width: 100%; max-width: 860px; margin: 0 auto; padding: 0 var(--space-6); }
+.portal-topbar { border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 10; }
+.portal-topbar .portal-wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); height: 60px; }
+.portal-user { display: flex; align-items: center; gap: var(--space-3); }
+.portal-user form { margin: 0; }
+.portal-main { flex: 1; padding-top: var(--space-7); padding-bottom: var(--space-8); display: flex; flex-direction: column; gap: var(--space-5); }
+
+.portal-hero h1 { font-size: var(--text-3xl); letter-spacing: -0.03em; margin: var(--space-2) 0; }
+.portal-todo { border-color: var(--slate-500); }
+.portal-todo-list { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-4); }
+.portal-todo-list li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; font-size: var(--text-sm); }
+
+.portal-applications { display: flex; flex-direction: column; gap: var(--space-3); }
+.section-title { font-size: var(--text-sm); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); font-family: var(--font-mono); font-weight: 500; margin-top: var(--space-4); }
+.portal-app-card .card-body { display: flex; flex-direction: column; gap: var(--space-4); align-items: flex-start; }
+.portal-app-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); width: 100%; }
+.portal-app-head h3 { font-size: var(--text-lg); letter-spacing: -0.02em; }
+.portal-app-head h3 a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.portal-app-note { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--text-secondary); }
+.portal-app-note svg { width: 16px; height: 16px; color: var(--text-tertiary); }
+
+.portal-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.portal-withdraw { border-style: dashed; }
+.portal-withdraw .card-body { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+
+.portal-foot { border-top: 1px solid var(--border); padding: var(--space-5) 0 var(--space-6); font-size: var(--text-xs); }
+.portal-foot .portal-wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.portal-foot a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 3px; }
+.portal-foot a:hover { color: var(--text); }
+.portal-foot-links { display: flex; gap: var(--space-4); }
+
+.screening-decision { border-color: var(--slate-500); }
+.screening-decision .card-body { align-items: flex-start; }
 
 /* ---- Page-specific pieces ------------------------------------------------------------------ */
 
@@ -729,4 +772,7 @@ a.card:hover { text-decoration: none; border-color: var(--border-strong); transf
   body.auth-page { grid-template-columns: minmax(0, 1fr); }
   .auth-aside { display: none; }
   .toolbar-sort { margin-left: 0; }
+  .portal-columns { grid-template-columns: minmax(0, 1fr); }
+  .portal-wrap { padding: 0 var(--space-4); }
+  .portal-user .btn span { display: none; }
 }

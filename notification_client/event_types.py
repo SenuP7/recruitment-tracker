@@ -5,3 +5,6 @@ in sync when adding a new trigger.
 
 APPLICATION_STATUS_CHANGED = "application_status_changed"
 INTERVIEW_SCHEDULED = "interview_scheduled"
+APPLICATION_CONFIRM = "application_confirm"
+PORTAL_INVITE = "portal_invite"
+PASSWORD_RESET = "password_reset"

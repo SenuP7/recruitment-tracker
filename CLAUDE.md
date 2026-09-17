@@ -15,6 +15,7 @@ Apps:
 - `interviews`: interviews, threaded feedback, audit log, staff notifications
 - `dashboard`: see `dashboard/CLAUDE.md`
 - `marketing`: the public site (see Public site below)
+- `portal`: the candidate portal (see Candidate portal below)
 - `notifications`: stub, no views/urls; unused
 
 Outside Django:
@@ -43,7 +44,7 @@ Only commit when the user asks.
 - The empty override doesn't select SQLite by parsing a URL: the mere
   presence of a `DATABASE_URL` value picks the Postgres branch, which reads
   its connection details from `DB_*` (see `.env.example`).
-- Current suite: **171 tests, all passing** (2026-09-17).
+- Current suite: **229 tests, all passing** (2026-09-18).
 - The notification Lambda has its own pytest suite in
   `notification-service/tests`.
 - The user runs their own server on **port 8000** against the real Postgres.
@@ -98,36 +99,23 @@ afterwards.)
 
 ### Known gaps (flagged, not built)
 
-- **Feature #7: candidate self-service scoping (deferred by the user).**
-  Nothing links a `User` to a `Candidate` record, so the Candidate group sees
-  *every* candidate, application, interview and feedback record. A proper fix
-  needs:
-  - a nullable FK `Candidate.user`
-  - queryset scoping in the list and detail views for the Candidate group
-  - a decision on which interviews and feedback a candidate can see
 - **Closed positions** are hidden from lists for non-managers but still
   reachable by direct URL. A restriction was added once and then reverted,
   because it wasn't approved. It's awaiting the user's decision.
 - **Unassigned interviews:** feedback creation doesn't check that the author
   is the interview's assigned `interviewer`. That field is optional, and
   existing interviews have none.
-- **Automated CV screening decision (user said: disclose now, fix later).**
-  `cv_screening/views.py` `upload_application_cv` sets "CV Screening
-  Passed" (score >= 0.7) or "CV Screening Failed" (< 0.4) with no human in
-  between, and the status signal emails the candidate. That is a solely
-  automated decision under UK GDPR Art. 22. The privacy notice, candidate
-  notice and help page disclose it and offer human review. The intended fix
-  is to require recruiter confirmation before a Failed outcome is emailed.
-  If the thresholds change, update those pages too
-  (`marketing/tests.py` checks the numbers match).
-- **Public copy vs Candidate-group access.** The landing role card ("no
-  access to internal feedback") and the candidate notice ("only the
-  recruitment team" sees applications) describe intended behaviour. Today
-  the Candidate group can view all candidates, applications, interviews and
-  feedback. Feature #7 closes this.
 - **Security page claims only what's verified.** No HTTPS redirect, HSTS or
   secure-cookie settings exist yet; add them at deployment and then update
   `templates/marketing/security.html`.
+- **Candidate group permissions in the real database.** The portal needs
+  none, and the middleware keeps candidates out of staff pages, but the
+  group may still hold the old `view_*` permissions. Strip them by hand
+  (see Candidate portal below); it's a DB-only change, so it won't show in
+  git.
+
+Closed since: candidate self-service scoping (the portal), and the
+automatic CV pass/fail decision (a recruiter now confirms outcomes).
 
 ## Interviews domain
 
@@ -258,3 +246,134 @@ Dark-only, uses `landing.css`; separate from the app shell in `base.html`.
 - **Not done yet, landing only this round:** the login page doesn't link to
   the terms or privacy notice, even though the terms say signing in means
   agreeing to them.
+
+## Candidate portal (`portal` app)
+
+Candidates get their own login and their own area at `/portal/`. Staff pages
+and candidate pages never mix.
+
+- **The link:** `Candidate.user` is a nullable `OneToOneField` to `User`
+  (`SET_NULL`). It is the only connection between a login and a candidate
+  record. Never match candidates to users by email address.
+- **Scoping:** `portal/mixins.py` `CandidateRequiredMixin` is the single
+  boundary. Every portal view starts from `self.candidate`, and no portal URL
+  takes a candidate id, so one candidate cannot address another's data.
+  A user with no linked candidate, or one in a staff group, gets 403.
+- **Defence in depth:** `portal.middleware.CandidatePortalMiddleware`
+  redirects candidate-linked accounts away from staff paths, so a permission
+  granted by mistake in the database doesn't open the staff app to them.
+- **What candidates never see** (decided by the user): interview feedback,
+  CV match scores, interviewer names, and any sign of other applicants. The
+  way to keep that true is to not put it in the context.
+- **Two ways in.** Applying through the public careers pages creates a
+  candidate account once the email is confirmed (see Public applications).
+  A recruiter can also invite an existing candidate record directly.
+- **Recruiter invites:** a recruiter with `candidates.change_candidate`
+  posts to `candidate-invite`; `CandidateInvite.issue()` revokes any
+  outstanding invite and creates a new token valid for 7 days
+  (`INVITE_VALID_DAYS`). Accepting sets a password, creates the user with the
+  email as username, adds them to the Candidate group and links the record.
+  Expired, revoked, used and unknown tokens all render the same 404, so the
+  token can't be used to probe whether a candidate exists.
+- **Candidates can:** see their applications and stage timeline, see their
+  interviews (type, time, status), upload or replace a CV while the status is
+  `Applied` or `CV Screening`, and withdraw an application. Withdrawal sets
+  the new `Withdrawn` status, cancels scheduled interviews, and notifies
+  recruiters plus the assigned interviewers.
+- **Deleting a candidate** deactivates the linked login, because `SET_NULL`
+  would otherwise leave an account that can still sign in.
+- **Login fork:** `LOGIN_REDIRECT_URL` points at
+  `accounts.views.PostLoginRedirectView`, which sends candidates to the
+  portal, staff to the dashboard, and anyone else to their profile.
+- **Password reset** exists for everyone now. The email is published to the
+  notification pipeline by `accounts/password_reset.py`, so Django's
+  `EMAIL_BACKEND` is still unused.
+- **Permissions to strip by hand** (DB-only, not in migrations) once the
+  portal is live:
+
+```python
+from django.contrib.auth.models import Group
+Group.objects.get(name="Candidate").permissions.clear()
+```
+
+## Screening outcomes are a human decision
+
+Uploading a CV scores it and moves the application to `CV Screening`. It
+never writes `CV Screening Passed`/`Failed`. Only
+`cv_screening.views.confirm_screening_outcome` does, and it needs staff group
+membership plus `candidates.change_application`. The public copy says a
+person decides, and `marketing/tests.py` fails if automation is wired back in
+without the copy being corrected.
+
+## Public applications (careers pages)
+
+Anyone can browse open roles and apply without an account. `marketing/careers.py`
+holds the views, `candidates/applications.py` the logic that matters.
+
+- **Pages:** `/careers/`, `/careers/<pk>/`, `/careers/<pk>/apply/`, and the
+  emailed link at `/apply/confirm/<token>/`. Only `is_open=True` positions are
+  listed or accept applications.
+- **Nothing enters the pipeline unconfirmed.** A submission creates a
+  `PendingApplication` and nothing else. Recruiters never see these rows. The
+  emailed link is what creates the Candidate, Application and CV. This is what
+  stops anyone putting a fake application under someone else's name.
+- **Linking to an existing candidate happens only at confirmation**, matching
+  on email, because clicking the link proves the address is theirs. Never link
+  on email anywhere earlier.
+- **Duplicates** are detected at confirmation, not submission: one live
+  application per role (`CLOSED_STATUSES` don't block re-applying). Telling
+  someone at submission time that they'd already applied would leak who is in
+  the pipeline.
+- **The form never reveals whether an address is known.** Every path renders
+  the same "check your email" page. Keep it that way.
+- **Rate limits** (`candidates/applications.py`): 3 per email and 8 per IP per
+  hour, counted in the database so they survive restarts and hold across
+  instances. The IP is erased as soon as the application is confirmed.
+- **Required:** name, email, CV (PDF/DOCX, 5 MB, shared rules in
+  `cv_screening/uploads.py`) and ticking the terms box, which records
+  `Candidate.terms_accepted_at`. Phone and message are optional; the message
+  is copied to `Application.applicant_message` and shown to recruiters.
+- **`Candidate.source`** is `staff` or `public`, shown on the candidate record.
+- **Housekeeping:** `candidates.applications.purge_expired_pending()` deletes
+  unconfirmed submissions and their CVs. Nothing calls it yet — it needs a
+  cron or management command before launch.
+
+## Two sign-in doors
+
+One accounts system, two pages (`accounts/login_forms.py`):
+- `/accounts/login/` — staff, with organisation-issued credentials. Refuses
+  candidate accounts.
+- `/portal/login/` — candidates, using the email they applied with. Refuses
+  staff accounts and accounts with no linked candidate.
+
+Both checks run after the password is verified, so neither page says anything
+about accounts that don't exist. The public site's "Sign in" button points at
+the candidate door; staff sign-in is linked in the footer.
+
+## Demo data (`manage.py seed_demo`)
+
+One worked example of the whole pipeline, for trying things out and for
+showing the app to someone:
+
+```
+python manage.py seed_demo --with-permissions   # local SQLite
+python manage.py seed_demo --clear              # remove it again
+```
+
+- **Creates:** an open Backend Engineer role with a screening profile, one
+  candidate (Maya Reyes) with a real .docx CV that is scored through the
+  normal code path, an application at "Technical Interview", a completed HR
+  round with feedback and a reply, an upcoming technical round, four extra
+  applications so the pipeline chart isn't empty, an unconfirmed public
+  application, and a portal invite. It prints every login and link at the end.
+- **The CV deliberately misses one required skill**, so the score lands mid-
+  range and "missing required" isn't empty — the case a recruiter has to
+  think about.
+- **Everything it creates is tagged** (`demo.` usernames, `@demo.candidflow.example`
+  emails, `[demo]` in the position description and profile name), and each run
+  clears the previous demo first. It never touches other records.
+- **Guards:** refuses to run against anything but local SQLite unless `--yes`.
+  Group permissions are only touched with `--with-permissions`, which applies
+  the same matrix as `assign_role_permissions` except that the Candidate group
+  is left empty (the portal needs no model permissions).
+- Passwords are all `demo-pass-12345`. Never run this against production.

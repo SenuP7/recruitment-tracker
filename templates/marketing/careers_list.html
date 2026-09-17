@@ -1,0 +1,74 @@
+{% extends "marketing/public_base.html" %}
+
+{% block title %}Open roles · Candidflow{% endblock %}
+{% block og_title %}Open roles · Candidflow{% endblock %}
+{% block meta_description %}Browse the roles we're hiring for and apply online. You'll get an email to confirm your application and follow its progress.{% endblock %}
+
+{% block content %}
+<header class="doc-hero">
+    <div class="wrap">
+        <span class="section-tag">Careers</span>
+        <h1>Open roles</h1>
+        <p class="doc-lede">Apply in a couple of minutes. We'll email you to confirm, and from then on you can follow exactly where your application stands.</p>
+    </div>
+</header>
+
+<div class="wrap careers-page">
+    <form method="get" class="careers-search" role="search">
+        <label for="careers-q" class="visually-hidden">Search roles</label>
+        <input type="search" id="careers-q" name="q" value="{{ query }}" placeholder="Search roles by title or keyword">
+        <button type="submit" class="btn btn-secondary">Search</button>
+        {% if query %}<a href="{% url 'careers' %}" class="careers-clear">Clear</a>{% endif %}
+    </form>
+
+    <p class="careers-count">
+        {% if query %}
+            {{ positions|length }} result{{ positions|length|pluralize }} for “{{ query }}”
+        {% else %}
+            {{ total_open }} open role{{ total_open|pluralize }}
+        {% endif %}
+    </p>
+
+    <ul class="careers-list">
+        {% for position in positions %}
+            <li class="careers-row">
+                <div>
+                    <h2><a href="{% url 'careers-detail' position.pk %}">{{ position.title }}</a></h2>
+                    <p class="careers-meta">
+                        {% if position.department %}{{ position.department.name }}{% else %}Department to be confirmed{% endif %}
+                        {% if position.minimum_experience %} · {{ position.minimum_experience }}+ years{% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'careers-detail' position.pk %}" class="btn btn-ghost">View role <span class="arrow">→</span></a>
+            </li>
+        {% empty %}
+            <li class="careers-empty">
+                {% if query %}
+                    <p>Nothing matches “{{ query }}” right now.</p>
+                    <a href="{% url 'careers' %}" class="btn btn-secondary">See all open roles</a>
+                {% else %}
+                    <p>No roles are open at the moment. Check back soon.</p>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+
+    {% if page_obj.has_other_pages %}
+        <nav class="careers-pages" aria-label="Pagination">
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">← Previous</a>{% endif %}
+            <span>Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Next →</a>{% endif %}
+        </nav>
+    {% endif %}
+
+    <aside class="careers-note">
+        <h2>Already applied?</h2>
+        <p>Use the link in your confirmation email to set a password, then <a href="{% url 'portal:login' %}">sign in</a> to see where your application is. Read <a href="{% url 'candidate-notice' %}">how we handle your data</a> before you apply.</p>
+    </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+{% endblock %}

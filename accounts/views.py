@@ -1,9 +1,12 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
+from django.shortcuts import redirect
+from django.views import View
 from django.views.generic import DetailView, TemplateView
 
 from django.contrib.auth.models import User
 
+from accounts.decorators import user_in_groups
 from candidates.models import Candidate
 from positions.models import Position
 
@@ -14,8 +17,22 @@ ROLE_SUMMARIES = {
     "Technical Interviewer": "Runs technical rounds and writes feedback, with the dashboard scoped to their own department.",
     "Senior Reviewer": "Reviews candidates across every round, updates application stages, and can moderate any feedback.",
     "Leadership Manager": "Oversees the full pipeline, updates application stages, and can edit any feedback.",
-    "Candidate": "Can browse open positions.",
+    "Candidate": "Follows their own applications in the candidate portal.",
 }
+
+
+
+class PostLoginRedirectView(LoginRequiredMixin, View):
+    """Where signing in lands you. Candidates have no business on a staff
+    page, and staff have none in the portal, so the two never share a
+    landing page."""
+
+    def get(self, request, *args, **kwargs):
+        if getattr(request.user, "candidate", None) is not None and not user_in_groups(request.user):
+            return redirect("portal:overview")
+        if user_in_groups(request.user):
+            return redirect("dashboard:dashboard")
+        return redirect("profile")
 
 
 class ProfileView(LoginRequiredMixin, DetailView):

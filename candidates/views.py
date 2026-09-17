@@ -1,9 +1,12 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Avg, Count, Q
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.text import slugify
+from django.shortcuts import get_object_or_404, redirect
+from django.views import View
 from django.views.generic import (
     ListView,
     DetailView,
@@ -17,7 +20,8 @@ from accounts.listing import ListToolbarMixin, Tab
 from accounts.models import Department
 from cv_screening.models import CVMatchResult
 
-from .models import Candidate, Application
+from .invites import send_candidate_invite
+from .models import Candidate, CandidateInvite, Application
 
 # Known candidate/application stages in pipeline order -- used to order tabs.
 STAGE_ORDER = [choice[0] for choice in Application.STATUS_CHOICES]
@@ -29,6 +33,7 @@ APPLICATION_TAB_GROUPS = [
     ("review", "Senior review", ["Senior Review"]),
     ("accepted", "Accepted", ["Accepted"]),
     ("rejected", "Rejected", ["Rejected"]),
+    ("withdrawn", "Withdrawn", ["Withdrawn"]),
 ]
 
 # The linear path an application moves along. Every status maps onto one
@@ -44,6 +49,7 @@ STATUS_TO_STEP = {
     "Senior Review": (4, None),
     "Accepted": (5, "done"),
     "Rejected": (5, "failed"),
+    "Withdrawn": (5, "failed"),
 }
 
 
@@ -262,6 +268,10 @@ class CandidateDetailView(
             "best_result_coverage": _skill_coverage(best_result),
             "average_rating": round(sum(ratings) / len(ratings), 1) if ratings else None,
             "feedback_count": len(feedback),
+            "pending_invite": candidate.invites.filter(
+                accepted_at__isnull=True, revoked_at__isnull=True, expires_at__gt=now
+            ).first(),
+            "can_invite": user.has_perm("candidates.change_candidate"),
         })
         return context
 
@@ -319,6 +329,51 @@ class CandidateUpdateView(
         return context
 
 
+
+class CandidateInviteView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Emails the candidate a link to set up their portal login. Uses
+    change_candidate rather than a new permission: whoever may correct a
+    candidate's details is who may give them access to their own record."""
+
+    permission_required = "candidates.change_candidate"
+    raise_exception = True
+
+    def post(self, request, pk):
+        candidate = get_object_or_404(Candidate, pk=pk)
+
+        if candidate.user_id is not None:
+            messages.info(request, f"{candidate.full_name} already has portal access.")
+        elif not candidate.email:
+            messages.error(request, "Add an email address before inviting this candidate.")
+        else:
+            invite = CandidateInvite.issue(candidate, created_by=request.user)
+            send_candidate_invite(request, invite)
+            messages.success(request, f"Invite sent to {invite.email}.")
+
+        return redirect("candidate-detail", pk=candidate.pk)
+
+
+class CandidateInviteRevokeView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Cancels an invite that hasn't been used yet, so a forwarded or
+    mistakenly sent link stops working immediately."""
+
+    permission_required = "candidates.change_candidate"
+    raise_exception = True
+
+    def post(self, request, pk):
+        candidate = get_object_or_404(Candidate, pk=pk)
+        revoked = CandidateInvite.objects.filter(
+            candidate=candidate, accepted_at__isnull=True, revoked_at__isnull=True
+        ).update(revoked_at=timezone.now())
+
+        if revoked:
+            messages.success(request, "The pending invite was cancelled.")
+        else:
+            messages.info(request, "There was no pending invite to cancel.")
+
+        return redirect("candidate-detail", pk=candidate.pk)
+
+
 class CandidateDeleteView(
     LoginRequiredMixin,
     PermissionRequiredMixin,
@@ -341,8 +396,19 @@ class CandidateDeleteView(
         context["cascade"] = [
             ("application", "applications", self.object.applications.count()),
             ("interview", "interviews", Interview.objects.filter(application__candidate=self.object).count()),
+            ("portal login", "portal logins", 1 if self.object.user_id else 0),
         ]
         return context
+
+    def form_valid(self, form):
+        """Candidate.user is SET_NULL, so deleting the record would otherwise
+        leave an account that can still sign in to an empty portal."""
+        user = self.object.user
+        response = super().form_valid(form)
+        if user is not None:
+            user.is_active = False
+            user.save(update_fields=["is_active"])
+        return response
 
 
 # ============================================================
@@ -442,6 +508,13 @@ class ApplicationDetailView(
             "cv_result": cv_result,
             "cv_coverage": _skill_coverage(cv_result),
             "can_upload_cv": is_staff and application.position.screening_profile_id is not None,
+            # Screening outcomes are a human decision (cv_screening.views), so
+            # the buttons appear only while the outcome is still open.
+            "can_decide_screening": (
+                is_staff
+                and user.has_perm("candidates.change_application")
+                and application.status in ("Applied", "CV Screening")
+            ),
             "other_applications": list(
                 application.candidate.applications.exclude(pk=application.pk).select_related("position")
             ),

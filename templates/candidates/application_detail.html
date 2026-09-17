@@ -43,6 +43,17 @@
 
 <div class="layout-rail">
     <div class="stack">
+        {% if application.applicant_message %}
+        <section class="card">
+            <div class="card-head">
+                <h2><i data-lucide="message-square-quote"></i> From the applicant</h2>
+                <span class="card-head-meta">Sent with their application</span>
+            </div>
+            <div class="card-body">
+                <blockquote class="quote">{{ application.applicant_message|linebreaksbr }}</blockquote>
+            </div>
+        </section>
+        {% endif %}
         {% if can_view_interviews %}
         <section class="card">
             <div class="card-head">
@@ -116,6 +127,24 @@
             </div>
             <div class="card-foot"><a href="{% url 'cv_screening:screening-result-detail' cv_result.pk %}">Full result <i data-lucide="arrow-right"></i></a></div>
         </section>
+
+        {% if can_decide_screening %}
+        <section class="card screening-decision">
+            <div class="card-head"><h2><i data-lucide="gavel"></i> Confirm the screening outcome</h2></div>
+            <div class="card-body stack">
+                <p class="faint" style="font-size: var(--text-sm)">
+                    The match score is advice, not a decision. Read the CV, then record whether this application passes screening. The candidate is emailed either way.
+                </p>
+                <form method="post" action="{% url 'cv_screening:confirm-screening-outcome' application.pk %}">
+                    {% csrf_token %}
+                    <div class="buttons">
+                        <button type="submit" name="outcome" value="fail" class="btn btn-secondary"><i data-lucide="x"></i> Not passed</button>
+                        <button type="submit" name="outcome" value="pass" class="btn btn-primary"><i data-lucide="check"></i> Passed screening</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        {% endif %}
         {% elif can_upload_cv %}
         <div class="empty">
             <span class="empty-icon"><i data-lucide="file-scan"></i></span>

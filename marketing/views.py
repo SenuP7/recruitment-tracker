@@ -19,24 +19,31 @@ LEGAL_UPDATED = date(2026, 9, 17)
 # Pages listed in sitemap.xml, in footer order. The app itself is excluded
 # (and disallowed in robots.txt) -- only the public site is indexable.
 PUBLIC_PAGES = (
-    "landing", "help", "status", "security", "privacy",
+    "landing", "careers", "help", "status", "security", "privacy",
     "terms", "cookies", "accessibility", "candidate-notice",
 )
 
 
-class PublicPageMixin:
-    """Context shared by every public page: contacts, the footer status dot,
-    and which top-nav link is active."""
+def public_context(nav_key=None):
+    """The bits every public page needs: contacts, the footer status dot, and
+    which top-nav link is active. A function as well as a mixin, because the
+    careers apply view is a plain View with no get_context_data chain."""
+    return {
+        "contacts": CONTACTS,
+        "legal_updated": LEGAL_UPDATED,
+        "nav_key": nav_key,
+        "version": settings.CANDIDFLOW_VERSION,
+        "site_status": status.footer_status(),
+    }
 
+
+class PublicPageMixin:
     nav_key = None
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["contacts"] = CONTACTS
-        context["legal_updated"] = LEGAL_UPDATED
-        context["nav_key"] = self.nav_key
-        context["version"] = settings.CANDIDFLOW_VERSION
-        context.setdefault("site_status", status.footer_status())
+        for key, value in public_context(self.nav_key).items():
+            context.setdefault(key, value)
         return context
 
 

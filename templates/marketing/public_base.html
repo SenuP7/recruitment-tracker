@@ -30,6 +30,7 @@
     <div class="wrap nav-inner">
         <a href="{% url 'landing' %}" class="nav-logo" aria-label="Candidflow home">{% include "components/brand_mark.html" %}<span>Candid<span>flow</span></span></a>
         <div class="nav-links">
+            <a href="{% url 'careers' %}"{% if nav_key == "careers" %} aria-current="page"{% endif %}>Careers</a>
             <a href="{% url 'help' %}"{% if nav_key == "help" %} aria-current="page"{% endif %}>Help</a>
             <a href="{% url 'status' %}"{% if nav_key == "status" %} aria-current="page"{% endif %}>Status</a>
             <a href="{% url 'security' %}"{% if nav_key == "security" %} aria-current="page"{% endif %}>Security</a>
@@ -39,11 +40,12 @@
             {% if user.is_authenticated %}
                 <a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'profile' %}{% endif %}" class="btn btn-primary">Open Candidflow <span class="arrow">→</span></a>
             {% else %}
-                <a href="{% url 'login' %}" class="btn btn-primary">Log in</a>
+                <a href="{% url 'portal:login' %}" class="btn btn-primary">Sign in</a>
             {% endif %}
             <details class="nav-menu">
                 <summary aria-label="Open menu"><span></span><span></span></summary>
                 <div class="nav-menu-panel">
+                    <a href="{% url 'careers' %}">Careers</a>
                     <a href="{% url 'help' %}">Help</a>
                     <a href="{% url 'status' %}">Status</a>
                     <a href="{% url 'security' %}">Security</a>
@@ -67,7 +69,9 @@
             </div>
             <nav class="footer-col" aria-label="Product">
                 <h2>Product</h2>
-                {% if user.is_authenticated %}<a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'profile' %}{% endif %}">Open Candidflow</a>{% else %}<a href="{% url 'login' %}">Log in</a>{% endif %}
+                {% if user.is_authenticated %}<a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'profile' %}{% endif %}">Open Candidflow</a>{% else %}<a href="{% url 'portal:login' %}">Candidate sign-in</a>{% endif %}
+                <a href="{% url 'careers' %}">Open roles</a>
+                <a href="{% url 'login' %}">Staff sign-in</a>
                 <a href="{% url 'help' %}">Help &amp; contact</a>
                 <a href="{% url 'status' %}">System status</a>
             </nav>

@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
 from django.http import FileResponse
 
@@ -208,20 +209,17 @@ def upload_application_cv(request, application_id):
             role_profile
         )
 
-        # Update application status based on score
+        # The score never decides the outcome on its own. It used to set
+        # "CV Screening Passed"/"Failed" straight away, which emailed the
+        # candidate a decision no person had looked at -- a solely automated
+        # decision under UK GDPR Art. 22. A recruiter now confirms it via
+        # confirm_screening_outcome() below.
 
-        if result.score >= 0.7:
-            application.status = "CV Screening Passed"
-
-        elif result.score < 0.4:
-            application.status = "CV Screening Failed"
-
-        else:
+        if application.status == "Applied":
             application.status = "CV Screening"
+            application.save(update_fields=["status"])
 
-        application.save()
-
-        messages.success(request, "CV uploaded and application status updated.")
+        messages.success(request, "CV uploaded and scored. Confirm the screening outcome when you've reviewed it.")
 
         return render(
             request,
@@ -229,6 +227,7 @@ def upload_application_cv(request, application_id):
             {
                 "cv": cv,
                 "result": result,
+                "application": application,
             }
         )
 
@@ -332,3 +331,36 @@ def delete_cv_result(request, result_id):
     return redirect(
         "cv_screening:screening-results"
     )
+
+@group_required(*RECRUITMENT_STAFF_GROUPS)
+def confirm_screening_outcome(request, application_id):
+    """A person decides whether a CV passes screening.
+
+    The match score is advice; this view is where the outcome is actually
+    set, and it's the only place that writes "CV Screening Passed"/"Failed".
+    Requires change_application on top of staff group membership, so
+    interviewers who may only read applications can't decide screening.
+    """
+    if request.method != "POST":
+        raise PermissionDenied("Screening outcomes are confirmed by submitting the form.")
+
+    if not request.user.has_perm("candidates.change_application"):
+        raise PermissionDenied("You do not have permission to change applications.")
+
+    application = get_object_or_404(Application, id=application_id)
+    outcome = request.POST.get("outcome")
+
+    if application.status not in ("Applied", "CV Screening"):
+        messages.error(request, "This application's screening outcome has already been decided.")
+    elif outcome == "pass":
+        application.status = "CV Screening Passed"
+        application.save(update_fields=["status"])
+        messages.success(request, "Screening marked as passed.")
+    elif outcome == "fail":
+        application.status = "CV Screening Failed"
+        application.save(update_fields=["status"])
+        messages.success(request, "Screening marked as not passed.")
+    else:
+        messages.error(request, "Choose whether the CV passed screening.")
+
+    return redirect("application-detail", pk=application.pk)

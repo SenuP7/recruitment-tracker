@@ -38,6 +38,13 @@ urlpatterns = [
     name="delete-cv-result"
     ),
 
+    # A recruiter confirms the screening outcome; the score never sets it.
+    path(
+    "application/<int:application_id>/outcome/",
+    views.confirm_screening_outcome,
+    name="confirm-screening-outcome"
+    ),
+
     path(
     "application/<int:application_id>/",
     views.upload_application_cv,

@@ -55,17 +55,27 @@ class PublicPagesTests(TestCase):
         self.assertContains(response, "Open Candidflow")
         self.assertContains(response, f'href="{reverse("profile")}"')
 
-    def test_screening_thresholds_in_copy_match_the_code(self):
-        # The notices disclose the automatic pass/fail thresholds; keep them honest.
+    def test_copy_matches_how_screening_actually_decides(self):
+        """The notices say a person decides screening outcomes. If a score is
+        ever wired back up to set the status automatically, this fails and the
+        copy has to be corrected (or the automation removed)."""
         from pathlib import Path
+
         source = Path(__file__).resolve().parent.parent.joinpath("cv_screening", "views.py").read_text()
-        self.assertIn("result.score >= 0.7", source)
-        self.assertIn("result.score < 0.4", source)
-        for name in ("privacy", "candidate-notice", "help"):
+        upload = source.split("def upload_application_cv", 1)[1].split("def screening_results", 1)[0]
+        code = "\n".join(
+            line for line in upload.splitlines() if not line.strip().startswith("#")
+        )
+        for automatic in ('"CV Screening Passed"', '"CV Screening Failed"'):
+            self.assertNotIn(automatic, code)
+
+        for name, phrase in (
+            ("privacy", "recruitment team"),
+            ("candidate-notice", "recruitment team"),
+            ("help", "a recruiter reads the CV"),
+        ):
             with self.subTest(page=name):
-                response = self.client.get(reverse(name))
-                self.assertContains(response, "70%")
-                self.assertContains(response, "40%")
+                self.assertContains(self.client.get(reverse(name)), phrase)
 
 
 class StatusChecksTests(TestCase):
