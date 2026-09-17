@@ -1,0 +1,65 @@
+{% extends "marketing/doc_base.html" %}
+
+{% block title %}Accessibility statement · Candidflow{% endblock %}
+{% block og_title %}Accessibility statement · Candidflow{% endblock %}
+{% block meta_description %}How accessible Candidflow is, what works well, known limitations, and how to report a problem or ask for information in another format.{% endblock %}
+
+{% block doc_tag %}Trust{% endblock %}
+{% block doc_title %}Accessibility statement{% endblock %}
+{% block doc_lede %}We want everyone who uses Candidflow to be able to do their job with it, including people using a keyboard, a screen reader, magnification or reduced motion settings.{% endblock %}
+
+{% block toc %}
+<li><a href="#status">Compliance status</a></li>
+<li><a href="#what-works">What works well</a></li>
+<li><a href="#limitations">Known limitations</a></li>
+<li><a href="#feedback">Reporting a problem</a></li>
+<li><a href="#enforcement">Enforcement</a></li>
+<li><a href="#preparation">How we tested</a></li>
+{% endblock %}
+
+{% block doc_body %}
+<section id="status">
+    <h2>Compliance status</h2>
+    <p>Our target is the Web Content Accessibility Guidelines (WCAG) 2.2 at level AA. Candidflow is <strong>partially compliant</strong>: we've built for it and checked it ourselves, but it hasn't been independently audited, and there are known gaps listed below.</p>
+</section>
+
+<section id="what-works">
+    <h2>What works well</h2>
+    <ul>
+        <li><strong>Keyboard:</strong> every link, button and form can be reached with the keyboard, with a visible focus ring. Press <kbd>/</kbd> to jump to search.</li>
+        <li><strong>Skip link:</strong> public pages have a "Skip to content" link as the first thing you tab to.</li>
+        <li><strong>Motion:</strong> animations, count-ups and scroll effects turn off when your device asks for reduced motion.</li>
+        <li><strong>Colour:</strong> application status is always shown with text and an icon, never colour alone.</li>
+        <li><strong>Themes:</strong> dark and light themes are both available.</li>
+        <li><strong>Zoom:</strong> layouts reflow down to phone width, so zooming in doesn't force sideways scrolling on text pages.</li>
+        <li><strong>Screen readers:</strong> decorative backgrounds and illustrations are hidden from screen readers, and pages use a meaningful heading structure.</li>
+    </ul>
+</section>
+
+<section id="limitations">
+    <h2>Known limitations</h2>
+    <ul>
+        <li>The signed-in app doesn't yet have a skip link, so keyboard users tab through the sidebar on each page.</li>
+        <li>Pipeline charts show counts as text, but their bars have no separate text alternative.</li>
+        <li>Wide data tables scroll sideways on small screens.</li>
+        <li>Uploaded CVs are the candidate's own documents, and we can't guarantee they're accessible.</li>
+        <li>When the dashboard filters update results, the change isn't announced to screen readers.</li>
+    </ul>
+    <p>We plan to fix the first and last of these as the app's pages are reworked.</p>
+</section>
+
+<section id="feedback">
+    <h2>Reporting a problem</h2>
+    <p>If something blocks you, or you need information in a different format, email <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a> with the page and what happened. We'll reply within 5 working days.</p>
+</section>
+
+<section id="enforcement">
+    <h2>Enforcement</h2>
+    <p>The Equality and Human Rights Commission (EHRC) enforces the Equality Act 2010 in Great Britain. If you're not happy with our response, contact the <a href="https://www.equalityadvisoryservice.com/" rel="noopener">Equality Advisory and Support Service</a>.</p>
+</section>
+
+<section id="preparation">
+    <h2>How we tested</h2>
+    <p>This statement was prepared on {{ legal_updated|date:"j F Y" }}, based on our own testing with keyboard-only navigation, reduced-motion settings, both themes, and narrow and zoomed viewports.</p>
+</section>
+{% endblock %}

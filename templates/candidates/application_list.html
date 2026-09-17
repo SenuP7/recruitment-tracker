@@ -1,43 +1,77 @@
 {% extends "base.html" %}
+{% load ui %}
 
 {% block title %}Applications{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>Applications <span class="count-pill">{{ applications|length }}</span></h1>
+<header class="page-header">
+    <div class="page-header-text">
+        <p class="eyebrow"><i data-lucide="file-text"></i> Pipeline</p>
+        <h1>Applications <span class="count-pill">{{ page_obj.paginator.count }}</span></h1>
+        <p class="page-subtitle">Every candidate-to-role pairing and the stage it has reached.</p>
+    </div>
     {% if perms.candidates.add_application %}
-        <a href="{% url 'application-create' %}" class="btn btn-primary">Add Application</a>
+        <div class="page-actions">
+            <a href="{% url 'application-create' %}" class="btn btn-primary"><i data-lucide="file-plus"></i> New application</a>
+        </div>
     {% endif %}
-</div>
+</header>
+
+{% include "components/list_toolbar.html" %}
 
 {% if applications %}
-    <div class="row-list">
-        {% for application in applications %}
-            <div class="row-card">
-                <div class="row-lead">
-                    <div class="avatar">{{ application.candidate.first_name|first }}{{ application.candidate.last_name|first }}</div>
-                    <div class="row-main">
-                        <h3>
-                            <a href="{% url 'application-detail' application.pk %}">
-                                {{ application.candidate }}
-                            </a>
-                        </h3>
-                        <div class="row-meta">
-                            <span>{{ application.position }}</span>
-                            <span>{{ application.position.department }}</span>
-                            <span class="mono">{{ application.applied_at|date:"d M Y" }}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="row-side">
-                    <span class="badge" data-status="{{ application.status }}">{{ application.status }}</span>
-                </div>
-            </div>
-        {% endfor %}
+    <div class="table-wrap">
+        <table class="data-table stagger">
+            <thead>
+                <tr>
+                    <th>Candidate</th>
+                    <th>Position</th>
+                    <th>Stage</th>
+                    <th class="num">Interviews</th>
+                    <th>Applied</th>
+                    <th class="shrink"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for application in applications %}
+                    <tr data-href="{% url 'application-detail' application.pk %}">
+                        <td>
+                            <div class="cell-lead">
+                                <span class="avatar">{{ application.candidate|initials }}</span>
+                                <div class="cell-text">
+                                    <a class="cell-title" href="{% url 'application-detail' application.pk %}">{{ application.candidate }}</a>
+                                    <span class="cell-sub mono">{{ application.candidate.email }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="cell-text">
+                                <span class="cell-title">{{ application.position.title }}</span>
+                                <span class="cell-sub">{{ application.position.department }}</span>
+                            </div>
+                        </td>
+                        <td><span class="badge" data-status="{{ application.status }}">{{ application.status }}</span></td>
+                        <td class="num">{{ application.interview_count }}</td>
+                        <td class="mono muted">{{ application.applied_at|date:"d M Y" }}</td>
+                        <td class="shrink">
+                            <div class="row-actions">
+                                {% if perms.candidates.change_application %}<a class="btn btn-ghost btn-sm" href="{% url 'application-update' application.pk %}" title="Edit"><i data-lucide="pencil"></i></a>{% endif %}
+                                <a class="btn btn-ghost btn-sm" href="{% url 'application-detail' application.pk %}" title="Open"><i data-lucide="arrow-up-right"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% include "components/pagination.html" %}
 {% else %}
-    <div class="empty-state">No applications found.</div>
+    <div class="empty">
+        <span class="empty-icon"><i data-lucide="file-search"></i></span>
+        <h3>No applications here</h3>
+        <p>{% if toolbar.query %}Nothing matches “{{ toolbar.query }}”.{% else %}No applications are at this stage right now.{% endif %}</p>
+    </div>
 {% endif %}
 
 {% endblock %}

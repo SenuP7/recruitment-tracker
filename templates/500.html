@@ -1,0 +1,18 @@
+{% extends "marketing/public_base.html" %}
+
+{% block title %}Something went wrong · Candidflow{% endblock %}
+{% block robots %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<section class="error-page">
+    <div class="wrap">
+        <span class="error-code">500</span>
+        <h1>Something went wrong on our side.</h1>
+        <p>Please try again in a minute. If it keeps happening, check the status page or tell us what you were doing when it happened.</p>
+        <div class="hero-ctas">
+            <a href="{% url 'status' %}" class="btn btn-primary">Check system status</a>
+            <a href="{% url 'help' %}" class="btn btn-ghost">Get help</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

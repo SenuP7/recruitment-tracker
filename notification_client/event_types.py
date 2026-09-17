@@ -1,0 +1,7 @@
+"""Event type constants shared between Django publishers and the Lambda consumer's
+template registry (notification-service/lambda/notifier/templates.py). Keep the two
+in sync when adding a new trigger.
+"""
+
+APPLICATION_STATUS_CHANGED = "application_status_changed"
+INTERVIEW_SCHEDULED = "interview_scheduled"

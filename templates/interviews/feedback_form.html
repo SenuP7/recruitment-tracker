@@ -1,26 +1,104 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}{% if object %}Edit Interview Feedback{% else %}Create Interview Feedback{% endif %}{% endblock %}
+{% block title %}{% if object %}Edit feedback{% else %}Add feedback{% endif %}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    {% if object %}
-        <h1>Edit Interview Feedback</h1>
-    {% else %}
-        <h1>Create Interview Feedback</h1>
-    {% endif %}
-</div>
+{% with context_iv=object.interview|default:context_interview %}
 
-<div class="panel">
-    <form method="post">
+<p class="eyebrow"><a href="{% if context_iv %}{% url 'feedback-thread' context_iv.pk %}{% else %}{% url 'interview-list' %}{% endif %}"><i data-lucide="arrow-left"></i> {% if context_iv %}Feedback thread{% else %}Interviews{% endif %}</a></p>
+
+<header class="page-header">
+    <div class="page-header-text">
+        <h1>{% if object %}Edit feedback{% else %}Add interview feedback{% endif %}</h1>
+        <p class="page-subtitle">{% if object %}Changes to rating or comments are recorded in the thread's edit history.{% else %}Record your assessment while the round is still fresh.{% endif %}</p>
+    </div>
+</header>
+
+<div class="form-layout">
+    <form method="post" class="form-card" novalidate>
         {% csrf_token %}
-        {{ form.as_p }}
-        <div class="actions-bar">
-            <button type="submit" class="btn-primary">Save Feedback</button>
-            <a href="{% url 'interview-list' %}" class="btn btn-secondary">Cancel</a>
+        {% include "components/form_errors.html" %}
+
+        {% if form.interview %}
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Interview</h2>
+                <p>Which round this feedback is about.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.interview wide=True %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if form.rating or form.recommendation %}
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Assessment</h2>
+                <p>A 1–5 rating and your overall recommendation.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.rating help="1 = significant concerns · 5 = exceptional" %}
+                {% include "components/field.html" with field=form.recommendation %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Comments</h2>
+                <p>Specific evidence helps the next reviewer more than general impressions.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.comments wide=True %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <span class="hint">Only you and senior reviewers can edit this later.</span>
+            <div class="buttons">
+                <a href="{% if context_iv %}{% url 'feedback-thread' context_iv.pk %}{% else %}{% url 'interview-list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="check"></i> {% if object %}Save changes{% else %}Submit feedback{% endif %}</button>
+            </div>
         </div>
     </form>
+
+    <aside class="rail">
+        {% if context_iv %}
+            <a href="{% url 'interview-detail' context_iv.pk %}" class="card card-link">
+                <div class="card-head"><h2><i data-lucide="calendar"></i> Interview</h2><i data-lucide="arrow-up-right" class="faint"></i></div>
+                <div class="list-item">
+                    <span class="avatar avatar-lg">{{ context_iv.application.candidate|initials }}</span>
+                    <span class="list-body">
+                        <span class="list-title">{{ context_iv.application.candidate }}</span>
+                        <span class="list-sub">{{ context_iv.interview_type }} · {{ context_iv.application.position.title }}</span>
+                    </span>
+                </div>
+                <div class="card-body" style="padding-top: var(--space-2)">
+                    <dl class="dl">
+                        <div class="dl-row"><dt>Date</dt><dd class="mono">{{ context_iv.scheduled_date|date:"d M Y, H:i" }}</dd></div>
+                        <div class="dl-row"><dt>Interviewer</dt><dd>{{ context_iv.interviewer|default:"Unassigned" }}</dd></div>
+                    </dl>
+                </div>
+            </a>
+        {% endif %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="gauge"></i> Rating guide</h2></div>
+            <div class="card-body">
+                <dl class="dl">
+                    <div class="dl-row"><dt><span class="rating"><i class="on"></i><i></i><i></i><i></i><i></i></span></dt><dd>Significant concerns</dd></div>
+                    <div class="dl-row"><dt><span class="rating"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></dt><dd>Below the bar</dd></div>
+                    <div class="dl-row"><dt><span class="rating"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></dt><dd>Meets the bar</dd></div>
+                    <div class="dl-row"><dt><span class="rating"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></dt><dd>Strong</dd></div>
+                    <div class="dl-row"><dt><span class="rating"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></dt><dd>Exceptional</dd></div>
+                </dl>
+            </div>
+        </section>
+    </aside>
 </div>
+
+{% endwith %}
 
 {% endblock %}

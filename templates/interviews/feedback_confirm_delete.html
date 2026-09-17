@@ -1,25 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Delete Feedback{% endblock %}
+{% block title %}Delete feedback{% endblock %}
 
 {% block content %}
-
-<div class="page-head">
-    <h1>Delete Interview Feedback</h1>
-</div>
-
-<div class="panel">
-    <p>Are you sure you want to delete this feedback?</p>
-    <p>Interview: <strong>{{ feedback.interview }}</strong></p>
-    <p>Rating: <strong>{{ feedback.rating }}</strong></p>
-
-    <form method="post">
-        {% csrf_token %}
-        <div class="actions-bar">
-            <button type="submit" class="btn-danger">Yes, Delete</button>
-            <a href="{% url 'feedback-detail' feedback.pk %}" class="btn btn-secondary">Cancel</a>
-        </div>
-    </form>
-</div>
-
+{% url 'feedback-thread' feedback.interview_id as cancel %}
+{% include "components/confirm_delete.html" with noun="feedback" name=feedback.interview cancel_url=cancel %}
 {% endblock %}

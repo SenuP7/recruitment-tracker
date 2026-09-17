@@ -1,0 +1,97 @@
+{% extends "marketing/doc_base.html" %}
+
+{% block title %}Terms of use · Candidflow{% endblock %}
+{% block og_title %}Terms of use · Candidflow{% endblock %}
+{% block meta_description %}The rules for everyone given a Candidflow account: account security, acceptable use, handling candidate data, feedback standards and availability.{% endblock %}
+
+{% block doc_tag %}Legal{% endblock %}
+{% block doc_title %}Terms of use{% endblock %}
+{% block doc_lede %}These terms apply to everyone given a Candidflow account. By signing in you agree to them. They sit alongside our <a href="{% url 'privacy' %}">privacy notice</a>, which explains how personal data is handled.{% endblock %}
+
+{% block toc %}
+<li><a href="#accounts">Accounts and access</a></li>
+<li><a href="#acceptable-use">Acceptable use</a></li>
+<li><a href="#candidate-data">Handling candidate data</a></li>
+<li><a href="#feedback">Interview feedback</a></li>
+<li><a href="#screening">CV screening results</a></li>
+<li><a href="#monitoring">Records and monitoring</a></li>
+<li><a href="#availability">Availability</a></li>
+<li><a href="#suspension">Suspension and closure</a></li>
+<li><a href="#liability">Liability</a></li>
+<li><a href="#changes">Changes and governing law</a></li>
+{% endblock %}
+
+{% block doc_body %}
+<section id="accounts">
+    <h2>1. Accounts and access</h2>
+    <ul>
+        <li>Accounts are created by an administrator. There is no public sign-up.</li>
+        <li>Your account is for you alone. Don't share your password or let anyone else use your session.</li>
+        <li>What you can see and do depends on the role you're given. If you need different access, ask through <a href="{% url 'help' %}">Help</a>. Don't use someone else's account to get it.</li>
+        <li>Log out on shared devices, and tell <a href="mailto:{{ contacts.security }}">{{ contacts.security }}</a> straight away if you think your account has been used by someone else.</li>
+    </ul>
+</section>
+
+<section id="acceptable-use">
+    <h2>2. Acceptable use</h2>
+    <p>Use Candidflow only for recruitment work you're responsible for. You must not:</p>
+    <ul>
+        <li>try to reach data or pages your role doesn't allow, or test the system's security without permission (see the <a href="{% url 'security' %}#report">reporting process</a>);</li>
+        <li>upload files that aren't a candidate's genuine CV, or anything containing malware;</li>
+        <li>automate access to the service, scrape it or put unreasonable load on it;</li>
+        <li>use it for anything unlawful, including discrimination.</li>
+    </ul>
+</section>
+
+<section id="candidate-data">
+    <h2>3. Handling candidate data</h2>
+    <ul>
+        <li>Treat everything about candidates as confidential and use it only to assess their application.</li>
+        <li>Only add a CV that the candidate provided for that application.</li>
+        <li>CSV exports contain personal data. Store them only on approved company systems, never share them outside the recruitment team, and delete them when you're finished.</li>
+        <li>Don't copy candidate data into personal email, messaging apps or other tools.</li>
+        <li>Pass any request from a candidate about their data to <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a> the same day. Legal time limits apply.</li>
+    </ul>
+</section>
+
+<section id="feedback">
+    <h2>4. Interview feedback</h2>
+    <p>Candidates can request a copy of feedback written about them, so write every comment as if they will read it:</p>
+    <ul>
+        <li>Base it on what happened in the interview and on the requirements of the role.</li>
+        <li>Keep it professional and factual.</li>
+        <li>Never refer to protected characteristics under the Equality Act 2010, such as age, disability, race, religion, sex, sexual orientation, pregnancy or marital status.</li>
+    </ul>
+    <p>You can edit or delete your own feedback. Senior reviewers and leadership managers can also edit or delete anyone's feedback. When they do, the author is notified.</p>
+</section>
+
+<section id="screening">
+    <h2>5. CV screening results</h2>
+    <p>Match scores come from keyword matching and can miss relevant experience. They can move an application to passed or failed automatically. Check screening outcomes before relying on them, and treat any candidate's request for a human review as a priority.</p>
+</section>
+
+<section id="monitoring">
+    <h2>6. Records and monitoring</h2>
+    <p>Candidflow records who writes, edits and deletes feedback, along with what changed and when. These records can be used to investigate complaints, data requests or misuse. See the <a href="{% url 'privacy' %}">privacy notice</a> for how long they're kept.</p>
+</section>
+
+<section id="availability">
+    <h2>7. Availability</h2>
+    <p>We aim to keep Candidflow available during working hours, but it's provided without a guaranteed uptime. Planned maintenance may briefly interrupt it. The current state of each system is on the <a href="{% url 'status' %}">status page</a>.</p>
+</section>
+
+<section id="suspension">
+    <h2>8. Suspension and closure</h2>
+    <p>We can suspend or remove an account to protect candidates, the service or other users, including if these terms are broken. Accounts are disabled when someone leaves or no longer needs access.</p>
+</section>
+
+<section id="liability">
+    <h2>9. Liability</h2>
+    <p>Candidflow is a tool to support hiring decisions. It doesn't make them for you, and you remain responsible for the decisions you make with it. Nothing in these terms limits liability that can't be limited by law.</p>
+</section>
+
+<section id="changes">
+    <h2>10. Changes and governing law</h2>
+    <p>We may update these terms and will change the date at the top when we do. Continuing to use Candidflow after an update means you accept the new terms. These terms are governed by the law of England and Wales.</p>
+</section>
+{% endblock %}

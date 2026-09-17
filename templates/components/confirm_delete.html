@@ -1,0 +1,34 @@
+{% load ui %}
+<p class="eyebrow"><a href="{{ cancel_url }}"><i data-lucide="arrow-left"></i> Back</a></p>
+
+<div class="confirm-wrap">
+    <section class="card confirm-card">
+        <div class="card-body stack" style="gap: var(--space-5)">
+            <span class="empty-icon"><i data-lucide="trash-2"></i></span>
+            <div>
+                <h1>Delete {{ noun }}?</h1>
+                <p class="page-subtitle">You're about to permanently delete <strong>{{ name }}</strong>. This can't be undone.</p>
+            </div>
+
+            {% with attached=cascade|nonzero %}
+            {% if attached %}
+                <div class="confirm-impact">
+                    <p class="skill-heading">This will also delete</p>
+                    <ul class="confirm-list">
+                        {% for singular, plural, count in attached %}
+                            <li><i data-lucide="corner-down-right"></i> <strong>{{ count }}</strong> {% if count == 1 %}{{ singular }}{% else %}{{ plural }}{% endif %}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            {% endwith %}
+        </div>
+        <form method="post" class="form-actions">
+            {% csrf_token %}
+            <div class="buttons">
+                <a href="{{ cancel_url }}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="trash-2"></i> Yes, delete {{ noun }}</button>
+            </div>
+        </form>
+    </section>
+</div>

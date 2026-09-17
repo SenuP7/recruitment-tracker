@@ -1,60 +1,162 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}Candidate Details{% endblock %}
+{% block title %}{{ candidate.first_name }} {{ candidate.last_name }}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>
-        <span class="avatar avatar-lg avatar-inline">{{ candidate.first_name|first }}{{ candidate.last_name|first }}</span>
-        {{ candidate.first_name }} {{ candidate.last_name }}
-    </h1>
-</div>
+<p class="eyebrow"><a href="{% url 'candidate-list' %}"><i data-lucide="arrow-left"></i> Candidates</a></p>
 
-<div class="detail-layout">
-    <div class="detail-card">
-        <div class="field-row">
-            <strong>First Name</strong>
-            <span class="field-value">{{ candidate.first_name }}</span>
+<section class="record-header">
+    <div class="record-top">
+        <div class="record-identity">
+            <span class="avatar avatar-xl">{{ candidate|initials }}</span>
+            <div>
+                <h1>{{ candidate.first_name }} {{ candidate.last_name }}</h1>
+                <div class="facts">
+                    <span class="badge" data-status="{{ candidate.current_status }}">{{ candidate.current_status }}</span>
+                    <span><i data-lucide="building-2"></i> {{ candidate.department|default:"No department" }}</span>
+                    <span><i data-lucide="calendar-plus"></i> Added {{ candidate.created_at|date:"j M Y" }}</span>
+                </div>
+            </div>
         </div>
-        <div class="field-row">
-            <strong>Last Name</strong>
-            <span class="field-value">{{ candidate.last_name }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Email</strong>
-            <span class="field-value mono">{{ candidate.email }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Phone</strong>
-            <span class="field-value mono">{{ candidate.phone }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Department</strong>
-            <span class="field-value">{{ candidate.department }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Status</strong>
-            <span class="field-value"><span class="badge" data-status="{{ candidate.current_status }}">{{ candidate.current_status }}</span></span>
-        </div>
-        <div class="field-row">
-            <strong>Created</strong>
-            <span class="field-value mono">{{ candidate.created_at }}</span>
+        <div class="page-actions">
+            {% if perms.candidates.delete_candidate %}<a href="{% url 'candidate-delete' candidate.pk %}" class="btn btn-danger"><i data-lucide="trash-2"></i> Delete</a>{% endif %}
+            {% if perms.candidates.change_candidate %}<a href="{% url 'candidate-update' candidate.pk %}" class="btn btn-primary"><i data-lucide="pencil"></i> Edit candidate</a>{% endif %}
         </div>
     </div>
 
-    <div class="sidebar-card">
-        <h2>Actions</h2>
-        <div class="actions-bar">
-            {% if perms.candidates.change_candidate %}
-                <a href="{% url 'candidate-update' candidate.pk %}" class="btn btn-primary">Edit Candidate</a>
-            {% endif %}
-            {% if perms.candidates.delete_candidate %}
-                <a href="{% url 'candidate-delete' candidate.pk %}" class="btn btn-danger">Delete Candidate</a>
-            {% endif %}
-            <a href="{% url 'candidate-list' %}" class="btn btn-secondary">Back to Candidates</a>
+    <div class="record-stats stagger">
+        {% if can_view_applications %}
+        <div class="record-stat">
+            <div class="record-stat-label">Applications</div>
+            <div class="record-stat-value" data-countup>{{ applications|length }}</div>
         </div>
+        {% endif %}
+        {% if can_view_interviews %}
+        <div class="record-stat">
+            <div class="record-stat-label">Interviews</div>
+            <div class="record-stat-value" data-countup>{{ interviews|length }}</div>
+        </div>
+        {% endif %}
+        {% if can_view_feedback %}
+        <div class="record-stat">
+            <div class="record-stat-label">Average rating</div>
+            <div class="record-stat-value">{% if average_rating %}{{ average_rating }}<small> / 5</small>{% else %}<span class="faint">—</span>{% endif %}</div>
+        </div>
+        {% endif %}
+        {% if can_view_cv %}
+        <div class="record-stat">
+            <div class="record-stat-label">Best CV match</div>
+            <div class="record-stat-value">{% if best_result %}<span data-countup>{{ best_result.percentage_score }}</span><small>%</small>{% else %}<span class="faint">—</span>{% endif %}</div>
+        </div>
+        {% endif %}
     </div>
+</section>
+
+<div class="layout-rail">
+    <div class="stack">
+        {% if can_view_applications %}
+        <section class="card">
+            <div class="card-head">
+                <h2><i data-lucide="file-text"></i> Applications <span class="count-pill">{{ applications|length }}</span></h2>
+                {% if perms.candidates.add_application %}<a href="{% url 'application-create' %}" class="btn btn-ghost btn-sm"><i data-lucide="plus"></i> New</a>{% endif %}
+            </div>
+            <div class="list">
+                {% for application in applications %}
+                    <a href="{% url 'application-detail' application.pk %}" class="list-item">
+                        <span class="avatar square avatar-sm">{{ application.position.title|initials }}</span>
+                        <span class="list-body">
+                            <span class="list-title">{{ application.position.title }}</span>
+                            <span class="list-sub">{{ application.position.department }} · applied {{ application.applied_at|date:"j M Y" }} · {{ application.interview_count }} interview{{ application.interview_count|pluralize }}</span>
+                        </span>
+                        <span class="list-trail"><span class="badge" data-status="{{ application.status }}">{{ application.status }}</span></span>
+                    </a>
+                {% empty %}
+                    <p class="list-empty"><i data-lucide="file-x"></i> Not applied to any position yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="card">
+            <div class="card-head">
+                <h2><i data-lucide="activity"></i> Activity</h2>
+                <span class="card-head-meta">Most recent first</span>
+            </div>
+            <div class="timeline stagger">
+                {% for event in activity %}
+                    <div class="timeline-item">
+                        <span class="timeline-icon">
+                            {% if event.kind == "applied" %}<i data-lucide="file-plus"></i>
+                            {% elif event.kind == "interview" %}<i data-lucide="calendar-check"></i>
+                            {% elif event.kind == "cv" %}<i data-lucide="scan-search"></i>
+                            {% elif event.kind == "feedback" %}<i data-lucide="message-square-text"></i>
+                            {% else %}<i data-lucide="user-plus"></i>{% endif %}
+                        </span>
+                        <div class="timeline-body">
+                            <div class="timeline-title">{% if event.link %}<a href="{{ event.link }}">{{ event.title }}</a>{% else %}{{ event.title }}{% endif %}</div>
+                            {% if event.detail %}<div class="timeline-detail">{{ event.detail }}</div>{% endif %}
+                        </div>
+                        <time class="timeline-when" datetime="{{ event.when|date:'c' }}" title="{{ event.when }}">{{ event.when|date:"j M Y" }}</time>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <aside class="rail">
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="contact"></i> Contact</h2></div>
+            <div class="card-body">
+                <dl class="dl">
+                    <div class="dl-row"><dt>Email</dt><dd><a class="mono" href="mailto:{{ candidate.email }}">{{ candidate.email }}</a></dd></div>
+                    <div class="dl-row"><dt>Phone</dt><dd class="mono">{{ candidate.phone|default:"—" }}</dd></div>
+                    <div class="dl-row"><dt>Department</dt><dd>{{ candidate.department|default:"—" }}</dd></div>
+                </dl>
+            </div>
+        </section>
+
+        {% if can_view_interviews %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="calendar-clock"></i> Next interview</h2></div>
+            {% if next_interview %}
+                <a href="{% url 'interview-detail' next_interview.pk %}" class="list-item">
+                    <span class="date-chip"><span class="m">{{ next_interview.scheduled_date|date:"M" }}</span><span class="d">{{ next_interview.scheduled_date|date:"j" }}</span></span>
+                    <span class="list-body">
+                        <span class="list-title">{{ next_interview.interview_type }} interview</span>
+                        <span class="list-sub">{{ next_interview.scheduled_date|date:"l" }} at {{ next_interview.scheduled_date|time:"H:i" }} · {{ next_interview.interviewer|default:"No interviewer yet" }}</span>
+                    </span>
+                </a>
+            {% else %}
+                <p class="list-empty"><i data-lucide="calendar-x"></i> Nothing scheduled.</p>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {% if can_view_cv %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="scan-search"></i> CV match</h2></div>
+            <div class="card-body">
+                {% if best_result %}
+                    <div class="meter">
+                        <div class="meter-top">
+                            <span class="meter-value">{{ best_result.percentage_score }}<small>%</small></span>
+                            <span class="match" data-match="{{ best_result.match_category }}">{{ best_result.match_category }}</span>
+                        </div>
+                        <div class="bar"><div class="bar-fill strong" style="--fill: {{ best_result.percentage_score }}%"></div></div>
+                        <p class="faint" style="font-size: var(--text-xs)">
+                            {{ best_result.role_profile.role_name }}{% if best_result_coverage.total %} · {{ best_result_coverage.matched }} of {{ best_result_coverage.total }} required skills{% endif %}
+                        </p>
+                    </div>
+                    <a href="{% url 'cv_screening:screening-result-detail' best_result.pk %}" class="btn btn-secondary btn-sm btn-block" style="margin-top: var(--space-4)">View full breakdown</a>
+                {% else %}
+                    <p class="faint" style="font-size: var(--text-sm)">No CV has been screened for this candidate yet.</p>
+                {% endif %}
+            </div>
+        </section>
+        {% endif %}
+    </aside>
 </div>
 
 {% endblock %}

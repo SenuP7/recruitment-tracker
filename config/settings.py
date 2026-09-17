@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'interviews',
     'notifications',
     'dashboard',
+    'marketing',
 ]
 
 MIDDLEWARE = [
@@ -75,6 +76,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'dashboard.context_processors.dashboard_access',
+                'interviews.context_processors.staff_notifications',
             ],
         },
     },
@@ -115,6 +117,17 @@ AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "ap-southeast-1")
 AWS_DEFAULT_ACL = None
 AWS_S3_FILE_OVERWRITE = False
 AWS_QUERYSTRING_EXPIRE = 3600
+
+# notification-service integration (SQS publish only -- see notification-service/README.md).
+# Left unset, publish_event() logs a warning and no-ops, so the app runs fine without it.
+NOTIFICATIONS_SQS_QUEUE_URL = os.environ.get("NOTIFICATIONS_SQS_QUEUE_URL", "")
+NOTIFICATIONS_AWS_REGION = os.environ.get("NOTIFICATIONS_AWS_REGION", AWS_S3_REGION_NAME)
+
+# Local dev mode: renders notifications in-process (same template code as the real
+# Lambda) and writes them to local_notifications/ instead of touching AWS at all.
+# See notification_client/local_runner.py. Set NOTIFICATIONS_LOCAL_MODE=True in .env
+# to try the pipeline locally before anything is deployed.
+NOTIFICATIONS_LOCAL_MODE = os.environ.get("NOTIFICATIONS_LOCAL_MODE", "False") == "True"
 
 STORAGES = {
     "default": {
@@ -169,4 +182,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/accounts/profile/"
-LOGOUT_REDIRECT_URL = "/accounts/login/"
+LOGOUT_REDIRECT_URL = "/"
+
+# Shown in the public footer and on the Status page.
+CANDIDFLOW_VERSION = os.environ.get("CANDIDFLOW_VERSION", "1.0.0")

@@ -1,0 +1,39 @@
+{% extends "marketing/public_base.html" %}
+{% load static %}
+
+{% block content %}
+<header class="doc-hero">
+    <div class="wrap">
+        <span class="section-tag">{% block doc_tag %}{% endblock %}</span>
+        <h1>{% block doc_title %}{% endblock %}</h1>
+        <p class="doc-lede">{% block doc_lede %}{% endblock %}</p>
+        <p class="doc-meta">{% block doc_meta %}<span>Last updated {{ legal_updated|date:"j F Y" }}</span>{% endblock %}</p>
+    </div>
+</header>
+
+<div class="wrap doc-layout">
+    <aside class="doc-toc" aria-label="On this page">
+        <details class="doc-toc-inner" open>
+            <summary>On this page</summary>
+            <ol>{% block toc %}{% endblock %}</ol>
+        </details>
+    </aside>
+
+    <article class="prose">
+        {% block doc_body %}{% endblock %}
+
+        <aside class="doc-contact">
+            <span class="doc-contact-icon" aria-hidden="true"><i data-lucide="mail"></i></span>
+            <div>
+                <h2>{% block contact_title %}Questions about this page?{% endblock %}</h2>
+                <p>{% block contact_text %}Email <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a> and we'll reply within 5 working days.{% endblock %}</p>
+            </div>
+        </aside>
+    </article>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script src="{% static 'js/public-docs.js' %}"></script>
+{% endblock %}

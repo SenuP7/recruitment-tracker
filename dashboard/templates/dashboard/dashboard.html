@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load ui %}
 
 {% block title %}Dashboard{% endblock %}
 
@@ -8,84 +9,150 @@
 
 {% block content %}
 
-<div class="page-head">
-    <h1>Recruitment Dashboard</h1>
-</div>
+<header class="page-header">
+    <div class="page-header-text">
+        <p class="eyebrow"><i data-lucide="calendar-days"></i> {% now "l, j F" %}</p>
+        <h1>{{ greeting }}{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}</h1>
+        <p class="page-subtitle">Here's where the hiring pipeline stands right now.</p>
+    </div>
+    <div class="page-actions">
+        {% if perms.interviews.add_interview %}<a href="{% url 'interview-create' %}" class="btn btn-secondary"><i data-lucide="calendar-plus"></i> Schedule interview</a>{% endif %}
+        {% if perms.candidates.add_candidate %}<a href="{% url 'candidate-create' %}" class="btn btn-primary"><i data-lucide="user-plus"></i> Add candidate</a>{% endif %}
+    </div>
+</header>
 
-<form
-    id="dashboard-filters"
-    hx-get="{% url 'dashboard:dashboard-results' %}"
-    hx-target="#dashboard-results"
-    hx-trigger="change, keyup changed delay:400ms from:input[type=search], submit"
-    hx-push-url="true"
-    hx-swap="innerHTML"
-    class="panel dashboard-filters"
->
-    <div class="filter-grid">
-        <p>
-            <label for="filter-search">Search</label>
-            <input type="search" id="filter-search" name="search" placeholder="Candidate name or email" value="{{ active_filters.search|default:'' }}">
-        </p>
+<div class="layout-rail">
+    <div class="stack">
+        <form
+            id="dashboard-filters"
+            class="card dashboard-filters"
+            hx-get="{% url 'dashboard:dashboard-results' %}"
+            hx-target="#dashboard-results"
+            hx-trigger="change, keyup changed delay:400ms from:input[type=search], submit"
+            hx-push-url="true"
+            hx-swap="innerHTML"
+        >
+            <div class="card-body filter-bar">
+                <label class="toolbar-search">
+                    <i data-lucide="search"></i>
+                    <span class="sr-only">Search</span>
+                    <input type="search" id="filter-search" name="search" placeholder="Search candidates by name or email" value="{{ active_filters.search|default:'' }}">
+                </label>
+                <select id="filter-department" name="department" aria-label="Department">
+                    <option value="">All departments</option>
+                    {% for department in filter_choices.departments %}
+                        <option value="{{ department.id }}" {% if active_filters.department == department.id|stringformat:"s" %}selected{% endif %}>{{ department.name }}</option>
+                    {% endfor %}
+                </select>
+                <select id="filter-status" name="status" aria-label="Stage">
+                    <option value="">All stages</option>
+                    {% for value, label in filter_choices.statuses %}
+                        <option value="{{ value }}" {% if active_filters.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <details class="filter-more"{% if active_filters.position or active_filters.category or active_filters.score_min or active_filters.score_max %} open{% endif %}>
+                    <summary class="btn btn-ghost btn-sm"><i data-lucide="sliders-horizontal"></i> More filters</summary>
+                    <div class="filter-more-panel">
+                        <label class="field">
+                            <span>Position</span>
+                            <select id="filter-position" name="position">
+                                <option value="">All positions</option>
+                                {% for position in filter_choices.positions %}
+                                    <option value="{{ position.id }}" {% if active_filters.position == position.id|stringformat:"s" %}selected{% endif %}>{{ position.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>CV match</span>
+                            <select id="filter-category" name="category">
+                                <option value="">Any match</option>
+                                {% for value, label in filter_choices.categories %}
+                                    <option value="{{ value }}" {% if active_filters.category == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Min score %</span>
+                            <input type="number" id="filter-score-min" name="score_min" min="0" max="100" placeholder="0" value="{{ active_filters.score_min|default:'' }}">
+                        </label>
+                        <label class="field">
+                            <span>Max score %</span>
+                            <input type="number" id="filter-score-max" name="score_max" min="0" max="100" placeholder="100" value="{{ active_filters.score_max|default:'' }}">
+                        </label>
+                    </div>
+                </details>
+                <noscript><button type="submit" class="btn btn-primary btn-sm">Apply</button></noscript>
+                {% if active_filter_count %}
+                    <a href="{% url 'dashboard:dashboard' %}" class="btn btn-ghost btn-sm"><i data-lucide="x"></i> Clear {{ active_filter_count }}</a>
+                {% endif %}
+            </div>
+        </form>
 
-        <p>
-            <label for="filter-department">Department</label>
-            <select id="filter-department" name="department">
-                <option value="">All departments</option>
-                {% for department in filter_choices.departments %}
-                    <option value="{{ department.id }}" {% if active_filters.department == department.id|stringformat:"s" %}selected{% endif %}>{{ department.name }}</option>
-                {% endfor %}
-            </select>
-        </p>
-
-        <p>
-            <label for="filter-position">Position</label>
-            <select id="filter-position" name="position">
-                <option value="">All positions</option>
-                {% for position in filter_choices.positions %}
-                    <option value="{{ position.id }}" {% if active_filters.position == position.id|stringformat:"s" %}selected{% endif %}>{{ position.title }}</option>
-                {% endfor %}
-            </select>
-        </p>
-
-        <p>
-            <label for="filter-status">Application Status</label>
-            <select id="filter-status" name="status">
-                <option value="">All stages</option>
-                {% for value, label in filter_choices.statuses %}
-                    <option value="{{ value }}" {% if active_filters.status == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </p>
-
-        <p>
-            <label for="filter-category">Match Category</label>
-            <select id="filter-category" name="category">
-                <option value="">Any score</option>
-                {% for value, label in filter_choices.categories %}
-                    <option value="{{ value }}" {% if active_filters.category == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </p>
-
-        <p>
-            <label for="filter-score-min">Min Score %</label>
-            <input type="number" id="filter-score-min" name="score_min" min="0" max="100" placeholder="0" value="{{ active_filters.score_min|default:'' }}">
-        </p>
-
-        <p>
-            <label for="filter-score-max">Max Score %</label>
-            <input type="number" id="filter-score-max" name="score_max" min="0" max="100" placeholder="100" value="{{ active_filters.score_max|default:'' }}">
-        </p>
+        <div id="dashboard-results" class="stack">
+            {% include "dashboard/components/results.html" %}
+        </div>
     </div>
 
-    <div class="actions-bar">
-        <button type="submit" class="btn-primary">Apply Filters</button>
-        <a href="{% url 'dashboard:dashboard' %}" class="btn btn-secondary">Reset</a>
-    </div>
-</form>
+    <aside class="rail stagger" aria-label="Needs attention">
+        <section class="card">
+            <div class="card-head">
+                <h2><i data-lucide="calendar-clock"></i> Upcoming interviews</h2>
+                {% if overdue_count %}<a href="{% url 'interview-list' %}?tab=overdue" class="badge" data-status="Overdue">{{ overdue_count }} need update</a>{% endif %}
+            </div>
+            <div class="list">
+                {% for interview in upcoming_interviews %}
+                    <a href="{% url 'interview-detail' interview.pk %}" class="list-item">
+                        <span class="date-chip"><span class="m">{{ interview.scheduled_date|date:"M" }}</span><span class="d">{{ interview.scheduled_date|date:"j" }}</span></span>
+                        <span class="list-body">
+                            <span class="list-title">{{ interview.application.candidate }}</span>
+                            <span class="list-sub">{{ interview.interview_type }} · {{ interview.application.position.title }}</span>
+                        </span>
+                        <span class="list-trail mono">{{ interview.scheduled_date|time:"H:i" }}</span>
+                    </a>
+                {% empty %}
+                    <p class="list-empty"><i data-lucide="calendar-x"></i> Nothing scheduled ahead.</p>
+                {% endfor %}
+            </div>
+            <div class="card-foot"><a href="{% url 'interview-list' %}?tab=upcoming">All upcoming <i data-lucide="arrow-right"></i></a></div>
+        </section>
 
-<div id="dashboard-results">
-    {% include "dashboard/components/results.html" %}
+        {% if perms.interviews.view_interviewfeedback %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="message-square-text"></i> Recent feedback</h2></div>
+            <div class="list">
+                {% for entry in recent_feedback %}
+                    <a href="{% url 'feedback-thread' entry.interview_id %}" class="list-item">
+                        <span class="avatar avatar-sm">{{ entry.author.username|initials }}</span>
+                        <span class="list-body">
+                            <span class="list-title">{{ entry.interview.application.candidate }}</span>
+                            <span class="list-sub">{{ entry.author|default:"Former user" }} · {{ entry.created_at|timesince }} ago</span>
+                        </span>
+                        {% if entry.rating %}<span class="list-trail"><span class="rating" aria-label="{{ entry.rating }} out of 5">{% for i in "12345" %}<i class="{% if forloop.counter <= entry.rating %}on{% endif %}"></i>{% endfor %}</span></span>{% endif %}
+                    </a>
+                {% empty %}
+                    <p class="list-empty"><i data-lucide="message-square-dashed"></i> No feedback submitted yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="bell"></i> Unread notifications</h2></div>
+            <div class="list">
+                {% for notification in rail_notifications %}
+                    <a href="{{ notification.link|default:'#' }}" class="list-item">
+                        <span class="list-body">
+                            <span class="list-title">{{ notification.message }}</span>
+                            <span class="list-sub">{{ notification.created_at|timesince }} ago</span>
+                        </span>
+                    </a>
+                {% empty %}
+                    <p class="list-empty"><i data-lucide="check-check"></i> You're all caught up.</p>
+                {% endfor %}
+            </div>
+            <div class="card-foot"><a href="{% url 'staff-notifications' %}">All notifications <i data-lucide="arrow-right"></i></a></div>
+        </section>
+    </aside>
 </div>
 
 {% endblock %}

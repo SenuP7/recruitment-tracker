@@ -1,0 +1,3 @@
+-r lambda/requirements.txt
+pytest==8.3.4
+moto[sqs,ses,dynamodb]==5.0.24

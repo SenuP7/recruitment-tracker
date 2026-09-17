@@ -1,7 +1,7 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 
-from .views import ProfileView
+from .views import GlobalSearchView, ProfileView
 
 
 urlpatterns = [
@@ -23,5 +23,11 @@ urlpatterns = [
         "profile/",
         ProfileView.as_view(),
         name="profile",
+    ),
+
+    path(
+        "search/",
+        GlobalSearchView.as_view(),
+        name="global-search",
     ),
 ]

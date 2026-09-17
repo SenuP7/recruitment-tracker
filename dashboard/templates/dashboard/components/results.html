@@ -1,7 +1,8 @@
 {% if department_missing %}
-    <div class="empty-state">
-        Your account is not assigned to a department, so no candidate data can be shown.
-        Contact an administrator to have a department assigned to your profile.
+    <div class="empty">
+        <span class="empty-icon"><i data-lucide="building-2"></i></span>
+        <h3>No department assigned</h3>
+        <p>Your account isn't linked to a department, so no candidate data can be shown yet. Ask an administrator to assign one to your profile.</p>
     </div>
 {% else %}
     {% include "dashboard/components/stats_cards.html" %}

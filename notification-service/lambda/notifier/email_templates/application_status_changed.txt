@@ -1,0 +1,10 @@
+Hi {candidate_name},
+
+There's an update on your application for the {job_title} position.
+
+Status: {old_status} -> {new_status}
+
+We'll be in touch with next steps. If you have any questions, just reply to this email.
+
+Thanks,
+The Recruitment Team

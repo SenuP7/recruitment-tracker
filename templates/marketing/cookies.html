@@ -1,0 +1,62 @@
+{% extends "marketing/doc_base.html" %}
+
+{% block title %}Cookie notice · Candidflow{% endblock %}
+{% block og_title %}Cookie notice · Candidflow{% endblock %}
+{% block meta_description %}Candidflow uses only essential cookies to keep you signed in and protect forms, plus two interface preferences stored on your own device. No tracking.{% endblock %}
+
+{% block doc_tag %}Legal{% endblock %}
+{% block doc_title %}Cookie notice{% endblock %}
+{% block doc_lede %}Candidflow uses only the cookies it needs to work. There's no analytics, advertising or tracking, which is why you won't see a consent banner.{% endblock %}
+
+{% block toc %}
+<li><a href="#cookies">Cookies we set</a></li>
+<li><a href="#device-storage">Preferences on your device</a></li>
+<li><a href="#third-parties">Third-party services</a></li>
+<li><a href="#no-banner">Why there's no banner</a></li>
+<li><a href="#control">Managing cookies</a></li>
+{% endblock %}
+
+{% block doc_body %}
+<section id="cookies">
+    <h2>Cookies we set</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th scope="col">Name</th><th scope="col">Purpose</th><th scope="col">Expires</th></tr></thead>
+            <tbody>
+                <tr><td><code>sessionid</code></td><td>Keeps you signed in after you log in.</td><td>2 weeks, or when you log out</td></tr>
+                <tr><td><code>csrftoken</code></td><td>Protects forms against cross-site request forgery.</td><td>1 year</td></tr>
+                <tr><td><code>messages</code></td><td>Carries a one-off confirmation such as "Candidate saved" to the next page.</td><td>Removed once shown</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section id="device-storage">
+    <h2>Preferences on your device</h2>
+    <p>Two interface settings are saved in your browser's local storage. They never leave your device and aren't sent to us.</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th scope="col">Key</th><th scope="col">Purpose</th></tr></thead>
+            <tbody>
+                <tr><td><code>candidflow-theme</code></td><td>Remembers whether you chose the light theme.</td></tr>
+                <tr><td><code>candidflow-sidebar-collapsed</code></td><td>Remembers whether you collapsed the sidebar.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section id="third-parties">
+    <h2>Third-party services</h2>
+    <p>Fonts, icons and some interface scripts load from Google Fonts, jsDelivr, cdnjs and unpkg. Candidflow doesn't set cookies for these services, but they receive your IP address when your browser requests the files. See the <a href="{% url 'privacy' %}#sharing">privacy notice</a>.</p>
+</section>
+
+<section id="no-banner">
+    <h2>Why there's no cookie banner</h2>
+    <p>Under the Privacy and Electronic Communications Regulations (PECR), cookies that are strictly necessary for a service you've asked to use don't need consent. Every cookie above falls into that category. If we ever add a cookie that isn't essential, we'll ask first.</p>
+</section>
+
+<section id="control">
+    <h2>Managing cookies</h2>
+    <p>You can clear or block cookies in your browser settings. Blocking <code>sessionid</code> or <code>csrftoken</code> will stop you from signing in or saving forms. Clearing local storage resets your theme and sidebar preferences.</p>
+</section>
+{% endblock %}

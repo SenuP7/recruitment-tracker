@@ -1,26 +1,81 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}{% if object %}Edit Application{% else %}Create Application{% endif %}{% endblock %}
+{% block title %}{% if object %}Update application{% else %}New application{% endif %}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    {% if object %}
-        <h1>Edit Application</h1>
-    {% else %}
-        <h1>Create Application</h1>
-    {% endif %}
-</div>
+<p class="eyebrow"><a href="{% if object %}{% url 'application-detail' object.pk %}{% else %}{% url 'application-list' %}{% endif %}"><i data-lucide="arrow-left"></i> {% if object %}{{ object.candidate }}{% else %}Applications{% endif %}</a></p>
 
-<div class="panel">
-    <form method="post">
+<header class="page-header">
+    <div class="page-header-text">
+        <h1>{% if object %}Update application{% else %}New application{% endif %}</h1>
+        <p class="page-subtitle">{% if object %}Move {{ object.candidate.first_name }} along the pipeline for {{ object.position.title }}.{% else %}Link an existing candidate to an open role.{% endif %}</p>
+    </div>
+</header>
+
+<div class="form-layout">
+    <form method="post" class="form-card" novalidate>
         {% csrf_token %}
-        {{ form.as_p }}
-        <div class="actions-bar">
-            <button type="submit" class="btn-primary">Save Application</button>
-            <a href="{% url 'application-list' %}" class="btn btn-secondary">Cancel</a>
+        {% include "components/form_errors.html" %}
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Candidate &amp; role</h2>
+                <p>Who is applying, and for which position.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.candidate %}
+                {% include "components/field.html" with field=form.position %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Stage</h2>
+                <p>Where this application sits in the hiring pipeline.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.status label="Pipeline stage" wide=True %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <span class="hint">Screening a CV updates the stage automatically.</span>
+            <div class="buttons">
+                <a href="{% if object %}{% url 'application-detail' object.pk %}{% else %}{% url 'application-list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="check"></i> {% if object %}Save changes{% else %}Create application{% endif %}</button>
+            </div>
         </div>
     </form>
+
+    <aside class="rail">
+        {% if object %}
+            <section class="card">
+                <div class="card-head"><h2><i data-lucide="route"></i> Current progress</h2></div>
+                <div class="card-body">
+                    <div class="stepper stepper-vertical">
+                        {% for step in journey %}
+                            <div class="step" data-state="{{ step.state }}">
+                                <div class="step-bar"></div>
+                                <span class="step-label">{{ step.label }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="map"></i> The pipeline</h2></div>
+            <div class="card-body tips">
+                <p class="tip"><i data-lucide="file-plus"></i><span><strong>Applied</strong> — received, not yet reviewed.</span></p>
+                <p class="tip"><i data-lucide="scan-search"></i><span><strong>CV screening</strong> — scored against the role's skill profile.</span></p>
+                <p class="tip"><i data-lucide="messages-square"></i><span><strong>HR &amp; technical interviews</strong> — structured rounds with feedback.</span></p>
+                <p class="tip"><i data-lucide="shield-check"></i><span><strong>Senior review</strong> — final assessment before a decision.</span></p>
+                <p class="tip"><i data-lucide="flag"></i><span><strong>Accepted or rejected</strong> — the outcome.</span></p>
+            </div>
+        </section>
+    </aside>
 </div>
 
 {% endblock %}

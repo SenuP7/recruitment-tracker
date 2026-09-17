@@ -1,49 +1,134 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}Interview Details{% endblock %}
+{% block title %}{{ interview.interview_type }} interview · {{ interview.application.candidate }}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>
-        <span class="avatar avatar-lg avatar-inline">{{ interview.application.candidate.first_name|first }}{{ interview.application.candidate.last_name|first }}</span>
-        {{ interview.application }}
-    </h1>
-</div>
+<p class="eyebrow"><a href="{% url 'interview-list' %}"><i data-lucide="arrow-left"></i> Interviews</a></p>
 
-<div class="detail-layout">
-    <div class="detail-card">
-        <div class="field-row">
-            <strong>Application</strong>
-            <span class="field-value">{{ interview.application }}</span>
+<section class="record-header">
+    <div class="record-top">
+        <div class="record-identity">
+            <span class="date-chip date-chip-xl"><span class="m">{{ interview.scheduled_date|date:"M" }}</span><span class="d">{{ interview.scheduled_date|date:"j" }}</span></span>
+            <div>
+                <h1>{{ interview.interview_type }} interview · {{ interview.application.candidate }}</h1>
+                <div class="facts">
+                    {% if is_overdue %}<span class="badge" data-status="Overdue">Needs update</span>{% else %}<span class="badge" data-status="{{ interview.status }}">{{ interview.status }}</span>{% endif %}
+                    <span><i data-lucide="clock-3"></i> {{ interview.scheduled_date|date:"l, j F Y" }} at {{ interview.scheduled_date|time:"H:i" }}</span>
+                    {% if is_upcoming %}<span><i data-lucide="hourglass"></i> in {{ interview.scheduled_date|timeuntil }}</span>{% endif %}
+                    <span><i data-lucide="briefcase"></i> {{ interview.application.position.title }}</span>
+                </div>
+            </div>
         </div>
-        <div class="field-row">
-            <strong>Interview Type</strong>
-            <span class="field-value">{{ interview.interview_type }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Scheduled Date</strong>
-            <span class="field-value mono">{{ interview.scheduled_date }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Status</strong>
-            <span class="field-value"><span class="badge" data-status="{{ interview.status }}">{{ interview.status }}</span></span>
+        <div class="page-actions">
+            {% if perms.interviews.delete_interview %}<a href="{% url 'interview-delete' interview.pk %}" class="btn btn-danger"><i data-lucide="trash-2"></i> Delete</a>{% endif %}
+            {% if perms.interviews.change_interview %}<a href="{% url 'interview-update' interview.pk %}" class="btn btn-secondary"><i data-lucide="pencil"></i> Edit</a>{% endif %}
+            {% if perms.interviews.add_interviewfeedback %}<a href="{% url 'feedback-create' %}?interview={{ interview.pk }}" class="btn btn-primary"><i data-lucide="message-square-plus"></i> Add feedback</a>{% endif %}
         </div>
     </div>
 
-    <div class="sidebar-card">
-        <h2>Actions</h2>
-        <div class="actions-bar">
-            {% if perms.interviews.change_interview %}
-                <a href="{% url 'interview-update' interview.pk %}" class="btn btn-primary">Edit Interview</a>
-            {% endif %}
-            {% if perms.interviews.delete_interview %}
-                <a href="{% url 'interview-delete' interview.pk %}" class="btn btn-danger">Delete Interview</a>
-            {% endif %}
-            <a href="{% url 'feedback-detail' interview.pk %}" class="btn btn-secondary">View Feedback</a>
-            <a href="{% url 'interview-list' %}" class="btn btn-secondary">Back to Interviews</a>
-        </div>
+    {% if feedback_summary %}
+    <div class="record-stats stagger">
+        <div class="record-stat"><div class="record-stat-label">Feedback entries</div><div class="record-stat-value" data-countup>{{ feedback_summary.count }}</div></div>
+        <div class="record-stat"><div class="record-stat-label">Replies</div><div class="record-stat-value" data-countup>{{ feedback_summary.replies }}</div></div>
+        <div class="record-stat"><div class="record-stat-label">Average rating</div><div class="record-stat-value">{% if feedback_summary.average %}{{ feedback_summary.average }}<small> / 5</small>{% else %}<span class="faint">—</span>{% endif %}</div></div>
+        {% for rec in feedback_summary.recommendations %}
+            <div class="record-stat"><div class="record-stat-label">{{ rec.label }}</div><div class="record-stat-value">{{ rec.count }}</div></div>
+        {% endfor %}
     </div>
+    {% endif %}
+</section>
+
+<div class="layout-rail">
+    <div class="stack">
+        {% if can_view_feedback %}
+        <section class="card">
+            <div class="card-head">
+                <h2><i data-lucide="message-square-text"></i> Latest feedback</h2>
+                <a href="{% url 'feedback-thread' interview.pk %}" class="btn btn-ghost btn-sm">Open thread <i data-lucide="arrow-right"></i></a>
+            </div>
+            {% for entry in latest_feedback %}
+                <div class="message">
+                    <span class="avatar">{{ entry.author.username|initials }}</span>
+                    <div>
+                        <div class="message-head">
+                            <span class="message-author">{{ entry.author|default:"Former user" }}</span>
+                            <span class="message-time">{{ entry.created_at|timesince }} ago</span>
+                        </div>
+                        <div class="message-meta">
+                            {% if entry.rating %}<span class="rating" aria-label="{{ entry.rating }} out of 5">{% for i in "12345" %}<i class="{% if forloop.counter <= entry.rating %}on{% endif %}"></i>{% endfor %}<span class="rating-value">{{ entry.rating }}/5</span></span>{% endif %}
+                            {% if entry.recommendation %}<span class="badge" data-status="{{ entry.recommendation }}">{{ entry.recommendation }}</span>{% endif %}
+                            {% if entry.reply_count %}<span class="faint" style="font-size: var(--text-xs)">{{ entry.reply_count }} repl{{ entry.reply_count|pluralize:"y,ies" }}</span>{% endif %}
+                        </div>
+                        <p class="message-text">{{ entry.comments|truncatechars:320 }}</p>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="card-body">
+                    <p class="list-empty" style="padding: 0"><i data-lucide="message-square-dashed"></i> No feedback submitted for this interview yet.</p>
+                </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        {% if other_rounds %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="layers"></i> Other rounds for this application</h2></div>
+            <div class="list">
+                {% for round in other_rounds %}
+                    <a href="{% url 'interview-detail' round.pk %}" class="list-item">
+                        <span class="date-chip"><span class="m">{{ round.scheduled_date|date:"M" }}</span><span class="d">{{ round.scheduled_date|date:"j" }}</span></span>
+                        <span class="list-body">
+                            <span class="list-title">{{ round.interview_type }} interview</span>
+                            <span class="list-sub">{{ round.interviewer|default:"Unassigned" }}</span>
+                        </span>
+                        <span class="list-trail"><span class="badge" data-status="{{ round.status }}">{{ round.status }}</span></span>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    </div>
+
+    <aside class="rail">
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="info"></i> Details</h2></div>
+            <div class="card-body">
+                <dl class="dl">
+                    <div class="dl-row"><dt>Round</dt><dd>{{ interview.interview_type }}</dd></div>
+                    <div class="dl-row"><dt>Date</dt><dd class="mono">{{ interview.scheduled_date|date:"d M Y" }}</dd></div>
+                    <div class="dl-row"><dt>Time</dt><dd class="mono">{{ interview.scheduled_date|time:"H:i" }}</dd></div>
+                    <div class="dl-row"><dt>Interviewer</dt><dd>{{ interview.interviewer|default:"Unassigned" }}</dd></div>
+                    <div class="dl-row"><dt>Status</dt><dd>{{ interview.status }}</dd></div>
+                </dl>
+            </div>
+        </section>
+
+        <a href="{% url 'application-detail' interview.application.pk %}" class="card card-link">
+            <div class="card-head"><h2><i data-lucide="file-text"></i> Application</h2><i data-lucide="arrow-up-right" class="faint"></i></div>
+            <div class="list-item">
+                <span class="avatar">{{ interview.application.candidate|initials }}</span>
+                <span class="list-body">
+                    <span class="list-title">{{ interview.application.candidate }}</span>
+                    <span class="list-sub">{{ interview.application.position.title }} · {{ interview.application.position.department }}</span>
+                </span>
+            </div>
+            <div class="card-body" style="padding-top: 0">
+                <span class="badge" data-status="{{ interview.application.status }}">{{ interview.application.status }}</span>
+            </div>
+        </a>
+
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="contact"></i> Candidate contact</h2></div>
+            <div class="card-body">
+                <dl class="dl">
+                    <div class="dl-row"><dt>Email</dt><dd><a class="mono" href="mailto:{{ interview.application.candidate.email }}">{{ interview.application.candidate.email }}</a></dd></div>
+                    <div class="dl-row"><dt>Phone</dt><dd class="mono">{{ interview.application.candidate.phone|default:"—" }}</dd></div>
+                </dl>
+            </div>
+        </section>
+    </aside>
 </div>
 
 {% endblock %}

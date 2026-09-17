@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load ui %}
+
+{% block title %}Feedback · {{ interview.application.candidate }}{% endblock %}
+
+{% block content %}
+
+<p class="eyebrow"><a href="{% url 'interview-detail' interview.pk %}"><i data-lucide="arrow-left"></i> {{ interview.interview_type }} interview</a></p>
+
+<header class="page-header">
+    <div class="page-header-text">
+        <h1>Interview feedback</h1>
+        <p class="page-subtitle">{{ interview.application.candidate }} · {{ interview.application.position.title }} · {{ interview.interview_type }} round on {{ interview.scheduled_date|date:"j M Y" }}</p>
+    </div>
+    {% if perms.interviews.add_interviewfeedback %}
+        <div class="page-actions">
+            <a href="{% url 'feedback-create' %}?interview={{ interview.pk }}" class="btn btn-primary"><i data-lucide="message-square-plus"></i> Add feedback</a>
+        </div>
+    {% endif %}
+</header>
+
+<div class="layout-rail">
+    <div class="stack stagger">
+        {% for thread in feedback_threads %}
+            <article class="thread">
+                <div class="message">
+                    <span class="avatar">{{ thread.author.username|initials }}</span>
+                    <div>
+                        <div class="message-head">
+                            <span class="message-author">{{ thread.author|default:"Unknown" }}</span>
+                            <time class="message-time" datetime="{{ thread.created_at|date:'c' }}" title="{{ thread.created_at }}">{{ thread.created_at|date:"j M Y, H:i" }}{% if thread.updated_at|date:"U" != thread.created_at|date:"U" %} · edited{% endif %}</time>
+                        </div>
+                        <div class="message-meta">
+                            {% if thread.rating %}<span class="rating" aria-label="{{ thread.rating }} out of 5">{% for i in "12345" %}<i class="{% if forloop.counter <= thread.rating %}on{% endif %}"></i>{% endfor %}<span class="rating-value">{{ thread.rating }}/5</span></span>{% endif %}
+                            {% if thread.recommendation %}<span class="badge" data-status="{{ thread.recommendation }}">{{ thread.recommendation }}</span>{% endif %}
+                        </div>
+                        <p class="message-text">{{ thread.comments }}</p>
+                        <div class="message-actions">
+                            {% if perms.interviews.add_interviewfeedback %}<a href="{% url 'feedback-reply-create' thread.pk %}" class="btn btn-ghost btn-sm"><i data-lucide="reply"></i> Reply</a>{% endif %}
+                            {% if thread.can_edit %}<a href="{% url 'feedback-update' thread.pk %}" class="btn btn-ghost btn-sm"><i data-lucide="pencil"></i> Edit</a>{% endif %}
+                            {% if perms.interviews.delete_interviewfeedback %}<a href="{% url 'feedback-delete' thread.pk %}" class="btn btn-ghost btn-sm"><i data-lucide="trash-2"></i> Delete</a>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if thread.replies.all %}
+                    <div class="replies">
+                        {% for reply in thread.replies.all %}
+                            <div class="message">
+                                <span class="avatar avatar-sm">{{ reply.author.username|initials }}</span>
+                                <div>
+                                    <div class="message-head">
+                                        <span class="message-author">{{ reply.author|default:"Unknown" }}</span>
+                                        <time class="message-time" datetime="{{ reply.created_at|date:'c' }}">{{ reply.created_at|date:"j M Y, H:i" }}</time>
+                                    </div>
+                                    <p class="message-text">{{ reply.comments }}</p>
+                                    <div class="message-actions">
+                                        {% if reply.can_edit %}<a href="{% url 'feedback-update' reply.pk %}" class="btn btn-ghost btn-sm"><i data-lucide="pencil"></i> Edit</a>{% endif %}
+                                        {% if perms.interviews.delete_interviewfeedback %}<a href="{% url 'feedback-delete' reply.pk %}" class="btn btn-ghost btn-sm"><i data-lucide="trash-2"></i> Delete</a>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </article>
+        {% empty %}
+            <div class="empty">
+                <span class="empty-icon"><i data-lucide="message-square-dashed"></i></span>
+                <h3>No feedback yet</h3>
+                <p>Once interviewers record their assessment of this round, it will appear here as a thread the team can reply to.</p>
+                {% if perms.interviews.add_interviewfeedback %}<a href="{% url 'feedback-create' %}?interview={{ interview.pk }}" class="btn btn-primary"><i data-lucide="message-square-plus"></i> Add the first feedback</a>{% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <aside class="rail">
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="bar-chart-3"></i> Summary</h2></div>
+            <div class="card-body">
+                <dl class="dl">
+                    <div class="dl-row"><dt>Feedback entries</dt><dd>{{ feedback_threads|length }}</dd></div>
+                    <div class="dl-row"><dt>Replies</dt><dd>{{ reply_count }}</dd></div>
+                    <div class="dl-row"><dt>Average rating</dt><dd>{% if average_rating %}{{ average_rating }} / 5{% else %}—{% endif %}</dd></div>
+                    <div class="dl-row"><dt>Interviewer</dt><dd>{{ interview.interviewer|default:"Unassigned" }}</dd></div>
+                    <div class="dl-row"><dt>Status</dt><dd>{{ interview.status }}</dd></div>
+                </dl>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="history"></i> Edit history</h2></div>
+            <div class="list">
+                {% for entry in history %}
+                    <div class="list-item">
+                        <span class="timeline-icon">{% if entry.action == "DELETED" %}<i data-lucide="trash-2"></i>{% else %}<i data-lucide="pencil"></i>{% endif %}</span>
+                        <span class="list-body">
+                            <span class="list-title">{{ entry.changed_by|default:"Former user" }} {{ entry.get_action_display|lower }} feedback</span>
+                            <span class="list-sub">{{ entry.changed_at|timesince }} ago · {{ entry.diff|length }} field{{ entry.diff|length|pluralize }}</span>
+                        </span>
+                    </div>
+                {% empty %}
+                    <p class="list-empty"><i data-lucide="shield-check"></i> No edits or deletions recorded.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </aside>
+</div>
+
+{% endblock %}

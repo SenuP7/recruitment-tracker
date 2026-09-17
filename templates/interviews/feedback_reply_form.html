@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load ui %}
+
+{% block title %}Reply to feedback{% endblock %}
+
+{% block content %}
+
+<p class="eyebrow"><a href="{% url 'feedback-thread' parent_feedback.interview_id %}"><i data-lucide="arrow-left"></i> Feedback thread</a></p>
+
+<header class="page-header">
+    <div class="page-header-text">
+        <h1>Reply to feedback</h1>
+        <p class="page-subtitle">Your reply is added under {{ parent_feedback.author|default:"this" }}'s entry in the thread.</p>
+    </div>
+</header>
+
+<div class="form-layout">
+    <form method="post" class="form-card" novalidate>
+        {% csrf_token %}
+        {% include "components/form_errors.html" %}
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Replying to</h2>
+                <p>{{ parent_feedback.author|default:"Unknown" }} · {{ parent_feedback.created_at|date:"j M Y" }}</p>
+            </div>
+            <div>
+                <p class="quote">{{ parent_feedback.comments }}</p>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Your reply</h2>
+                <p>Replies don't carry a rating or recommendation.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.comments wide=True label="Reply" %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <div class="buttons">
+                <a href="{% url 'feedback-thread' parent_feedback.interview_id %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="reply"></i> Post reply</button>
+            </div>
+        </div>
+    </form>
+
+    <aside class="rail">
+        <a href="{% url 'interview-detail' parent_feedback.interview.pk %}" class="card card-link">
+            <div class="card-head"><h2><i data-lucide="calendar"></i> Interview</h2><i data-lucide="arrow-up-right" class="faint"></i></div>
+            <div class="list-item">
+                <span class="avatar avatar-lg">{{ parent_feedback.interview.application.candidate|initials }}</span>
+                <span class="list-body">
+                    <span class="list-title">{{ parent_feedback.interview.application.candidate }}</span>
+                    <span class="list-sub">{{ parent_feedback.interview.interview_type }} · {{ parent_feedback.interview.application.position.title }}</span>
+                </span>
+            </div>
+        </a>
+    </aside>
+</div>
+
+{% endblock %}

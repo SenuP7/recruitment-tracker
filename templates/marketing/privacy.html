@@ -1,0 +1,156 @@
+{% extends "marketing/doc_base.html" %}
+
+{% block title %}Privacy notice · Candidflow{% endblock %}
+{% block og_title %}Privacy notice · Candidflow{% endblock %}
+{% block meta_description %}What personal data Candidflow holds about candidates and staff, why, where it's stored, how long it's kept, and your rights under UK GDPR.{% endblock %}
+
+{% block doc_tag %}Legal{% endblock %}
+{% block doc_title %}Privacy notice{% endblock %}
+{% block doc_lede %}What personal data Candidflow holds about candidates and staff, why we hold it, who processes it, how long we keep it, and the rights you have over it.{% endblock %}
+
+{% block toc %}
+<li><a href="#who-we-are">Who we are</a></li>
+<li><a href="#what-we-collect">What we collect</a></li>
+<li><a href="#how-we-use-it">How we use it</a></li>
+<li><a href="#automated-screening">Automated CV screening</a></li>
+<li><a href="#sharing">Who processes it</a></li>
+<li><a href="#transfers">International transfers</a></li>
+<li><a href="#retention">How long we keep it</a></li>
+<li><a href="#your-rights">Your rights</a></li>
+<li><a href="#security">Keeping it secure</a></li>
+<li><a href="#changes">Changes to this notice</a></li>
+{% endblock %}
+
+{% block doc_body %}
+<section id="who-we-are">
+    <h2>1. Who we are</h2>
+    <p>Candidflow ("we", "us") is the controller of the personal data described in this notice. It applies to people who apply for a role through us (candidates) and to staff who are given an account to run recruitment (users).</p>
+    <p>For anything about your personal data, contact our data protection contact at <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a>. We handle personal data in line with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.</p>
+    <p class="callout">If you're a candidate, the <a href="{% url 'candidate-notice' %}">candidate notice</a> covers the same ground in a shorter, plain-language form.</p>
+</section>
+
+<section id="what-we-collect">
+    <h2>2. What we collect</h2>
+    <h3>About candidates</h3>
+    <ul>
+        <li><strong>Contact details:</strong> first and last name, email address and phone number.</li>
+        <li><strong>Application details:</strong> the positions you applied for, the department, the date you applied and where each application is in our process.</li>
+        <li><strong>Your CV:</strong> the PDF or Word file you send us, the text we extract from it, and the skills we found in it.</li>
+        <li><strong>Assessment records:</strong> CV match scores, interview dates, types and outcomes, and the feedback interviewers write, including ratings (1 to 5), recommendations, comments and replies.</li>
+        <li><strong>Email delivery records:</strong> which notification emails were sent to you, when, and whether delivery succeeded.</li>
+    </ul>
+    <h3>About staff users</h3>
+    <ul>
+        <li><strong>Account details:</strong> username, name, email address, role and department. Passwords are only ever stored as one-way hashes.</li>
+        <li><strong>Activity records:</strong> feedback you write, a log of every edit or deletion of feedback (who made it, when, and what changed), and in-app notifications sent to you.</li>
+    </ul>
+    <h3>Technical data</h3>
+    <ul>
+        <li>Essential cookies that keep you signed in and protect forms. See the <a href="{% url 'cookies' %}">cookie notice</a>.</li>
+        <li>Standard request logs kept by our hosting provider, such as IP address, time and page requested.</li>
+    </ul>
+    <p>We don't use analytics or advertising trackers, and we don't sell personal data.</p>
+</section>
+
+<section id="how-we-use-it">
+    <h2>3. How we use it and our lawful basis</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th scope="col">Purpose</th><th scope="col">Data used</th><th scope="col">Lawful basis</th></tr></thead>
+            <tbody>
+                <tr><td>Assessing your application and running interviews</td><td>Contact, application, CV and assessment records</td><td>Steps taken at your request before entering into a contract (Art. 6(1)(b)), and our legitimate interest in recruiting (Art. 6(1)(f))</td></tr>
+                <tr><td>Emailing you about your application's status and scheduled interviews</td><td>Name, email, position, status, interview date and type</td><td>Legitimate interests (Art. 6(1)(f))</td></tr>
+                <tr><td>Giving staff accounts with access limited by role</td><td>Staff account details</td><td>Legitimate interests (Art. 6(1)(f))</td></tr>
+                <tr><td>Keeping an audit trail of feedback changes, and security</td><td>Activity records, technical data</td><td>Legitimate interests (Art. 6(1)(f))</td></tr>
+                <tr><td>Responding to legal claims and regulators</td><td>Any of the above, as needed</td><td>Legal obligation (Art. 6(1)(c)) and legitimate interests</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>We don't ask for special category data (such as health, ethnicity or religion). Please leave it out of your CV. If it's included anyway, we don't use it in screening or decisions.</p>
+</section>
+
+<section id="automated-screening">
+    <h2>4. Automated CV screening</h2>
+    <p>When a CV is uploaded against an application, Candidflow compares its text against the skills the position requires (80% of the score) and the skills that are nice to have (20%), including recognised alternative names for each skill. This produces a match score.</p>
+    <p>The score can set the screening outcome <strong>without a person reviewing it first</strong>:</p>
+    <ul>
+        <li>A score of <strong>70% or more</strong> marks the application as <em>CV Screening Passed</em>.</li>
+        <li>A score <strong>below 40%</strong> marks it as <em>CV Screening Failed</em>.</li>
+        <li>Anything in between stays <em>in screening</em> for the recruitment team to review.</li>
+    </ul>
+    <p>A change of status sends you an email. Because a failed outcome can be reached automatically, it counts as a decision based solely on automated processing under Article 22 of UK GDPR. You have the right to:</p>
+    <ul>
+        <li>ask for a member of the recruitment team to review the outcome,</li>
+        <li>give us your point of view, for example skills the keyword match missed, and</li>
+        <li>contest the decision.</li>
+    </ul>
+    <p>To do any of these, email <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a> with the position you applied for. A recruiter will look at your CV and tell you the result.</p>
+</section>
+
+<section id="sharing">
+    <h2>5. Who can see it and who processes it</h2>
+    <p>Inside Candidflow, access depends on a person's role. Recruiters, HR interviewers, senior reviewers and leadership managers work across all departments, and technical interviewers see the dashboard for their own department. Details are on the <a href="{% url 'security' %}">security page</a>.</p>
+    <p>We use these service providers, who process data only on our instructions:</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th scope="col">Provider</th><th scope="col">What for</th></tr></thead>
+            <tbody>
+                <tr><td>Amazon Web Services</td><td>Hosting the application and database, storing CVs (Amazon S3), sending emails (Amazon SES), queueing notifications (Amazon SQS) and logging email delivery (Amazon DynamoDB)</td></tr>
+                <tr><td>Google Fonts, jsDelivr, cdnjs (Cloudflare), unpkg</td><td>Delivering fonts, icons and interface scripts to your browser. These services receive your IP address when your browser requests the files.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>We only share personal data with anyone else when the law requires us to.</p>
+</section>
+
+<section id="transfers">
+    <h2>6. International transfers</h2>
+    <p>Our data is stored in the AWS Asia Pacific (Singapore) region, which is outside the UK. These transfers are covered by AWS's data processing addendum, which includes the International Data Transfer Addendum to the EU Standard Contractual Clauses approved for UK transfers. You can ask us for a copy of the relevant safeguards.</p>
+</section>
+
+<section id="retention">
+    <h2>7. How long we keep it</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th scope="col">Record</th><th scope="col">Retention</th></tr></thead>
+            <tbody>
+                <tr><td>Unsuccessful candidates: contact details, CVs, scores, interviews and feedback</td><td>12 months after the final decision on your last application, then deleted</td></tr>
+                <tr><td>Successful candidates</td><td>Moved to employee records when you start. The recruitment record is deleted 12 months after the decision.</td></tr>
+                <tr><td>Feedback edit and deletion log</td><td>Same period as the application it relates to</td></tr>
+                <tr><td>Email delivery records</td><td>12 months after sending</td></tr>
+                <tr><td>Staff accounts</td><td>Disabled when you leave, deleted 12 months later</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>If you ask us to delete your data sooner, we will unless we need to keep it for a legal claim.</p>
+</section>
+
+<section id="your-rights">
+    <h2>8. Your rights</h2>
+    <p>You have the right to:</p>
+    <ul>
+        <li><strong>Access:</strong> a copy of your data, including interview feedback written about you.</li>
+        <li><strong>Correction:</strong> fix anything inaccurate or incomplete.</li>
+        <li><strong>Erasure:</strong> have your data deleted, including withdrawing an application.</li>
+        <li><strong>Restriction</strong> of how we use your data while a concern is looked into.</li>
+        <li><strong>Objection</strong> to processing we base on legitimate interests.</li>
+        <li><strong>Portability:</strong> receive data you gave us in a machine-readable format.</li>
+        <li><strong>Human review</strong> of automated screening decisions (see <a href="#automated-screening">section 4</a>).</li>
+    </ul>
+    <p>Email <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a>. We'll respond within one month, free of charge, and may need to confirm your identity first.</p>
+    <p>If you're unhappy with how we've handled your data, you can complain to the Information Commissioner's Office at <a href="https://ico.org.uk/make-a-complaint/" rel="noopener">ico.org.uk</a>. We'd appreciate the chance to put it right first.</p>
+</section>
+
+<section id="security">
+    <h2>9. Keeping it secure</h2>
+    <p>Access is limited by role and checked on the server, passwords are hashed, CVs are stored privately and opened through links that expire after an hour, and every change to interview feedback is logged. The <a href="{% url 'security' %}">security page</a> describes exactly what's in place.</p>
+</section>
+
+<section id="changes">
+    <h2>10. Changes to this notice</h2>
+    <p>We'll update this notice when how we handle data changes, and update the date at the top of the page. For significant changes we'll tell active candidates and users by email.</p>
+</section>
+{% endblock %}
+
+{% block contact_title %}Questions about your data?{% endblock %}
+{% block contact_text %}Email our data protection contact at <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a>. We'll reply within one month.{% endblock %}

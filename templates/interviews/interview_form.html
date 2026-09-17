@@ -1,26 +1,94 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}{% if object %}Edit Interview{% else %}Create Interview{% endif %}{% endblock %}
+{% block title %}{% if object %}Edit interview{% else %}Schedule interview{% endif %}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    {% if object %}
-        <h1>Edit Interview</h1>
-    {% else %}
-        <h1>Create Interview</h1>
-    {% endif %}
-</div>
+<p class="eyebrow"><a href="{% if object %}{% url 'interview-detail' object.pk %}{% else %}{% url 'interview-list' %}{% endif %}"><i data-lucide="arrow-left"></i> {% if object %}{{ object.interview_type }} interview{% else %}Interviews{% endif %}</a></p>
 
-<div class="panel">
-    <form method="post">
+<header class="page-header">
+    <div class="page-header-text">
+        <h1>{% if object %}Edit interview{% else %}Schedule an interview{% endif %}</h1>
+        <p class="page-subtitle">{% if object %}Reschedule, reassign, or record the outcome of this round.{% else %}Pick the application, set a time, and assign who will run it.{% endif %}</p>
+    </div>
+</header>
+
+<div class="form-layout">
+    <form method="post" class="form-card" novalidate>
         {% csrf_token %}
-        {{ form.as_p }}
-        <div class="actions-bar">
-            <button type="submit" class="btn-primary">Save Interview</button>
-            <a href="{% url 'interview-list' %}" class="btn btn-secondary">Cancel</a>
+        {% include "components/form_errors.html" %}
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Candidate &amp; role</h2>
+                <p>The application this round belongs to.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.application wide=True %}
+                {% include "components/field.html" with field=form.interview_type label="Round" %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Schedule</h2>
+                <p>Uses your local time zone. Interviews can't be set in the past.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.scheduled_date label="Date" %}
+                {% include "components/field.html" with field=form.scheduled_time label="Time" %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Assignment &amp; outcome</h2>
+                <p>The interviewer sees this round under My interviews.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.interviewer %}
+                {% include "components/field.html" with field=form.status %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <span class="hint">Fields marked * are required.</span>
+            <div class="buttons">
+                <a href="{% if object %}{% url 'interview-detail' object.pk %}{% else %}{% url 'interview-list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="check"></i> {% if object %}Save changes{% else %}Schedule interview{% endif %}</button>
+            </div>
         </div>
     </form>
+
+    <aside class="rail">
+        {% if object %}
+            <a href="{% url 'application-detail' object.application.pk %}" class="card card-link">
+                <div class="card-head"><h2><i data-lucide="file-text"></i> Application</h2><i data-lucide="arrow-up-right" class="faint"></i></div>
+                <div class="list-item">
+                    <span class="avatar avatar-lg">{{ object.application.candidate|initials }}</span>
+                    <span class="list-body">
+                        <span class="list-title">{{ object.application.candidate }}</span>
+                        <span class="list-sub">{{ object.application.position.title }}</span>
+                    </span>
+                </div>
+                <div class="card-body" style="padding-top: var(--space-2)">
+                    <dl class="dl">
+                        <div class="dl-row"><dt>Stage</dt><dd><span class="badge" data-status="{{ object.application.status }}">{{ object.application.status }}</span></dd></div>
+                        <div class="dl-row"><dt>Currently</dt><dd class="mono">{{ object.scheduled_date|date:"d M Y, H:i" }}</dd></div>
+                    </dl>
+                </div>
+            </a>
+        {% endif %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="lightbulb"></i> Before you schedule</h2></div>
+            <div class="card-body tips">
+                <p class="tip"><i data-lucide="user-check"></i><span>Only recruitment staff can be assigned as interviewers.</span></p>
+                <p class="tip"><i data-lucide="bell"></i><span>Scheduling a new round notifies the candidate by email when notifications are enabled.</span></p>
+                <p class="tip"><i data-lucide="message-square-text"></i><span>After the round, interviewers add structured feedback from the interview page.</span></p>
+            </div>
+        </section>
+    </aside>
 </div>
 
 {% endblock %}

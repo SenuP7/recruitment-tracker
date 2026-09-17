@@ -4,40 +4,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recruitment Tracker - Login</title>
+    <title>Log in · Candidflow</title>
+    <meta name="robots" content="noindex, nofollow">
+    {% include "components/head_icons.html" %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    <script>
+        try { if (localStorage.getItem("candidflow-theme") === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}
+    </script>
 </head>
 
 <body class="auth-page">
 
-<div class="login-panel">
+<aside class="auth-aside">
+    <a href="{% url 'landing' %}" class="brand">{% include "components/brand_mark.html" %}<span class="brand-word">Candid<span>flow</span></span></a>
+    <div>
+        <h2>Every candidate, every round, one pipeline.</h2>
+        <p>Pick up where you left off — screening scores, interview schedules, and the feedback your team has written since you last looked.</p>
+        <ul class="auth-points">
+            <li><i data-lucide="scan-search"></i> CV screening scored against each role</li>
+            <li><i data-lucide="calendar-check"></i> Interview rounds with threaded feedback</li>
+            <li><i data-lucide="shield-check"></i> Access scoped to your role</li>
+        </ul>
+    </div>
+    <p class="faint" style="font-size: var(--text-xs)">Internal recruitment tool</p>
+</aside>
 
-    <h1>Recruitment<span>Tracker</span></h1>
+<main class="auth-main">
+    <div class="login-panel">
+        <a href="{% url 'landing' %}" class="back-link"><i data-lucide="arrow-left"></i> Back to Candidflow</a>
 
-    <form method="post">
+        <h1>Welcome back</h1>
+        <p class="lede">Log in with your team account.</p>
 
-        {% csrf_token %}
+        <form method="post">
+            {% csrf_token %}
 
-        <label for="id_username">Username</label>
-        <input type="text" name="username" id="id_username" required>
+            <div class="field">
+                <label for="id_username">Username</label>
+                <input type="text" name="username" id="id_username" autocomplete="username" autofocus required>
+            </div>
 
-        <label for="id_password">Password</label>
-        <input type="password" name="password" id="id_password" required>
+            <div class="field">
+                <label for="id_password">Password</label>
+                <input type="password" name="password" id="id_password" autocomplete="current-password" required>
+            </div>
 
-        {% if form.errors %}
-            <div class="error">Invalid username or password.</div>
-        {% endif %}
+            {% if form.errors %}
+                <div class="error" role="alert"><i data-lucide="alert-circle"></i> Invalid username or password.</div>
+            {% endif %}
 
-        <input type="hidden" name="next" value="{{ next }}">
+            <input type="hidden" name="next" value="{{ next }}">
 
-        <button type="submit">Login</button>
+            <button type="submit" class="btn btn-primary">Log in</button>
+        </form>
+    </div>
+</main>
 
-    </form>
-
-</div>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
 
 </body>
 </html>

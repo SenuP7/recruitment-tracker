@@ -1,81 +1,76 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}CV Screening Result{% endblock %}
+{% block title %}CV result · {{ cv.candidate }}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>CV Screening Result</h1>
-</div>
+<p class="eyebrow"><a href="{% url 'cv_screening:screening-results' %}"><i data-lucide="arrow-left"></i> CV screening</a></p>
 
-<div class="panel panel-wide">
-
-    <h2 class="mt-0">
-        <span class="avatar avatar-inline">{{ cv.candidate.first_name|first }}{{ cv.candidate.last_name|first }}</span>
-        {{ cv.candidate.first_name }} {{ cv.candidate.last_name }}
-    </h2>
-    <p class="meta-line">Role: {{ result.role_profile.role_name }} &middot; <a href="{% url 'cv_screening:view_cv' cv.id %}" target="_blank">View Uploaded CV</a></p>
-
-    <div class="score-box" data-result="{% if result.score <= 0 %}zero{% elif result.score >= 0.8 %}pass{% else %}review{% endif %}">
-        <p class="meta-line">Match Score</p>
-        <div class="score">{% widthratio result.score 1 100 %}%</div>
-
-        <div class="progress-container">
-            <div class="progress-bar" style="width:{% widthratio result.score 1 100 %}%;"></div>
+<section class="record-header">
+    <div class="record-top">
+        <div class="record-identity">
+            <span class="avatar avatar-xl">{{ cv.candidate|initials }}</span>
+            <div>
+                <h1>{{ cv.candidate.first_name }} {{ cv.candidate.last_name }}</h1>
+                <div class="facts">
+                    <span><i data-lucide="list-checks"></i> {{ result.role_profile.role_name }}</span>
+                    <span><i data-lucide="calendar"></i> Screened {{ result.computed_at|date:"j M Y, H:i" }}</span>
+                </div>
+            </div>
         </div>
-
-        <div class="category">
-            {% if result.score >= 0.8 %}
-                <strong class="text-success">Strong Match</strong>
-            {% elif result.score >= 0.5 %}
-                <strong class="text-warning">Good Match</strong>
-            {% else %}
-                <strong class="text-danger">Needs Review</strong>
-            {% endif %}
+        <div class="page-actions">
+            <a class="btn btn-secondary" href="{% url 'cv_screening:view_cv' cv.id %}" target="_blank" rel="noopener"><i data-lucide="file-text"></i> Open CV</a>
+            {% if cv.candidate %}<a class="btn btn-secondary" href="{% url 'candidate-detail' cv.candidate.pk %}"><i data-lucide="user"></i> Candidate</a>{% endif %}
+            <a class="btn btn-primary" href="{% url 'cv_screening:upload-cv' result.role_profile.id %}"><i data-lucide="upload"></i> Screen another CV</a>
         </div>
     </div>
+</section>
 
-    <div class="skill-box">
-        <div class="section matched">
-            <h2>Matched Required Skills</h2>
-            {% if result.matched_required.all %}
-                <ul>
-                    {% for skill in result.matched_required.all %}
-                        <li>&#10003; {{ skill.name }}</li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>No required skills matched.</p>
-            {% endif %}
+<div class="layout-rail">
+    <div class="stack">
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="check-circle-2"></i> Matched skills</h2><span class="card-head-meta">{{ result.matched_required.all|length }} required · {{ result.matched_nice_to_have.all|length }} nice to have</span></div>
+            <div class="card-body stack" style="gap: var(--space-4)">
+                <div>
+                    <p class="skill-heading">Required</p>
+                    <div class="chips">{% for skill in result.matched_required.all %}<span class="chip solid"><i data-lucide="check"></i>{{ skill.name }}</span>{% empty %}<span class="faint">No required skills matched.</span>{% endfor %}</div>
+                </div>
+                <div>
+                    <p class="skill-heading">Nice to have</p>
+                    <div class="chips">{% for skill in result.matched_nice_to_have.all %}<span class="chip outline">{{ skill.name }}</span>{% empty %}<span class="faint">No nice-to-have skills matched.</span>{% endfor %}</div>
+                </div>
+            </div>
+        </section>
 
-            <h2>Matched Nice-to-have Skills</h2>
-            {% if result.matched_nice_to_have.all %}
-                <ul>
-                    {% for skill in result.matched_nice_to_have.all %}
-                        <li>&#10003; {{ skill.name }}</li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>No nice-to-have skills matched.</p>
-            {% endif %}
-        </div>
-
-        <div class="section missing">
-            <h2>Missing Required Skills</h2>
-            {% if result.missing_required.all %}
-                <ul>
-                    {% for skill in result.missing_required.all %}
-                        <li>&#9888; {{ skill.name }}</li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>No missing required skills.</p>
-            {% endif %}
-        </div>
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="circle-dashed"></i> Missing required skills</h2><span class="card-head-meta">{{ result.missing_required.all|length }}</span></div>
+            <div class="card-body">
+                <div class="chips">{% for skill in result.missing_required.all %}<span class="chip dashed">{{ skill.name }}</span>{% empty %}<span class="faint">Nothing missing — every required skill was found.</span>{% endfor %}</div>
+            </div>
+        </section>
     </div>
 
-    <a class="button btn btn-primary" href="/cv-screening/upload/{{ result.role_profile.id }}/">Screen Another CV</a>
-
+    <aside class="rail">
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="gauge"></i> Match score</h2></div>
+            <div class="card-body">
+                <div class="meter">
+                    <div class="meter-top">
+                        <span class="meter-value"><span data-countup>{% widthratio result.score 1 100 %}</span><small>%</small></span>
+                        <span class="match" data-match="{{ result.match_category }}">{{ result.match_category }}</span>
+                    </div>
+                    <div class="bar"><div class="bar-fill strong" style="--fill: {% widthratio result.score 1 100 %}%"></div></div>
+                </div>
+                <dl class="dl" style="margin-top: var(--space-4)">
+                    <div class="dl-row"><dt>Excellent</dt><dd class="mono">80–100%</dd></div>
+                    <div class="dl-row"><dt>Good</dt><dd class="mono">60–79%</dd></div>
+                    <div class="dl-row"><dt>Needs review</dt><dd class="mono">40–59%</dd></div>
+                    <div class="dl-row"><dt>Poor</dt><dd class="mono">0–39%</dd></div>
+                </dl>
+            </div>
+        </section>
+    </aside>
 </div>
 
 {% endblock %}

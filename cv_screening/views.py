@@ -147,6 +147,8 @@ def upload_cv(request, role_profile_id):
             role_profile
         )
 
+        messages.success(request, "CV uploaded and scored successfully.")
+
         return render(
             request,
             "cv_screening/match_result.html",
@@ -219,6 +221,7 @@ def upload_application_cv(request, application_id):
 
         application.save()
 
+        messages.success(request, "CV uploaded and application status updated.")
 
         return render(
             request,
@@ -252,11 +255,20 @@ def screening_results(request):
         "missing_required",
     ).order_by("-score")
 
+    scores = [result.score for result in results]
+    summary = {
+        "total": len(scores),
+        "average": round(sum(scores) / len(scores) * 100) if scores else None,
+        "strong": sum(1 for score in scores if score >= 0.8),
+        "needs_review": sum(1 for score in scores if score < 0.6),
+    }
+
     return render(
         request,
         "cv_screening/screening_results.html",
         {
             "results": results,
+            "summary": summary,
         }
     )
 
@@ -314,6 +326,8 @@ def delete_cv_result(request, result_id):
 
     # Delete CV
     cv.delete()
+
+    messages.success(request, "CV screening result deleted successfully.")
 
     return redirect(
         "cv_screening:screening-results"

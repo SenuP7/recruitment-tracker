@@ -6,7 +6,7 @@ none of them re-derive access scope, they only aggregate over what RBAC
 already allowed.
 """
 
-from django.db.models import Count, OuterRef, Subquery
+from django.db.models import Avg, Count, OuterRef, Subquery
 
 from cv_screening.models import CVMatchResult
 from positions.models import Position
@@ -42,8 +42,11 @@ def annotate_latest_cv_result(queryset):
 
 
 def _status_counts(queryset):
+    # order_by() is required: the filtered queryset is ordered by applied_at,
+    # and Django adds ordering fields to GROUP BY -- which would split every
+    # application into its own group and collapse each count to 1.
     return dict(
-        queryset.values("status")
+        queryset.order_by().values("status")
         .annotate(count=Count("id"))
         .values_list("status", "count")
     )
@@ -63,10 +66,14 @@ def get_overview_stats(applications):
         id__in=applications.values("position_id"),
     ).distinct().count()
 
+    average_score = applications.aggregate(average=Avg("cv_score"))["average"] if "cv_score" in applications.query.annotations else None
+
     return {
         "total_candidates": applications.values("candidate_id").distinct().count(),
         "total_applications": applications.count(),
         "open_positions": open_positions,
+        "interviewing": applications.filter(status__in=("HR Interview", "Technical Interview")).count(),
+        "average_score": round(average_score * 100) if average_score is not None else None,
     }
 
 

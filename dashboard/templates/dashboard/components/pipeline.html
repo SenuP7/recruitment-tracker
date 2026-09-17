@@ -1,8 +1,18 @@
-<div class="pipeline-strip">
-    {% for step in pipeline %}
-        <div class="pipeline-step">
-            <div class="pipeline-count">{{ step.count }}</div>
-            <div class="pipeline-label">{{ step.stage }}</div>
+{% load ui %}
+<section class="card">
+    <div class="card-head">
+        <h2><i data-lucide="filter"></i> Pipeline</h2>
+        <span class="card-head-meta">Applications by stage</span>
+    </div>
+    <div class="card-body">
+        <div class="funnel">
+            {% for step in pipeline %}
+                <div class="funnel-row{% if not step.count %} is-empty{% endif %}">
+                    <span class="funnel-label">{{ step.stage }}</span>
+                    <div class="bar"><div class="bar-fill{% if step.stage == 'Accepted' %} strong{% elif step.stage == 'Rejected' or step.stage == 'CV Screening Failed' %} muted{% endif %}" style="--fill: {{ step.count|percent_of:pipeline_max }}%; animation-delay: {{ forloop.counter0 }}0ms"></div></div>
+                    <span class="funnel-count" {% if step.count %}data-countup{% endif %}>{{ step.count }}</span>
+                </div>
+            {% endfor %}
         </div>
-    {% endfor %}
-</div>
+    </div>
+</section>

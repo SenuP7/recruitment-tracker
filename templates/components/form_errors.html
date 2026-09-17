@@ -1,0 +1,8 @@
+{% if form.non_field_errors or form.errors %}
+<div class="form-errors">
+    <div class="alert alert-error">
+        <i data-lucide="alert-circle"></i>
+        <span>{% if form.non_field_errors %}{% for error in form.non_field_errors %}{{ error }} {% endfor %}{% else %}Some fields need attention — see the highlighted fields below.{% endif %}</span>
+    </div>
+</div>
+{% endif %}

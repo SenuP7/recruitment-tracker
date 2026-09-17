@@ -1,3 +1,5 @@
+import csv
+
 from django.contrib.auth.models import Group, Permission, User
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -362,3 +364,71 @@ class NavLinkAccessTests(DashboardTestBase):
         response = client.get(reverse("candidate-list"))
         self.assertFalse(response.context["can_access_dashboard"])
         self.assertNotContains(response, reverse("dashboard:dashboard"))
+
+
+class DashboardExportTests(DashboardTestBase):
+    """CSV export must go through the exact same RBAC scope + active
+    filters as the table it's exporting -- reuses this file's existing
+    two-department fixture (Technical Interviewer scoped to Engineering
+    only) to prove that, not just that a CSV comes back."""
+
+    def setUp(self):
+        super().setUp()
+        self.export_url = reverse("dashboard:dashboard-export")
+
+    def _rows(self, response):
+        content = b"".join(response.streaming_content).decode()
+        return list(csv.reader(content.splitlines()))
+
+    def test_anonymous_user_denied(self):
+        client = Client()
+        response = client.get(self.export_url)
+        self.assertNotEqual(response.status_code, 200)
+
+    def test_recruiter_export_includes_both_departments(self):
+        client = Client()
+        client.login(username="recruiter_t", password="pass12345")
+        response = client.get(self.export_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("attachment", response["Content-Disposition"])
+
+        rows = self._rows(response)
+        self.assertEqual(rows[0], [
+            "Candidate Name", "Email", "Department", "Position", "Status",
+            "CV Score (%)", "Match Category", "Applied Date",
+        ])
+        candidate_names = [row[0] for row in rows[1:]]
+        self.assertIn("Eng Candidate", candidate_names)
+        self.assertIn("Sec Candidate", candidate_names)
+
+    def test_technical_interviewer_export_scoped_to_own_department_only(self):
+        client = Client()
+        client.login(username="tech_eng_t", password="pass12345")
+        response = client.get(self.export_url)
+
+        rows = self._rows(response)
+        candidate_names = [row[0] for row in rows[1:]]
+        self.assertIn("Eng Candidate", candidate_names)
+        self.assertNotIn("Sec Candidate", candidate_names)
+
+    def test_export_respects_active_status_filter(self):
+        client = Client()
+        client.login(username="recruiter_t", password="pass12345")
+        response = client.get(self.export_url, {"status": "Applied"})
+
+        rows = self._rows(response)
+        candidate_names = [row[0] for row in rows[1:]]
+        self.assertIn("Sec Candidate", candidate_names)  # status="Applied"
+        self.assertNotIn("Eng Candidate", candidate_names)  # status="CV Screening Passed"
+
+    def test_export_includes_cv_score_and_match_category(self):
+        client = Client()
+        client.login(username="recruiter_t", password="pass12345")
+        response = client.get(self.export_url)
+
+        rows = self._rows(response)
+        eng_row = next(row for row in rows[1:] if row[0] == "Eng Candidate")
+        self.assertEqual(eng_row[5], "85")  # CV Score (%)
+        self.assertEqual(eng_row[6], "Excellent Match")

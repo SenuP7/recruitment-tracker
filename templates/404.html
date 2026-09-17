@@ -1,0 +1,18 @@
+{% extends "marketing/public_base.html" %}
+
+{% block title %}Page not found · Candidflow{% endblock %}
+{% block robots %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<section class="error-page">
+    <div class="wrap">
+        <span class="error-code">404</span>
+        <h1>We couldn't find that page.</h1>
+        <p>The link may be out of date, or the record may have been deleted. If you typed the address, check it for mistakes.</p>
+        <div class="hero-ctas">
+            <a href="{% url 'landing' %}" class="btn btn-primary">Back to home</a>
+            <a href="{% url 'help' %}" class="btn btn-ghost">Get help</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

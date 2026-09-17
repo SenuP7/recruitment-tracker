@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load ui %}
+
+{% block title %}Search{% endblock %}
+
+{% block content %}
+
+<header class="page-header">
+    <div class="page-header-text">
+        <p class="eyebrow"><i data-lucide="search"></i> Search</p>
+        <h1>{% if query %}Results for “{{ query }}”{% else %}Search{% endif %}</h1>
+        {% if query %}<p class="page-subtitle">{{ candidates|length }} candidate{{ candidates|length|pluralize }} and {{ positions|length }} position{{ positions|length|pluralize }} matched.</p>{% endif %}
+    </div>
+</header>
+
+<form method="get" action="{% url 'global-search' %}" class="toolbar" role="search">
+    <label class="toolbar-search search-large">
+        <i data-lucide="search"></i>
+        <span class="sr-only">Search</span>
+        <input type="search" name="q" value="{{ query }}" placeholder="Search by name, email, or position title" autofocus>
+    </label>
+    <button type="submit" class="btn btn-primary">Search</button>
+</form>
+
+{% if not query %}
+    <div class="empty">
+        <span class="empty-icon"><i data-lucide="text-search"></i></span>
+        <h3>Find anyone or any role</h3>
+        <p>Search matches every word you type against names, emails, and position titles. Tip: press <kbd>/</kbd> anywhere to jump to search.</p>
+    </div>
+{% elif not perms.candidates.view_candidate and not perms.positions.view_position %}
+    <div class="empty">
+        <span class="empty-icon"><i data-lucide="shield-off"></i></span>
+        <h3>Nothing you can view</h3>
+        <p>You don't have permission to view candidates or positions.</p>
+    </div>
+{% else %}
+    <div class="grid-2 stagger">
+        {% if perms.candidates.view_candidate %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="users"></i> Candidates <span class="count-pill">{{ candidates|length }}</span></h2></div>
+            <div class="list">
+                {% for candidate in candidates %}
+                    <a href="{% url 'candidate-detail' candidate.pk %}" class="list-item">
+                        <span class="avatar">{{ candidate|initials }}</span>
+                        <span class="list-body">
+                            <span class="list-title">{{ candidate.first_name }} {{ candidate.last_name }}</span>
+                            <span class="list-sub mono">{{ candidate.email }}</span>
+                        </span>
+                        <span class="list-trail"><span class="badge" data-status="{{ candidate.current_status }}">{{ candidate.current_status }}</span></span>
+                    </a>
+                {% empty %}
+                    <p class="list-empty"><i data-lucide="user-x"></i> No matching candidates.</p>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if perms.positions.view_position %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="briefcase"></i> Positions <span class="count-pill">{{ positions|length }}</span></h2></div>
+            <div class="list">
+                {% for position in positions %}
+                    <a href="{% url 'position-detail' position.pk %}" class="list-item">
+                        <span class="avatar square">{{ position.title|initials }}</span>
+                        <span class="list-body">
+                            <span class="list-title">{{ position.title }}</span>
+                            <span class="list-sub">{{ position.department }}</span>
+                        </span>
+                        <span class="list-trail"><span class="badge" data-status="{% if position.is_open %}Open{% else %}Closed{% endif %}">{% if position.is_open %}Open{% else %}Closed{% endif %}</span></span>
+                    </a>
+                {% empty %}
+                    <p class="list-empty"><i data-lucide="briefcase"></i> No matching positions.</p>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    </div>
+{% endif %}
+
+{% endblock %}

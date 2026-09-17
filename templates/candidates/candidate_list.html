@@ -1,43 +1,73 @@
 {% extends "base.html" %}
+{% load ui %}
 
 {% block title %}Candidates{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>Candidates <span class="count-pill">{{ candidates|length }}</span></h1>
+<header class="page-header">
+    <div class="page-header-text">
+        <p class="eyebrow"><i data-lucide="users"></i> Pipeline</p>
+        <h1>Candidates <span class="count-pill">{{ page_obj.paginator.count }}</span></h1>
+        <p class="page-subtitle">Everyone who has entered the pipeline, and where they currently stand.</p>
+    </div>
     {% if perms.candidates.add_candidate %}
-        <a href="{% url 'candidate-create' %}" class="btn btn-primary">Add Candidate</a>
+        <div class="page-actions">
+            <a href="{% url 'candidate-create' %}" class="btn btn-primary"><i data-lucide="user-plus"></i> Add candidate</a>
+        </div>
     {% endif %}
-</div>
+</header>
+
+{% include "components/list_toolbar.html" %}
 
 {% if candidates %}
-    <div class="row-list">
-        {% for candidate in candidates %}
-            <div class="row-card">
-                <div class="row-lead">
-                    <div class="avatar">{{ candidate.first_name|first }}{{ candidate.last_name|first }}</div>
-                    <div class="row-main">
-                        <h3>
-                            <a href="{% url 'candidate-detail' candidate.pk %}">
-                                {{ candidate.first_name }} {{ candidate.last_name }}
-                            </a>
-                        </h3>
-                        <div class="row-meta">
-                            <span class="mono">{{ candidate.email }}</span>
-                            <span>{{ candidate.department|default:"No department" }}</span>
-                            <span class="mono">{{ candidate.phone }}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="row-side">
-                    <span class="badge" data-status="{{ candidate.current_status }}">{{ candidate.current_status }}</span>
-                </div>
-            </div>
-        {% endfor %}
+    <div class="table-wrap">
+        <table class="data-table stagger">
+            <thead>
+                <tr>
+                    <th>Candidate</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th class="num">Applications</th>
+                    <th>Added</th>
+                    <th class="shrink"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for candidate in candidates %}
+                    <tr data-href="{% url 'candidate-detail' candidate.pk %}">
+                        <td>
+                            <div class="cell-lead">
+                                <span class="avatar">{{ candidate|initials }}</span>
+                                <div class="cell-text">
+                                    <a class="cell-title" href="{% url 'candidate-detail' candidate.pk %}">{{ candidate.first_name }} {{ candidate.last_name }}</a>
+                                    <span class="cell-sub mono">{{ candidate.email }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="muted">{{ candidate.department|default:"—" }}</td>
+                        <td><span class="badge" data-status="{{ candidate.current_status }}">{{ candidate.current_status }}</span></td>
+                        <td class="num">{{ candidate.application_count }}</td>
+                        <td class="mono muted">{{ candidate.created_at|date:"d M Y" }}</td>
+                        <td class="shrink">
+                            <div class="row-actions">
+                                {% if perms.candidates.change_candidate %}<a class="btn btn-ghost btn-sm" href="{% url 'candidate-update' candidate.pk %}" title="Edit"><i data-lucide="pencil"></i></a>{% endif %}
+                                <a class="btn btn-ghost btn-sm" href="{% url 'candidate-detail' candidate.pk %}" title="Open"><i data-lucide="arrow-up-right"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% include "components/pagination.html" %}
 {% else %}
-    <div class="empty-state">No candidates found.</div>
+    <div class="empty">
+        <span class="empty-icon"><i data-lucide="user-search"></i></span>
+        <h3>No candidates found</h3>
+        <p>{% if toolbar.query %}Nothing matches “{{ toolbar.query }}”. Try a different name or email.{% else %}Candidates will appear here as soon as they're added.{% endif %}</p>
+        {% if perms.candidates.add_candidate %}<a href="{% url 'candidate-create' %}" class="btn btn-primary"><i data-lucide="user-plus"></i> Add candidate</a>{% endif %}
+    </div>
 {% endif %}
 
 {% endblock %}

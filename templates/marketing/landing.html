@@ -1,0 +1,273 @@
+{% extends "marketing/public_base.html" %}
+{% load static %}
+
+{% block title %}Candidflow — the hiring pipeline your team can see clearly{% endblock %}
+{% block og_title %}Candidflow — the hiring pipeline your team can see clearly{% endblock %}
+{% block body_class %}home-page{% endblock %}
+
+{% block background %}<canvas id="webgl-bg" aria-hidden="true"></canvas>{% endblock %}
+
+{% block content %}
+<header class="hero">
+    <div class="wrap">
+        <span class="eyebrow reveal in-view">Internal hiring tool</span>
+        <h1 class="reveal in-view">The hiring pipeline your team can actually see clearly.</h1>
+        <p class="lede reveal in-view">Candidflow tracks candidates, CV screening, interviews, and feedback in one place — with role-based access for recruiters, interviewers, and leadership.</p>
+        <div class="hero-ctas reveal in-view">
+            {% if user.is_authenticated %}<a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'profile' %}{% endif %}" class="btn btn-primary">Open Candidflow <span class="arrow">→</span></a>{% else %}<a href="{% url 'login' %}" class="btn btn-primary">Log in <span class="arrow">→</span></a>{% endif %}
+        </div>
+    </div>
+
+    <div class="wrap preview-wrap reveal in-view">
+        <div class="preview" aria-label="Illustration of the Candidflow dashboard" role="img">
+            <div class="preview-chrome"><span></span><span></span><span></span><div class="preview-url">candidflow / dashboard</div></div>
+            <div class="preview-body">
+                <aside class="pv-side">
+                    <div class="pv-brand">{% include "components/brand_mark.html" %}<b>Candidflow</b></div>
+                    <i class="pv-group">Overview</i>
+                    <i class="pv-nav is-active">Dashboard</i>
+                    <i class="pv-nav">My interviews</i>
+                    <i class="pv-group">Pipeline</i>
+                    <i class="pv-nav">Candidates</i>
+                    <i class="pv-nav">Applications</i>
+                    <i class="pv-nav">Interviews</i>
+                    <i class="pv-group">Hiring</i>
+                    <i class="pv-nav">Positions</i>
+                    <i class="pv-nav">CV screening</i>
+                </aside>
+                <div class="pv-main">
+                    <div class="pv-title"><b>Good morning</b><span>Here's where the hiring pipeline stands.</span></div>
+                    <div class="pv-kpis">
+                        <div><span>Candidates</span><b>128</b></div>
+                        <div><span>Applications</span><b>164</b></div>
+                        <div><span>Interviewing</span><b>23</b></div>
+                        <div><span>Avg CV match</span><b>71%</b></div>
+                    </div>
+                    <div class="pv-grid">
+                        <div class="pv-card">
+                            <div class="pv-card-head">Pipeline</div>
+                            <div class="pv-funnel">
+                                <div><span>Applied</span><em style="--w: 100%"></em><b>58</b></div>
+                                <div><span>CV screening</span><em style="--w: 62%"></em><b>36</b></div>
+                                <div><span>HR interview</span><em style="--w: 28%"></em><b>16</b></div>
+                                <div><span>Technical</span><em style="--w: 12%"></em><b>7</b></div>
+                                <div><span>Senior review</span><em style="--w: 7%"></em><b>4</b></div>
+                                <div><span>Accepted</span><em class="strong" style="--w: 5%"></em><b>3</b></div>
+                            </div>
+                            <div class="pv-card-head">Applications</div>
+                            <div class="pv-rows">
+                                <div><i class="pv-av">MR</i><span>Maya Reyes<small>Backend Engineer</small></span><em class="pv-status done">Accepted</em><strong>91%</strong></div>
+                                <div><i class="pv-av">JO</i><span>James Okafor<small>Data Analyst</small></span><em class="pv-status">Technical</em><strong>78%</strong></div>
+                                <div><i class="pv-av">LC</i><span>Lena Carter<small>Product Designer</small></span><em class="pv-status wait">Senior review</em><strong>84%</strong></div>
+                                <div><i class="pv-av">DP</i><span>Dev Patel<small>Backend Engineer</small></span><em class="pv-status">HR interview</em><strong>66%</strong></div>
+                            </div>
+                        </div>
+                        <div class="pv-card pv-rail">
+                            <div class="pv-card-head">Upcoming interviews</div>
+                            <div class="pv-event"><i><small>SEP</small>18</i><span>James Okafor<small>Technical · 10:30</small></span></div>
+                            <div class="pv-event"><i><small>SEP</small>19</i><span>Dev Patel<small>HR · 14:00</small></span></div>
+                            <div class="pv-card-head">Recent feedback</div>
+                            <div class="pv-event"><i class="pv-av">AK</i><span>Lena Carter<small class="pv-dots"><b></b><b></b><b></b><b></b><s></s></small></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="preview-note">Illustration with sample names — the real dashboard is scoped to what your role can see.</p>
+    </div>
+</header>
+
+<section class="facts-strip">
+    <div class="wrap facts-grid reveal">
+        <div><b>9</b><span>tracked pipeline stages</span></div>
+        <div><b>6</b><span>roles with scoped access</span></div>
+        <div><b>3</b><span>interview round types</span></div>
+        <div><b>1</b><span>place for all of it</span></div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="wrap journey">
+        <div class="journey-intro">
+            <span class="section-tag">How it works</span>
+            <h2>Follow a candidate from first application to final decision.</h2>
+            <p>Every application moves through the same stages, and every stage leaves a record the next person can build on.</p>
+        </div>
+        <ol class="journey-steps">
+            <li class="journey-step reveal">
+                <span class="journey-num">01</span>
+                <div>
+                    <h3>Applied</h3>
+                    <p>A candidate record is created once and linked to each role they apply for. Duplicates are prevented by email.</p>
+                </div>
+            </li>
+            <li class="journey-step reveal">
+                <span class="journey-num">02</span>
+                <div>
+                    <h3>CV screening</h3>
+                    <p>The CV is scored against the role's required and nice-to-have skills. Strong matches pass screening automatically; weak ones are marked as failed.</p>
+                </div>
+            </li>
+            <li class="journey-step reveal">
+                <span class="journey-num">03</span>
+                <div>
+                    <h3>HR interview</h3>
+                    <p>Schedule the round, assign an interviewer, and it appears in their own interview list the moment it's saved.</p>
+                </div>
+            </li>
+            <li class="journey-step reveal">
+                <span class="journey-num">04</span>
+                <div>
+                    <h3>Technical interview</h3>
+                    <p>Technical interviewers work from a dashboard scoped to their own department and record a rating, recommendation, and evidence.</p>
+                </div>
+            </li>
+            <li class="journey-step reveal">
+                <span class="journey-num">05</span>
+                <div>
+                    <h3>Senior review</h3>
+                    <p>Reviewers read the full feedback thread, reply where something needs discussing, and every edit is kept in the history.</p>
+                </div>
+            </li>
+            <li class="journey-step reveal">
+                <span class="journey-num">06</span>
+                <div>
+                    <h3>Decision</h3>
+                    <p>The application is accepted or rejected, and the whole path — scores, rounds, feedback — stays on the record.</p>
+                </div>
+            </li>
+        </ol>
+    </div>
+</section>
+
+<section class="section">
+    <div class="wrap">
+        <div class="section-head reveal">
+            <span class="section-tag">Built for every role</span>
+            <h2>Everyone sees exactly what their job needs.</h2>
+            <p>Access is decided by role, so the pipeline stays useful for the people running it and private from everyone else.</p>
+        </div>
+        <div class="role-grid">
+            <article class="role-card reveal">
+                <div class="role-top"><span class="role-icon"><i data-lucide="users"></i></span><span class="role-scope">All departments</span></div>
+                <h3>Recruiter</h3>
+                <p>Creates and manages candidates, applications, positions and interview schedules.</p>
+            </article>
+            <article class="role-card reveal">
+                <div class="role-top"><span class="role-icon"><i data-lucide="messages-square"></i></span><span class="role-scope">All departments</span></div>
+                <h3>HR Interviewer</h3>
+                <p>Runs HR rounds, updates interview outcomes, and writes structured feedback.</p>
+            </article>
+            <article class="role-card reveal">
+                <div class="role-top"><span class="role-icon"><i data-lucide="code-2"></i></span><span class="role-scope">Own department</span></div>
+                <h3>Technical Interviewer</h3>
+                <p>Runs technical rounds and writes feedback, with the dashboard scoped to their department.</p>
+            </article>
+            <article class="role-card reveal">
+                <div class="role-top"><span class="role-icon"><i data-lucide="shield-check"></i></span><span class="role-scope">All departments</span></div>
+                <h3>Senior Reviewer</h3>
+                <p>Reviews candidates across every round, updates stages, and can moderate any feedback.</p>
+            </article>
+            <article class="role-card reveal">
+                <div class="role-top"><span class="role-icon"><i data-lucide="line-chart"></i></span><span class="role-scope">All departments</span></div>
+                <h3>Leadership Manager</h3>
+                <p>Oversees the full pipeline, updates application stages, and can edit any feedback.</p>
+            </article>
+            <article class="role-card reveal">
+                <div class="role-top"><span class="role-icon"><i data-lucide="user"></i></span><span class="role-scope">Open roles only</span></div>
+                <h3>Candidate</h3>
+                <p>Can browse open positions. No access to the dashboard, screening, or internal feedback.</p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="wrap">
+        <div class="section-head reveal">
+            <span class="section-tag">Features</span>
+            <h2>What it actually does</h2>
+            <p>No pitch and no pricing — just the tools this team uses every day.</p>
+        </div>
+        <div class="feature-grid">
+            <div class="feature-card reveal">
+                <span class="feature-icon"><i data-lucide="scan-search"></i></span>
+                <h3>CV screening &amp; match scoring</h3>
+                <p>Every CV is scored against the role's requirements the moment it's uploaded, then ranked and categorized automatically.</p>
+            </div>
+            <div class="feature-card reveal">
+                <span class="feature-icon"><i data-lucide="calendar-check"></i></span>
+                <h3>Interview scheduling</h3>
+                <p>Schedule rounds, assign an interviewer, and spot anything past its date that still needs an outcome.</p>
+            </div>
+            <div class="feature-card reveal">
+                <span class="feature-icon"><i data-lucide="message-square-text"></i></span>
+                <h3>Threaded feedback</h3>
+                <p>Ratings, recommendations and replies, with author-locked edits and a full history of every change.</p>
+            </div>
+            <div class="feature-card reveal">
+                <span class="feature-icon"><i data-lucide="layout-dashboard"></i></span>
+                <h3>Role-based dashboard</h3>
+                <p>A live pipeline, upcoming interviews and recent feedback — scoped to what your role is allowed to see.</p>
+            </div>
+            <div class="feature-card reveal">
+                <span class="feature-icon"><i data-lucide="download"></i></span>
+                <h3>Search &amp; export</h3>
+                <p>Find any candidate or position instantly, and export whatever is currently filtered straight to CSV.</p>
+            </div>
+            <div class="feature-card reveal">
+                <span class="feature-icon"><i data-lucide="bell"></i></span>
+                <h3>Notifications</h3>
+                <p>Know when someone edits or removes feedback you wrote, without going looking for it.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section trust-section">
+    <div class="wrap">
+        <div class="section-head reveal">
+            <span class="section-tag">Trust</span>
+            <h2>Candidate data, handled carefully.</h2>
+            <p>Candidflow holds personal information about people applying for jobs, so how we protect it is written down rather than implied.</p>
+        </div>
+        <div class="trust-grid">
+            <a href="{% url 'security' %}" class="trust-card reveal">
+                <span class="role-icon"><i data-lucide="lock-keyhole"></i></span>
+                <h3>Security</h3>
+                <p>Role-checked access on every page, hashed passwords, private CV storage and a logged history of feedback changes.</p>
+                <span class="trust-link">Read the safeguards <span class="arrow">→</span></span>
+            </a>
+            <a href="{% url 'privacy' %}" class="trust-card reveal">
+                <span class="role-icon"><i data-lucide="file-text"></i></span>
+                <h3>Privacy</h3>
+                <p>What we collect, why, where it's stored, how long it's kept, and the rights candidates and staff have over it.</p>
+                <span class="trust-link">Read the privacy notice <span class="arrow">→</span></span>
+            </a>
+            <a href="{% url 'candidate-notice' %}" class="trust-card reveal">
+                <span class="role-icon"><i data-lucide="user-check"></i></span>
+                <h3>For applicants</h3>
+                <p>The emails candidates receive, how CV screening works, and how to ask a person to review an automated result.</p>
+                <span class="trust-link">Read the candidate notice <span class="arrow">→</span></span>
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="cta-band">
+    <div class="wrap cta-inner reveal">
+        {% include "components/brand_mark.html" with size="lg" %}
+        <h2>Ready to pick up where you left off?</h2>
+        <p>{% if user.is_authenticated %}You're already signed in. Head straight back to your pipeline.{% else %}Log in with the account your administrator set up for you.{% endif %}</p>
+        {% if user.is_authenticated %}<a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'profile' %}{% endif %}" class="btn btn-primary">Open Candidflow <span class="arrow">→</span></a>{% else %}<a href="{% url 'login' %}" class="btn btn-primary">Log in <span class="arrow">→</span></a>{% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script src="{% static 'js/landing-webgl.js' %}"></script>
+<script src="{% static 'js/landing-reveal.js' %}"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+{% endblock %}

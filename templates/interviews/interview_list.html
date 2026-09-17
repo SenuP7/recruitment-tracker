@@ -1,41 +1,92 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}Interviews{% endblock %}
+{% block title %}{% if my_interviews_only %}My interviews{% else %}Interviews{% endif %}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>Interviews <span class="count-pill">{{ interviews|length }}</span></h1>
+<header class="page-header">
+    <div class="page-header-text">
+        <p class="eyebrow"><i data-lucide="{% if my_interviews_only %}calendar-check{% else %}calendar{% endif %}"></i> {% if my_interviews_only %}Assigned to you{% else %}Pipeline{% endif %}</p>
+        <h1>{% if my_interviews_only %}My interviews{% else %}Interviews{% endif %} <span class="count-pill">{{ page_obj.paginator.count }}</span></h1>
+        <p class="page-subtitle">{% if my_interviews_only %}Interviews where you're the assigned interviewer.{% else %}Every scheduled round, with its outcome and feedback.{% endif %}</p>
+    </div>
     {% if perms.interviews.add_interview %}
-        <a href="{% url 'interview-create' %}" class="btn btn-primary">Create Interview</a>
+        <div class="page-actions">
+            <a href="{% url 'interview-create' %}" class="btn btn-primary"><i data-lucide="calendar-plus"></i> Schedule interview</a>
+        </div>
     {% endif %}
-</div>
+</header>
+
+{% include "components/list_toolbar.html" %}
 
 {% if interviews %}
-    <div class="row-list">
-        {% for interview in interviews %}
-            <div class="row-card">
-                <div class="row-lead">
-                    <div class="avatar">{{ interview.application.candidate.first_name|first }}{{ interview.application.candidate.last_name|first }}</div>
-                    <div class="row-main">
-                        <h3>
-                            <a href="{% url 'interview-detail' interview.pk %}">{{ interview.application }}</a>
-                        </h3>
-                        <div class="row-meta">
-                            <span>{{ interview.interview_type }}</span>
-                            <span class="mono">{{ interview.scheduled_date|date:"d M Y, H:i" }}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="row-side">
-                    <span class="badge" data-status="{{ interview.status }}">{{ interview.status }}</span>
-                    <a href="{% url 'feedback-detail' interview.pk %}" class="btn btn-secondary btn-sm">Feedback</a>
-                </div>
-            </div>
-        {% endfor %}
+    <div class="table-wrap">
+        <table class="data-table stagger">
+            <thead>
+                <tr>
+                    <th>When</th>
+                    <th>Candidate</th>
+                    <th>Round</th>
+                    <th>Interviewer</th>
+                    <th>Status</th>
+                    <th class="num">Feedback</th>
+                    <th class="shrink"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for interview in interviews %}
+                    <tr data-href="{% url 'interview-detail' interview.pk %}">
+                        <td>
+                            <div class="cell-lead">
+                                <span class="date-chip"><span class="m">{{ interview.scheduled_date|date:"M" }}</span><span class="d">{{ interview.scheduled_date|date:"j" }}</span></span>
+                                <div class="cell-text">
+                                    <span class="cell-title">{{ interview.scheduled_date|date:"l" }}</span>
+                                    <span class="cell-sub mono">{{ interview.scheduled_date|time:"H:i" }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="cell-text">
+                                <a class="cell-title" href="{% url 'interview-detail' interview.pk %}">{{ interview.application.candidate }}</a>
+                                <span class="cell-sub">{{ interview.application.position.title }}</span>
+                            </div>
+                        </td>
+                        <td>{{ interview.interview_type }}</td>
+                        <td>
+                            {% if interview.interviewer %}
+                                <div class="cell-lead"><span class="avatar avatar-sm">{{ interview.interviewer.username|initials }}</span><span>{{ interview.interviewer }}</span></div>
+                            {% else %}
+                                <span class="faint">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if interview.status == "Scheduled" and interview.scheduled_date < toolbar.now %}
+                                <span class="badge" data-status="Overdue">Needs update</span>
+                            {% else %}
+                                <span class="badge" data-status="{{ interview.status }}">{{ interview.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="num">{{ interview.feedback_count }}</td>
+                        <td class="shrink">
+                            <div class="row-actions">
+                                <a class="btn btn-ghost btn-sm" href="{% url 'feedback-thread' interview.pk %}" title="Feedback"><i data-lucide="message-square-text"></i></a>
+                                <a class="btn btn-ghost btn-sm" href="{% url 'interview-detail' interview.pk %}" title="Open"><i data-lucide="arrow-up-right"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% include "components/pagination.html" %}
 {% else %}
-    <div class="empty-state">No interviews found.</div>
+    <div class="empty">
+        <span class="empty-icon"><i data-lucide="calendar-x"></i></span>
+        <h3>No interviews here</h3>
+        <p>{% if my_interviews_only %}You have no interviews assigned to you.{% else %}No interviews found.{% endif %}</p>
+        {% if perms.interviews.add_interview %}<a href="{% url 'interview-create' %}" class="btn btn-primary"><i data-lucide="calendar-plus"></i> Schedule interview</a>{% endif %}
+    </div>
 {% endif %}
 
 {% endblock %}

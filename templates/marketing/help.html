@@ -1,0 +1,121 @@
+{% extends "marketing/public_base.html" %}
+{% load static %}
+
+{% block title %}Help & contact · Candidflow{% endblock %}
+{% block og_title %}Help & contact · Candidflow{% endblock %}
+{% block meta_description %}Get help with a Candidflow account, access and roles, CV screening, feedback and data requests, or contact the right team.{% endblock %}
+
+{% block content %}
+<header class="doc-hero">
+    <div class="wrap">
+        <span class="section-tag">Support</span>
+        <h1>Help &amp; contact</h1>
+        <p class="doc-lede">Answers to the questions people ask most, and who to contact when you need a person.</p>
+    </div>
+</header>
+
+<div class="wrap">
+    <section class="help-contacts" aria-labelledby="contact-heading">
+        <h2 id="contact-heading" class="visually-hidden">Contact</h2>
+        <article class="contact-card">
+            <span class="contact-icon"><i data-lucide="life-buoy" aria-hidden="true"></i></span>
+            <h3>Accounts &amp; access</h3>
+            <p>Sign-in problems, new accounts, role changes, anything not working.</p>
+            <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a>
+            <span class="contact-sla">Reply within 5 working days</span>
+        </article>
+        <article class="contact-card">
+            <span class="contact-icon"><i data-lucide="fingerprint" aria-hidden="true"></i></span>
+            <h3>Personal data</h3>
+            <p>Copies of your data, corrections, deletion, or a human review of screening.</p>
+            <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a>
+            <span class="contact-sla">Reply within one month</span>
+        </article>
+        <article class="contact-card">
+            <span class="contact-icon"><i data-lucide="bug" aria-hidden="true"></i></span>
+            <h3>Security issues</h3>
+            <p>A vulnerability, or a sign your account has been used by someone else.</p>
+            <a href="mailto:{{ contacts.security }}">{{ contacts.security }}</a>
+            <span class="contact-sla">Acknowledged within 5 working days</span>
+        </article>
+    </section>
+
+    <div class="help-layout">
+        <section class="faq-group" aria-labelledby="faq-staff">
+            <div class="faq-head">
+                <span class="section-tag">For staff</span>
+                <h2 id="faq-staff">Using Candidflow</h2>
+            </div>
+            <div class="faq-list">
+                <details>
+                    <summary>How do I get an account?</summary>
+                    <p>Accounts are created by an administrator. There's no public sign-up. Ask your manager to request one through <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a>, stating the role and department you need.</p>
+                </details>
+                <details>
+                    <summary>I forgot my password.</summary>
+                    <p>Passwords can't be reset from the sign-in page yet. Email <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a> from your work address and an administrator will set a new one for you.</p>
+                </details>
+                <details>
+                    <summary>Why can't I see the dashboard or CV screening?</summary>
+                    <p>Both are limited to recruitment staff: recruiters, HR and technical interviewers, senior reviewers and leadership managers. Technical interviewers also need a department on their profile, otherwise the dashboard stays empty. If your role looks wrong, contact help.</p>
+                </details>
+                <details>
+                    <summary>I got a "403 Forbidden" page.</summary>
+                    <p>Your role doesn't include that action. For example, only some roles can create positions or delete candidates. If you need it for your job, ask for a role change rather than using someone else's account.</p>
+                </details>
+                <details>
+                    <summary>Who can edit feedback I wrote?</summary>
+                    <p>You, senior reviewers and leadership managers. If someone else edits or deletes your feedback, you'll get a notification, and every change is kept in the feedback's history.</p>
+                </details>
+                <details>
+                    <summary>How is the CV match score worked out?</summary>
+                    <p>The CV's text is checked for each skill the position lists, including known alternative names (for example "JS" for JavaScript). Required skills make up 80% of the score and nice-to-have skills 20%. A score of 70% or more passes screening automatically, below 40% fails, and anything in between is left for review. Keyword matching can miss experience described in other words, so check the result before relying on it.</p>
+                </details>
+                <details>
+                    <summary>Which CV files can I upload?</summary>
+                    <p>PDF or Word (.docx), up to 5 MB. Scanned image-only PDFs have no text to read, so they'll score low.</p>
+                </details>
+                <details>
+                    <summary>How do I export applications?</summary>
+                    <p>On the dashboard, set the filters you want and choose <strong>Export CSV</strong>. The file contains exactly what those filters show, limited to what your role can see. It contains personal data, so follow the <a href="{% url 'terms' %}#candidate-data">handling rules</a>.</p>
+                </details>
+                <details>
+                    <summary>Are there keyboard shortcuts?</summary>
+                    <p>Press <kbd>/</kbd> anywhere in the app to jump to search. The theme switch in the top bar toggles light and dark, and your choice is remembered on that device.</p>
+                </details>
+            </div>
+        </section>
+
+        <section class="faq-group" aria-labelledby="faq-candidates">
+            <div class="faq-head">
+                <span class="section-tag">For applicants</span>
+                <h2 id="faq-candidates">Your application</h2>
+            </div>
+            <div class="faq-list">
+                <details>
+                    <summary>Why did I get an email from Candidflow?</summary>
+                    <p>We use Candidflow to manage applications. It emails you when your application changes stage or an interview is scheduled, and never sends marketing. See the <a href="{% url 'candidate-notice' %}">candidate notice</a>.</p>
+                </details>
+                <details>
+                    <summary>My CV didn't pass screening. Can a person look at it?</summary>
+                    <p>Yes. Email <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a> with the role you applied for, and a recruiter will review your CV and tell you the result.</p>
+                </details>
+                <details>
+                    <summary>How do I see or delete my data?</summary>
+                    <p>Email <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a>. You can ask for a copy of everything we hold, including interview feedback, ask us to correct it, or withdraw your application and have it deleted. We reply within one month.</p>
+                </details>
+            </div>
+        </section>
+    </div>
+
+    <aside class="help-status">
+        <a href="{% url 'status' %}" class="footer-status" data-state="{{ site_status.state|default:'unknown' }}"><span class="status-dot" aria-hidden="true"></span>{{ site_status.label|default:"System status" }}</a>
+        <p>Something not loading? Check the status page before you email us.</p>
+    </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+{% endblock %}

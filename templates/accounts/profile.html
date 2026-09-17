@@ -1,58 +1,114 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}My Profile{% endblock %}
+{% block title %}Your profile{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>
-        <span class="avatar avatar-lg avatar-inline">
-            {% if profile_user.first_name %}{{ profile_user.first_name|first }}{{ profile_user.last_name|first }}{% else %}{{ profile_user.username|slice:":2"|upper }}{% endif %}
-        </span>
-        My Profile
-    </h1>
-</div>
-
-<div class="detail-layout">
-    <div class="detail-card">
-        <div class="field-row">
-            <strong>Username</strong>
-            <span class="field-value mono">{{ profile_user.username }}</span>
+<section class="record-header">
+    <div class="record-top">
+        <div class="record-identity">
+            <span class="avatar avatar-xl">{% if profile_user.first_name %}{{ profile_user.get_full_name|initials }}{% else %}{{ profile_user.username|initials }}{% endif %}</span>
+            <div>
+                <h1>{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+                <div class="facts">
+                    <span class="mono"><i data-lucide="at-sign"></i> {{ profile_user.username }}</span>
+                    {% if profile_user.email %}<span><i data-lucide="mail"></i> {{ profile_user.email }}</span>{% endif %}
+                    <span><i data-lucide="calendar-plus"></i> Joined {{ profile_user.date_joined|date:"j M Y" }}</span>
+                </div>
+            </div>
         </div>
-        <div class="field-row">
-            <strong>First Name</strong>
-            <span class="field-value">{{ profile_user.first_name }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Last Name</strong>
-            <span class="field-value">{{ profile_user.last_name }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Email</strong>
-            <span class="field-value mono">{{ profile_user.email }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Groups</strong>
-            <span class="field-value">
-                {% for group in profile_user.groups.all %}
-                    {{ group.name }}{% if not forloop.last %}, {% endif %}
-                {% empty %}
-                    No group assigned
-                {% endfor %}
-            </span>
-        </div>
-    </div>
-
-    <div class="sidebar-card">
-        <h2>Actions</h2>
-        <div class="actions-bar profile-actions">
-            <a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'candidate-list' %}{% endif %}" class="btn btn-primary">Home</a>
+        <div class="page-actions">
+            <a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'candidate-list' %}{% endif %}" class="btn btn-secondary"><i data-lucide="home"></i> Home</a>
             <form method="post" action="{% url 'logout' %}" class="logout-form">
                 {% csrf_token %}
-                <button type="submit" class="btn logout">Logout</button>
+                <button type="submit" class="btn btn-primary"><i data-lucide="log-out"></i> Log out</button>
             </form>
         </div>
     </div>
+
+    <div class="record-stats stagger">
+        <div class="record-stat"><div class="record-stat-label">Interviews assigned</div><div class="record-stat-value" data-countup>{{ my_interview_count }}</div></div>
+        <div class="record-stat"><div class="record-stat-label">Upcoming</div><div class="record-stat-value" data-countup>{{ my_upcoming_interviews|length }}</div></div>
+        <div class="record-stat"><div class="record-stat-label">Feedback written</div><div class="record-stat-value" data-countup>{{ my_feedback_count }}</div></div>
+        <div class="record-stat"><div class="record-stat-label">Unread notifications</div><div class="record-stat-value" data-countup>{{ unread_notifications|length }}</div></div>
+    </div>
+</section>
+
+<div class="layout-rail">
+    <div class="stack">
+        <section class="card">
+            <div class="card-head">
+                <h2><i data-lucide="calendar-clock"></i> Your upcoming interviews</h2>
+                {% if can_access_dashboard %}<a href="{% url 'my-interviews' %}" class="btn btn-ghost btn-sm">All yours <i data-lucide="arrow-right"></i></a>{% endif %}
+            </div>
+            <div class="list">
+                {% for interview in my_upcoming_interviews %}
+                    <a href="{% url 'interview-detail' interview.pk %}" class="list-item">
+                        <span class="date-chip"><span class="m">{{ interview.scheduled_date|date:"M" }}</span><span class="d">{{ interview.scheduled_date|date:"j" }}</span></span>
+                        <span class="list-body">
+                            <span class="list-title">{{ interview.application.candidate }}</span>
+                            <span class="list-sub">{{ interview.interview_type }} · {{ interview.application.position.title }}</span>
+                        </span>
+                        <span class="list-trail mono">{{ interview.scheduled_date|time:"H:i" }}</span>
+                    </a>
+                {% empty %}
+                    <p class="list-empty"><i data-lucide="calendar-x"></i> No interviews assigned to you ahead.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="message-square-text"></i> Your recent feedback</h2></div>
+            <div class="list">
+                {% for entry in my_feedback %}
+                    <a href="{% url 'feedback-thread' entry.interview_id %}" class="list-item">
+                        <span class="list-body">
+                            <span class="list-title">{{ entry.interview.application.candidate }}</span>
+                            <span class="list-sub">{{ entry.comments|truncatechars:90 }}</span>
+                        </span>
+                        <span class="list-trail">
+                            {% if entry.rating %}<span class="rating">{% for i in "12345" %}<i class="{% if forloop.counter <= entry.rating %}on{% endif %}"></i>{% endfor %}</span>{% endif %}
+                            <span class="faint">{{ entry.created_at|date:"j M" }}</span>
+                        </span>
+                    </a>
+                {% empty %}
+                    <p class="list-empty"><i data-lucide="message-square-dashed"></i> You haven't written any feedback yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <aside class="rail">
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="shield"></i> Your access</h2></div>
+            <div class="list">
+                {% for role in roles %}
+                    <div class="list-item">
+                        <span class="list-body">
+                            <span class="list-title">{{ role.name }}</span>
+                            {% if role.summary %}<span class="list-sub wrap">{{ role.summary }}</span>{% endif %}
+                        </span>
+                    </div>
+                {% empty %}
+                    <p class="list-empty"><i data-lucide="shield-off"></i> No group assigned yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="user"></i> Account</h2></div>
+            <div class="card-body">
+                <dl class="dl">
+                    <div class="dl-row"><dt>Username</dt><dd class="mono">{{ profile_user.username }}</dd></div>
+                    <div class="dl-row"><dt>First name</dt><dd>{{ profile_user.first_name|default:"—" }}</dd></div>
+                    <div class="dl-row"><dt>Last name</dt><dd>{{ profile_user.last_name|default:"—" }}</dd></div>
+                    <div class="dl-row"><dt>Email</dt><dd class="mono">{{ profile_user.email|default:"—" }}</dd></div>
+                    <div class="dl-row"><dt>Last login</dt><dd class="mono">{{ profile_user.last_login|date:"d M Y, H:i"|default:"—" }}</dd></div>
+                </dl>
+            </div>
+        </section>
+    </aside>
 </div>
 
 {% endblock %}

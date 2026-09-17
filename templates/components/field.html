@@ -1,0 +1,15 @@
+{% if field %}
+<div class="field{% if field.errors %} has-error{% endif %}{% if wide %} field-wide{% endif %}">
+    {% if field.field.widget.input_type == "checkbox" %}
+        <label class="checkbox" for="{{ field.id_for_label }}">
+            {{ field }}
+            <span>{{ field.label }}</span>
+        </label>
+    {% else %}
+        <label for="{{ field.id_for_label }}">{{ label|default:field.label }}{% if field.field.required %}<span class="req" aria-hidden="true">*</span>{% endif %}</label>
+        {{ field }}
+    {% endif %}
+    {% if help %}<p class="help">{{ help }}</p>{% elif field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+    {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+</div>
+{% endif %}

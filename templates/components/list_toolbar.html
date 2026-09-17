@@ -1,0 +1,58 @@
+{% load ui %}
+{% if toolbar.tabs|length > 1 %}
+<nav class="tabs" aria-label="Filter by stage">
+    {% for tab in toolbar.tabs %}
+        <a href="{% url_replace tab=tab.key page='' %}" class="tab{% if tab.active %} is-active{% endif %}"{% if tab.active %} aria-current="page"{% endif %}>
+            {{ tab.label }}<span class="tab-count">{{ tab.count }}</span>
+        </a>
+    {% endfor %}
+</nav>
+{% endif %}
+
+<form method="get" class="toolbar" role="search">
+    {% if toolbar.active_tab %}<input type="hidden" name="tab" value="{{ toolbar.active_tab }}">{% endif %}
+    <label class="toolbar-search">
+        <i data-lucide="search"></i>
+        <span class="sr-only">Search</span>
+        <input type="search" name="q" value="{{ toolbar.query }}" placeholder="{{ toolbar.search_placeholder }}">
+    </label>
+
+    {% if toolbar.departments %}
+        <label class="toolbar-select">
+            <span class="sr-only">Department</span>
+            <select name="dept" onchange="this.form.submit()">
+                <option value="">All departments</option>
+                {% for department in toolbar.departments %}
+                    <option value="{{ department.id }}"{% if toolbar.active_department == department.id|stringformat:"s" %} selected{% endif %}>{{ department.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    {% endif %}
+
+    {% if toolbar.interview_types %}
+        <label class="toolbar-select">
+            <span class="sr-only">Interview type</span>
+            <select name="type" onchange="this.form.submit()">
+                <option value="">All types</option>
+                {% for value in toolbar.interview_types %}
+                    <option value="{{ value }}"{% if toolbar.active_type == value %} selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    {% endif %}
+
+    {% if toolbar.sort_options %}
+        <label class="toolbar-select toolbar-sort">
+            <span class="toolbar-select-label">Sort</span>
+            <select name="sort" onchange="this.form.submit()">
+                {% for key, label in toolbar.sort_options %}
+                    <option value="{{ key }}"{% if toolbar.active_sort == key %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    {% endif %}
+
+    {% if toolbar.query or toolbar.active_department or toolbar.active_type %}
+        <a href="?{% if toolbar.active_tab %}tab={{ toolbar.active_tab }}{% endif %}" class="btn btn-ghost btn-sm toolbar-clear"><i data-lucide="x"></i> Clear</a>
+    {% endif %}
+</form>

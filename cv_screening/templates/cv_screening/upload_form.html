@@ -1,44 +1,76 @@
 {% extends "base.html" %}
 
-{% block title %}CV Screening{% endblock %}
+{% block title %}Screen a CV{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>CV Screening</h1>
-</div>
+<p class="eyebrow"><a href="{% url 'cv_screening:screening-results' %}"><i data-lucide="arrow-left"></i> CV screening</a></p>
 
-{% if messages %}
-    {% for message in messages %}
-        <p class="alert alert-error">{{ message }}</p>
-    {% endfor %}
-{% endif %}
+<header class="page-header">
+    <div class="page-header-text">
+        <h1>Screen a CV</h1>
+        <p class="page-subtitle">Score a candidate's CV against the <strong>{{ role_profile.role_name }}</strong> skill profile.</p>
+    </div>
+</header>
 
-<div class="panel">
-    <p class="meta-line mb-4">Role: <strong>{{ role_profile.role_name }}</strong></p>
-
-    <form method="post" enctype="multipart/form-data">
+<div class="form-layout">
+    <form method="post" enctype="multipart/form-data" class="form-card">
         {% csrf_token %}
 
-        <p>
-            <label for="candidate">Candidate</label>
-            <select id="candidate" name="candidate" required>
-                <option value="">-- Select Candidate --</option>
-                {% for candidate in candidates %}
-                    <option value="{{ candidate.id }}">{{ candidate.first_name }} {{ candidate.last_name }}</option>
-                {% endfor %}
-            </select>
-        </p>
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Candidate</h2>
+                <p>Whose CV this is.</p>
+            </div>
+            <div class="field-grid">
+                <div class="field field-wide">
+                    <label for="candidate">Candidate<span class="req">*</span></label>
+                    <select id="candidate" name="candidate" required>
+                        <option value="">Select a candidate</option>
+                        {% for candidate in candidates %}
+                            <option value="{{ candidate.id }}">{{ candidate.first_name }} {{ candidate.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </section>
 
-        <p>
-            <label for="cv_file">Upload CV</label>
-            <input type="file" id="cv_file" name="cv_file" accept=".pdf,.docx" required>
-        </p>
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>CV file</h2>
+                <p>PDF or DOCX, up to 5 MB.</p>
+            </div>
+            <div class="field-grid">
+                <div class="field field-wide">
+                    <label for="cv_file">Upload CV<span class="req">*</span></label>
+                    <input type="file" id="cv_file" name="cv_file" accept=".pdf,.docx" required>
+                </div>
+            </div>
+        </section>
 
-        <p class="meta-line">Accepted formats: PDF, DOCX &middot; Maximum file size: 5 MB</p>
-
-        <button type="submit" class="btn-primary">Screen CV</button>
+        <div class="form-actions">
+            <div class="buttons">
+                <a href="{% url 'cv_screening:screening-results' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="scan-search"></i> Screen CV</button>
+            </div>
+        </div>
     </form>
+
+    <aside class="rail">
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="list-checks"></i> {{ role_profile.role_name }}</h2></div>
+            <div class="card-body stack" style="gap: var(--space-4)">
+                <div>
+                    <p class="skill-heading">Required skills</p>
+                    <div class="chips">{% for skill in role_profile.required_skills.all %}<span class="chip solid">{{ skill.name }}</span>{% empty %}<span class="faint">None listed</span>{% endfor %}</div>
+                </div>
+                <div>
+                    <p class="skill-heading">Nice to have</p>
+                    <div class="chips">{% for skill in role_profile.nice_to_have_skills.all %}<span class="chip outline">{{ skill.name }}</span>{% empty %}<span class="faint">None listed</span>{% endfor %}</div>
+                </div>
+            </div>
+        </section>
+    </aside>
 </div>
 
 {% endblock %}

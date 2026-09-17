@@ -1,50 +1,148 @@
-{% load static %}
+{% load static ui %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Recruitment Tracker{% endblock %}</title>
+    <title>{% block title %}Candidflow{% endblock %} · Candidflow</title>
+    <meta name="robots" content="noindex, nofollow">
+    {% include "components/head_icons.html" %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    <script>
+        (function () {
+            try {
+                // Dark is the default; only a stored "light" preference overrides it.
+                if (localStorage.getItem("candidflow-theme") === "light") {
+                    document.documentElement.setAttribute("data-theme", "light");
+                }
+            } catch (e) {}
+        })();
+    </script>
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body class="app-shell">
+<script>
+    (function () {
+        try {
+            if (localStorage.getItem("candidflow-sidebar-collapsed") === "1") {
+                document.body.classList.add("sidebar-collapsed");
+            }
+        } catch (e) {}
+    })();
+</script>
 
-<header class="topbar">
-    <div class="topbar-inner">
-        <a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'candidate-list' %}{% endif %}" class="brand">Recruitment<span>Tracker</span></a>
+<aside class="sidebar">
+    <div class="sidebar-head">
+        <a href="{% if can_access_dashboard %}{% url 'dashboard:dashboard' %}{% else %}{% url 'candidate-list' %}{% endif %}" class="brand">
+            {% include "components/brand_mark.html" %}<span class="brand-word">Candid<span>flow</span></span>
+        </a>
+        <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-label="Collapse sidebar">
+            <i data-lucide="panel-left"></i>
+        </button>
+    </div>
 
-        <nav class="nav-links">
-            {% if can_access_dashboard %}
-                <a href="{% url 'dashboard:dashboard' %}">Dashboard</a>
-            {% endif %}
-            <a href="{% url 'candidate-list' %}">Candidates</a>
-            <a href="{% url 'application-list' %}">Applications</a>
-            <a href="{% url 'position-list' %}">Positions</a>
-            <a href="{% url 'interview-list' %}">Interviews</a>
-            {% if can_access_cv_screening %}
-                <a href="{% url 'cv_screening:screening-results' %}">CV Screening</a>
-            {% endif %}
-        </nav>
+    <nav class="sidebar-nav" aria-label="Main">
+        {% if can_access_dashboard %}
+            <p class="nav-group">Overview</p>
+            <a href="{% url 'dashboard:dashboard' %}" class="nav-item{% if '/dashboard/' in request.path %} active{% endif %}" title="Dashboard">
+                <i data-lucide="layout-dashboard"></i><span>Dashboard</span>
+            </a>
+            <a href="{% url 'my-interviews' %}" class="nav-item{% if '/interviews/mine/' in request.path %} active{% endif %}" title="My interviews">
+                <i data-lucide="calendar-check"></i><span>My interviews</span>
+            </a>
+        {% endif %}
 
+        <p class="nav-group">Pipeline</p>
+        <a href="{% url 'candidate-list' %}" class="nav-item{% if '/candidates/' in request.path and '/candidates/applications/' not in request.path %} active{% endif %}" title="Candidates">
+            <i data-lucide="users"></i><span>Candidates</span>
+        </a>
+        <a href="{% url 'application-list' %}" class="nav-item{% if '/candidates/applications/' in request.path %} active{% endif %}" title="Applications">
+            <i data-lucide="file-text"></i><span>Applications</span>
+        </a>
+        <a href="{% url 'interview-list' %}" class="nav-item{% if '/interviews/' in request.path and '/interviews/mine/' not in request.path and '/interviews/notifications/' not in request.path %} active{% endif %}" title="Interviews">
+            <i data-lucide="calendar"></i><span>Interviews</span>
+        </a>
+
+        <p class="nav-group">Hiring</p>
+        <a href="{% url 'position-list' %}" class="nav-item{% if '/positions/' in request.path %} active{% endif %}" title="Positions">
+            <i data-lucide="briefcase"></i><span>Positions</span>
+        </a>
+        {% if can_access_cv_screening %}
+            <a href="{% url 'cv_screening:screening-results' %}" class="nav-item{% if '/cv-screening/' in request.path %} active{% endif %}" title="CV screening">
+                <i data-lucide="scan-search"></i><span>CV screening</span>
+            </a>
+        {% endif %}
+    </nav>
+
+    {% if request.user.is_authenticated %}
+        <div class="sidebar-user">
+            <a href="{% url 'profile' %}" class="sidebar-user-link" title="Your profile">
+                <span class="avatar avatar-sm">{% if request.user.first_name %}{{ request.user.get_full_name|initials }}{% else %}{{ request.user.username|initials }}{% endif %}</span>
+                <span class="sidebar-user-text">
+                    <span class="sidebar-user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+                    <span class="sidebar-user-role">{% if request.user.groups.first %}{{ request.user.groups.first.name }}{% elif request.user.is_superuser %}Administrator{% else %}No role{% endif %}</span>
+                </span>
+            </a>
+            <form method="post" action="{% url 'logout' %}" class="logout-form">
+                {% csrf_token %}
+                <button type="submit" class="sidebar-logout" title="Log out" aria-label="Log out"><i data-lucide="log-out"></i></button>
+            </form>
+        </div>
+    {% endif %}
+</aside>
+
+<div class="app-main">
+    <header class="topbar">
         {% if request.user.is_authenticated %}
-            <div class="topbar-user">
-                <a href="{% url 'profile' %}" class="user-chip">{{ request.user.username }}</a>
-                <form method="post" action="{% url 'logout' %}" class="logout-form">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
-                </form>
+            <form method="get" action="{% url 'global-search' %}" class="topbar-search" role="search">
+                <i data-lucide="search"></i>
+                <input type="search" name="q" placeholder="Search candidates and positions" value="{{ query|default:'' }}" aria-label="Search">
+                <kbd>/</kbd>
+            </form>
+            <div class="topbar-actions">
+                {% if perms.candidates.add_candidate or perms.candidates.add_application or perms.interviews.add_interview or perms.positions.add_position %}
+                    <details class="menu">
+                        <summary class="btn btn-primary btn-sm"><i data-lucide="plus"></i> New</summary>
+                        <div class="menu-panel">
+                            {% if perms.candidates.add_candidate %}<a href="{% url 'candidate-create' %}" class="menu-item"><i data-lucide="user-plus"></i> Candidate</a>{% endif %}
+                            {% if perms.candidates.add_application %}<a href="{% url 'application-create' %}" class="menu-item"><i data-lucide="file-plus"></i> Application</a>{% endif %}
+                            {% if perms.interviews.add_interview %}<a href="{% url 'interview-create' %}" class="menu-item"><i data-lucide="calendar-plus"></i> Interview</a>{% endif %}
+                            {% if perms.positions.add_position %}<a href="{% url 'position-create' %}" class="menu-item"><i data-lucide="briefcase"></i> Position</a>{% endif %}
+                        </div>
+                    </details>
+                {% endif %}
+                <button type="button" class="icon-btn" id="theme-toggle" aria-label="Toggle light and dark mode">
+                    <i data-lucide="moon" class="icon-moon"></i>
+                    <i data-lucide="sun" class="icon-sun"></i>
+                </button>
+                <a href="{% url 'staff-notifications' %}" class="icon-btn" title="Notifications" aria-label="Notifications">
+                    <i data-lucide="bell"></i>
+                    {% if unread_staff_notification_count %}<span class="count-pill">{{ unread_staff_notification_count }}</span>{% endif %}
+                </a>
             </div>
         {% endif %}
-    </div>
-</header>
+    </header>
 
-<main class="page">
-{% block content %}{% endblock %}
-</main>
+    <main class="page">
+        {% if messages %}
+            <div class="toasts" role="status">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        <i data-lucide="{% if message.tags == 'error' %}alert-circle{% else %}check-circle-2{% endif %}"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</div>
 
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script src="{% static 'js/app-shell.js' %}"></script>
+{% block extra_scripts %}{% endblock %}
 </body>
 </html>

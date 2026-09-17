@@ -1,0 +1,19 @@
+{% load ui %}
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="pagination" aria-label="Pagination">
+    <span class="pagination-summary">Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+    <div class="pagination-controls">
+        {% if page_obj.has_previous %}
+            <a class="btn btn-secondary btn-sm" href="{% url_replace page=page_obj.previous_page_number %}"><i data-lucide="chevron-left"></i> Previous</a>
+        {% else %}
+            <span class="btn btn-secondary btn-sm is-disabled" aria-disabled="true"><i data-lucide="chevron-left"></i> Previous</span>
+        {% endif %}
+        <span class="pagination-page">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a class="btn btn-secondary btn-sm" href="{% url_replace page=page_obj.next_page_number %}">Next <i data-lucide="chevron-right"></i></a>
+        {% else %}
+            <span class="btn btn-secondary btn-sm is-disabled" aria-disabled="true">Next <i data-lucide="chevron-right"></i></span>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}

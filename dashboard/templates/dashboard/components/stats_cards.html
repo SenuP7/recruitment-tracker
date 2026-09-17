@@ -1,14 +1,27 @@
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-value">{{ stats.total_candidates }}</div>
-        <div class="stat-label">Total Candidates</div>
+<div class="kpi-grid stagger">
+    <div class="kpi">
+        <div class="kpi-label"><i data-lucide="users"></i> Candidates</div>
+        <div class="kpi-value" data-countup>{{ stats.total_candidates }}</div>
+        <div class="kpi-hint">in the current view</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ stats.total_applications }}</div>
-        <div class="stat-label">Total Applications</div>
+    <div class="kpi">
+        <div class="kpi-label"><i data-lucide="file-text"></i> Applications</div>
+        <div class="kpi-value" data-countup>{{ stats.total_applications }}</div>
+        <div class="kpi-hint">across all stages</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ stats.open_positions }}</div>
-        <div class="stat-label">Open Positions</div>
+    <div class="kpi">
+        <div class="kpi-label"><i data-lucide="messages-square"></i> Interviewing</div>
+        <div class="kpi-value" data-countup>{{ stats.interviewing }}</div>
+        <div class="kpi-hint">HR or technical stage</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label"><i data-lucide="briefcase"></i> Open roles</div>
+        <div class="kpi-value" data-countup>{{ stats.open_positions }}</div>
+        <div class="kpi-hint">with applicants shown</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label"><i data-lucide="gauge"></i> Avg CV match</div>
+        <div class="kpi-value">{% if stats.average_score is not None %}<span data-countup>{{ stats.average_score }}</span><small>%</small>{% else %}<span class="faint">—</span>{% endif %}</div>
+        <div class="kpi-hint">screened applications</div>
     </div>
 </div>

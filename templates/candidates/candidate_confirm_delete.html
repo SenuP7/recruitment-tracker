@@ -1,26 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Delete Candidate{% endblock %}
+{% block title %}Delete {{ candidate }}{% endblock %}
 
 {% block content %}
-
-<div class="page-head">
-    <h1>Delete Candidate</h1>
-</div>
-
-<div class="panel">
-    <p>
-        Are you sure you want to delete
-        <strong>{{ candidate.first_name }} {{ candidate.last_name }}</strong>?
-    </p>
-
-    <form method="post">
-        {% csrf_token %}
-        <div class="actions-bar">
-            <button type="submit" class="btn-danger">Yes, Delete</button>
-            <a href="{% url 'candidate-detail' candidate.pk %}" class="btn btn-secondary">Cancel</a>
-        </div>
-    </form>
-</div>
-
+{% url 'candidate-detail' candidate.pk as cancel %}
+{% include "components/confirm_delete.html" with noun="candidate" name=candidate cancel_url=cancel %}
 {% endblock %}

@@ -16,7 +16,7 @@ requirement. These tests pin that behaviour so it can't silently regress
 back to a GET link.
 """
 
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group, Permission, User
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -44,12 +44,12 @@ class LogoutRequiresPostTests(TestCase):
             profile_response.wsgi_request.user.username, "logout_test_user"
         )
 
-    def test_post_logout_clears_session_and_redirects_to_login(self):
+    def test_post_logout_clears_session_and_redirects_to_landing(self):
         client = Client()
         client.login(username="logout_test_user", password="pass12345")
 
         response = client.post(self.logout_url)
-        self.assertRedirects(response, reverse("login"))
+        self.assertRedirects(response, reverse("landing"))
 
         profile_response = client.get(reverse("profile"))
         self.assertNotEqual(profile_response.status_code, 200)
@@ -151,3 +151,96 @@ class AnonymousAccessTests(TestCase):
         client = Client()
         response = client.get(reverse("candidate-list"))
         self.assertEqual(response.status_code, 403)
+
+
+class GlobalSearchTests(TestCase):
+    """GlobalSearchView: multi-word matching (same algorithm as the
+    dashboard's candidate search), per-category permission gating, and the
+    empty-query state."""
+
+    def setUp(self):
+        from accounts.models import Department
+        from candidates.models import Candidate
+        from positions.models import Position
+
+        department = Department.objects.create(name="Engineering")
+        self.candidate = Candidate.objects.create(
+            first_name="Jane", last_name="Doe", email="jane.doe@example.com", phone="0"
+        )
+        Candidate.objects.create(
+            first_name="John", last_name="Smith", email="john.smith@example.com", phone="0"
+        )
+        self.position = Position.objects.create(
+            title="Backend Engineer", department=department, is_open=True
+        )
+
+        self.both_group, _ = Group.objects.get_or_create(name="Recruiter")
+        self.both_group.permissions.add(
+            Permission.objects.get(codename="view_candidate"),
+            Permission.objects.get(codename="view_position"),
+        )
+        self.both_user = User.objects.create_user("search_both", password="pass12345")
+        self.both_user.groups.add(self.both_group)
+
+        self.candidate_only_group, _ = Group.objects.get_or_create(name="Senior Reviewer")
+        self.candidate_only_group.permissions.add(Permission.objects.get(codename="view_candidate"))
+        self.candidate_only_user = User.objects.create_user("search_cand_only", password="pass12345")
+        self.candidate_only_user.groups.add(self.candidate_only_group)
+
+    def test_multi_word_query_matches_full_name(self):
+        client = Client()
+        client.login(username="search_both", password="pass12345")
+        response = client.get(reverse("global-search"), {"q": "Jane Doe"})
+
+        candidates = list(response.context["candidates"])
+        self.assertEqual(candidates, [self.candidate])
+
+    def test_single_term_matches_email(self):
+        client = Client()
+        client.login(username="search_both", password="pass12345")
+        response = client.get(reverse("global-search"), {"q": "jane.doe"})
+
+        self.assertEqual(list(response.context["candidates"]), [self.candidate])
+
+    def test_position_title_search(self):
+        client = Client()
+        client.login(username="search_both", password="pass12345")
+        response = client.get(reverse("global-search"), {"q": "Backend"})
+
+        self.assertEqual(list(response.context["positions"]), [self.position])
+
+    def test_no_match_returns_empty(self):
+        client = Client()
+        client.login(username="search_both", password="pass12345")
+        response = client.get(reverse("global-search"), {"q": "Nonexistent Query Xyz"})
+
+        self.assertEqual(list(response.context["candidates"]), [])
+        self.assertEqual(list(response.context["positions"]), [])
+
+    def test_empty_query_returns_nothing(self):
+        client = Client()
+        client.login(username="search_both", password="pass12345")
+        response = client.get(reverse("global-search"))
+
+        self.assertEqual(list(response.context["candidates"]), [])
+        self.assertEqual(list(response.context["positions"]), [])
+
+    def test_user_without_position_permission_gets_no_position_results(self):
+        client = Client()
+        client.login(username="search_cand_only", password="pass12345")
+        response = client.get(reverse("global-search"), {"q": "Backend"})
+
+        self.assertEqual(list(response.context["positions"]), [])
+
+    def test_user_without_position_permission_still_gets_candidate_results(self):
+        client = Client()
+        client.login(username="search_cand_only", password="pass12345")
+        response = client.get(reverse("global-search"), {"q": "Jane"})
+
+        self.assertEqual(list(response.context["candidates"]), [self.candidate])
+
+    def test_anonymous_user_redirected(self):
+        client = Client()
+        response = client.get(reverse("global-search"), {"q": "Jane"})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response.url)

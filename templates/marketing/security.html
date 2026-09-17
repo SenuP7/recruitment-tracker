@@ -1,0 +1,103 @@
+{% extends "marketing/doc_base.html" %}
+
+{% block title %}Security · Candidflow{% endblock %}
+{% block og_title %}Security · Candidflow{% endblock %}
+{% block meta_description %}How Candidflow protects recruitment data: role-based access, hashed passwords, form protections, private CV storage, feedback audit logs, and how to report a vulnerability.{% endblock %}
+
+{% block doc_tag %}Trust{% endblock %}
+{% block doc_title %}Security{% endblock %}
+{% block doc_lede %}Candidflow holds personal data about people applying for jobs, so we take protecting it seriously. This page lists the safeguards that are actually in place, and doesn't claim anything else.{% endblock %}
+
+{% block toc %}
+<li><a href="#access">Access control</a></li>
+<li><a href="#accounts">Accounts and passwords</a></li>
+<li><a href="#application">Application protections</a></li>
+<li><a href="#files">CV files</a></li>
+<li><a href="#audit">Audit trail</a></li>
+<li><a href="#infrastructure">Infrastructure</a></li>
+<li><a href="#not-claimed">What we don't claim</a></li>
+<li><a href="#report">Reporting a vulnerability</a></li>
+{% endblock %}
+
+{% block doc_body %}
+<div class="fact-grid">
+    <div><i data-lucide="users-round" aria-hidden="true"></i><b>6 roles</b><span>Access set per role</span></div>
+    <div><i data-lucide="key-round" aria-hidden="true"></i><b>Hashed</b><span>Passwords never stored readable</span></div>
+    <div><i data-lucide="file-lock-2" aria-hidden="true"></i><b>1 hour</b><span>Expiry on CV download links</span></div>
+    <div><i data-lucide="history" aria-hidden="true"></i><b>Logged</b><span>Every feedback edit and deletion</span></div>
+</div>
+
+<section id="access">
+    <h2>Access control</h2>
+    <ul>
+        <li>Every page checks your permissions on the server before showing or changing anything. Hiding a button is never the only protection.</li>
+        <li>Access follows six roles: Recruiter, HR Interviewer, Technical Interviewer, Senior Reviewer, Leadership Manager and Candidate.</li>
+        <li>The dashboard filters data when it's retrieved, not afterwards. Technical interviewers only see their own department's applications there.</li>
+        <li>The dashboard, CV screening and applicant lists are limited to recruitment staff.</li>
+        <li>Only a feedback entry's author, a senior reviewer or a leadership manager can change or delete it.</li>
+    </ul>
+</section>
+
+<section id="accounts">
+    <h2>Accounts and passwords</h2>
+    <ul>
+        <li>There's no public sign-up. An administrator creates each account.</li>
+        <li>Passwords are stored as salted PBKDF2-SHA256 hashes, never in readable form.</li>
+        <li>New passwords must meet minimum length rules, can't be common or entirely numeric, and can't closely match your other account details.</li>
+        <li>Logging out requires a submitted form, so another site can't sign you out with a hidden link.</li>
+    </ul>
+</section>
+
+<section id="application">
+    <h2>Application protections</h2>
+    <ul>
+        <li>Every form carries a cross-site request forgery (CSRF) token.</li>
+        <li>Pages can't be embedded in frames on other sites, which prevents clickjacking.</li>
+        <li>Database queries go through Django's ORM, which parameterises input against SQL injection.</li>
+        <li>Page templates escape output by default, which protects against cross-site scripting.</li>
+    </ul>
+</section>
+
+<section id="files">
+    <h2>CV files</h2>
+    <ul>
+        <li>Only PDF and Word (.docx) files up to 5 MB are accepted.</li>
+        <li>CVs are stored in Amazon S3, which encrypts stored objects by default. Files are never publicly listed.</li>
+        <li>CVs open through signed links that expire after one hour.</li>
+    </ul>
+</section>
+
+<section id="audit">
+    <h2>Audit trail</h2>
+    <p>Each edit or deletion of interview feedback is recorded with the person who made it, the time, and the before-and-after values. Deletion records are kept even after the feedback itself is gone. If someone other than the author changes their feedback, the author gets a notification.</p>
+</section>
+
+<section id="infrastructure">
+    <h2>Infrastructure</h2>
+    <ul>
+        <li>Candidflow runs on Amazon Web Services in the Asia Pacific (Singapore) region.</li>
+        <li>HTTPS is provided by the hosting environment.</li>
+        <li>The web application sends notification emails through a separate, isolated pipeline. The application's only permission there is to add a message to a queue, so it can't read the email log or send email directly.</li>
+        <li>Failed email deliveries are retried, then moved to a separate queue that raises an alert.</li>
+    </ul>
+</section>
+
+<section id="not-claimed">
+    <h2>What we don't claim</h2>
+    <p>Candidflow has no independent security certification, such as ISO 27001 or SOC 2, and hasn't had an external penetration test. We'd rather tell you that than imply otherwise.</p>
+</section>
+
+<section id="report">
+    <h2>Reporting a vulnerability</h2>
+    <p>If you find a security problem, email <a href="mailto:{{ contacts.security }}">{{ contacts.security }}</a>. Our contact details are also published at <a href="{% url 'security-txt' %}"><code>/.well-known/security.txt</code></a>. Please include:</p>
+    <ul>
+        <li>what you found and where,</li>
+        <li>the steps to reproduce it, and</li>
+        <li>what an attacker could do with it.</li>
+    </ul>
+    <p>We aim to acknowledge reports within 5 working days and keep you updated until the issue is fixed. If you act in good faith, avoid accessing or changing other people's data, and give us reasonable time to fix the issue before disclosing it, we won't take legal action against you.</p>
+</section>
+{% endblock %}
+
+{% block contact_title %}Found a security issue?{% endblock %}
+{% block contact_text %}Email <a href="mailto:{{ contacts.security }}">{{ contacts.security }}</a>. For anything else, use <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a>.{% endblock %}

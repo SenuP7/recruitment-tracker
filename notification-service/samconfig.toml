@@ -1,0 +1,15 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "recruitment-tracker-notifications"
+region = "ap-southeast-1"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+# SenderEmail has no default deliberately -- pass --parameter-overrides
+# SenderEmail=you@example.com on first deploy, or answer the guided prompt.
+parameter_overrides = "AlertEmail=abdullah.racip@gmail.com"
+
+[default.build.parameters]
+cached = true
+parallel = true

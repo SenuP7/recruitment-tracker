@@ -42,3 +42,28 @@ class DepartmentRequiredMixin(GroupRequiredMixin):
             )
 
         return True
+
+
+class AuthorOrGroupRequiredMixin(LoginRequiredMixin):
+    """Object-level check: allows the object's author, a superuser, or a
+    member of override_groups; denies (403) otherwise. Mirrors
+    DepartmentRequiredMixin's shape -- an object-level narrowing layered on
+    top of whatever coarser gate the view already uses."""
+
+    author_field = "author"
+    override_groups = ()
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        user = request.user
+
+        is_author = getattr(self.object, f"{self.author_field}_id", None) == user.id
+        is_override = (
+            user.is_superuser
+            or user.groups.filter(name__in=self.override_groups).exists()
+        )
+
+        if not (is_author or is_override):
+            raise PermissionDenied("You can only edit your own feedback.")
+
+        return super().dispatch(request, *args, **kwargs)

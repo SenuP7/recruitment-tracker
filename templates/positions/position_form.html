@@ -1,26 +1,88 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}{% if object %}Edit Position{% else %}Create Position{% endif %}{% endblock %}
+{% block title %}{% if object %}Edit {{ object.title }}{% else %}New position{% endif %}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    {% if object %}
-        <h1>Edit Position</h1>
-    {% else %}
-        <h1>Create Position</h1>
-    {% endif %}
-</div>
+<p class="eyebrow"><a href="{% if object %}{% url 'position-detail' object.pk %}{% else %}{% url 'position-list' %}{% endif %}"><i data-lucide="arrow-left"></i> {% if object %}{{ object.title }}{% else %}Positions{% endif %}</a></p>
 
-<div class="panel">
-    <form method="post">
+<header class="page-header">
+    <div class="page-header-text">
+        <h1>{% if object %}Edit position{% else %}Open a new position{% endif %}</h1>
+        <p class="page-subtitle">{% if object %}Changes apply immediately to the listing and any new applications.{% else %}Describe the role clearly — this is what the team screens candidates against.{% endif %}</p>
+    </div>
+</header>
+
+<div class="form-layout">
+    <form method="post" class="form-card" novalidate>
         {% csrf_token %}
-        {{ form.as_p }}
-        <div class="actions-bar">
-            <button type="submit" class="btn-primary">Save Position</button>
-            <a href="{% url 'position-list' %}" class="btn btn-secondary">Cancel</a>
+        {% include "components/form_errors.html" %}
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Role</h2>
+                <p>The title and team this position belongs to.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.title wide=True %}
+                {% include "components/field.html" with field=form.department %}
+                {% include "components/field.html" with field=form.minimum_experience label="Minimum experience (years)" %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Description</h2>
+                <p>Responsibilities, expectations, and anything interviewers should know.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.description wide=True %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Availability</h2>
+                <p>Closed positions stop appearing for anyone who can't manage positions.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.is_open wide=True %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <span class="hint">Fields marked * are required.</span>
+            <div class="buttons">
+                <a href="{% if object %}{% url 'position-detail' object.pk %}{% else %}{% url 'position-list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="check"></i> {% if object %}Save changes{% else %}Create position{% endif %}</button>
+            </div>
         </div>
     </form>
+
+    <aside class="rail">
+        {% if object %}
+            <section class="card">
+                <div class="card-head"><h2><i data-lucide="briefcase"></i> Current listing</h2></div>
+                <div class="card-body">
+                    <dl class="dl">
+                        <div class="dl-row"><dt>Status</dt><dd><span class="badge" data-status="{% if object.is_open %}Open{% else %}Closed{% endif %}">{% if object.is_open %}Open{% else %}Closed{% endif %}</span></dd></div>
+                        <div class="dl-row"><dt>Applicants</dt><dd>{{ applicant_count }}</dd></div>
+                        <div class="dl-row"><dt>Opened</dt><dd class="mono">{{ object.created_at|date:"d M Y" }}</dd></div>
+                        <div class="dl-row"><dt>Screening profile</dt><dd>{{ object.screening_profile|default:"None" }}</dd></div>
+                    </dl>
+                </div>
+            </section>
+        {% endif %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="lightbulb"></i> Writing a good listing</h2></div>
+            <div class="card-body tips">
+                <p class="tip"><i data-lucide="target"></i><span>Lead with what the person will actually do in their first months.</span></p>
+                <p class="tip"><i data-lucide="list-checks"></i><span>CV scoring uses the role's screening profile, which an administrator attaches separately.</span></p>
+                <p class="tip"><i data-lucide="clock-3"></i><span>Keep minimum experience realistic — it's shown to everyone reviewing applicants.</span></p>
+            </div>
+        </section>
+    </aside>
 </div>
 
 {% endblock %}

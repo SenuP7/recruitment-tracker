@@ -1,0 +1,20 @@
+{
+  "Records": [
+    {
+      "messageId": "11111111-1111-1111-1111-111111111111",
+      "receiptHandle": "sample-receipt-handle",
+      "body": "{\"notification_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", \"event_type\": \"application_status_changed\", \"recipient_email\": \"jane.doe@example.com\", \"recipient_name\": \"Jane Doe\", \"context\": {\"candidate_name\": \"Jane Doe\", \"job_title\": \"Backend Engineer\", \"old_status\": \"CV Screening\", \"new_status\": \"HR Interview\", \"application_id\": 42}, \"occurred_at\": \"2026-09-10T09:15:00+00:00\"}",
+      "attributes": {
+        "ApproximateReceiveCount": "1",
+        "SentTimestamp": "1757494500000",
+        "SenderId": "AIDAEXAMPLE",
+        "ApproximateFirstReceiveTimestamp": "1757494500000"
+      },
+      "messageAttributes": {},
+      "md5OfBody": "example",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:ap-southeast-1:000000000000:recruitment-tracker-notifications",
+      "awsRegion": "ap-southeast-1"
+    }
+  ]
+}

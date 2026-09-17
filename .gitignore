@@ -43,3 +43,10 @@ media/
 
 # AWS Elastic Beanstalk
 .elasticbeanstalk/
+
+# AWS SAM build output (notification-service/)
+.aws-sam/
+**/.aws-sam/
+
+# Local notification-mode output (NOTIFICATIONS_LOCAL_MODE=True)
+local_notifications/

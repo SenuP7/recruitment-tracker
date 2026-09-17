@@ -1,42 +1,68 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}Application CV Screening{% endblock %}
+{% block title %}Screen CV · {{ application.candidate }}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>
-        <span class="avatar avatar-inline">{{ application.candidate.first_name|first }}{{ application.candidate.last_name|first }}</span>
-        CV Screening
-    </h1>
-</div>
+<p class="eyebrow"><a href="{% url 'application-detail' application.pk %}"><i data-lucide="arrow-left"></i> {{ application.candidate }}</a></p>
 
-<div class="panel">
-    <div class="detail-card embedded">
-        <div class="field-row">
-            <strong>Candidate</strong>
-            <span class="field-value">{{ application.candidate.first_name }} {{ application.candidate.last_name }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Position</strong>
-            <span class="field-value">{{ application.position.title }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Screening Profile</strong>
-            <span class="field-value">{{ role_profile.role_name }}</span>
-        </div>
+<header class="page-header">
+    <div class="page-header-text">
+        <h1>Screen CV</h1>
+        <p class="page-subtitle">The score updates this application's stage automatically: 70%+ passes screening, under 40% fails it.</p>
     </div>
+</header>
 
-    <form method="post" enctype="multipart/form-data">
+<div class="form-layout">
+    <form method="post" enctype="multipart/form-data" class="form-card">
         {% csrf_token %}
 
-        <p>
-            <label>Upload CV</label>
-            <input type="file" name="cv_file" accept=".pdf,.doc,.docx" required>
-        </p>
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>CV file</h2>
+                <p>PDF, DOC, or DOCX.</p>
+            </div>
+            <div class="field-grid">
+                <div class="field field-wide">
+                    <label for="cv_file">Upload CV<span class="req">*</span></label>
+                    <input type="file" id="cv_file" name="cv_file" accept=".pdf,.doc,.docx" required>
+                </div>
+            </div>
+        </section>
 
-        <button type="submit" class="btn-primary">Screen CV</button>
+        <div class="form-actions">
+            <div class="buttons">
+                <a href="{% url 'application-detail' application.pk %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="scan-search"></i> Screen CV</button>
+            </div>
+        </div>
     </form>
+
+    <aside class="rail">
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="file-text"></i> Application</h2></div>
+            <div class="list-item">
+                <span class="avatar avatar-lg">{{ application.candidate|initials }}</span>
+                <span class="list-body">
+                    <span class="list-title">{{ application.candidate }}</span>
+                    <span class="list-sub">{{ application.position.title }}</span>
+                </span>
+            </div>
+            <div class="card-body" style="padding-top: var(--space-2)">
+                <dl class="dl">
+                    <div class="dl-row"><dt>Current stage</dt><dd><span class="badge" data-status="{{ application.status }}">{{ application.status }}</span></dd></div>
+                    <div class="dl-row"><dt>Profile</dt><dd>{{ role_profile.role_name }}</dd></div>
+                </dl>
+            </div>
+        </section>
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="list-checks"></i> Scored against</h2></div>
+            <div class="card-body">
+                <div class="chips">{% for skill in role_profile.required_skills.all %}<span class="chip solid">{{ skill.name }}</span>{% endfor %}{% for skill in role_profile.nice_to_have_skills.all %}<span class="chip outline">{{ skill.name }}</span>{% endfor %}</div>
+            </div>
+        </section>
+    </aside>
 </div>
 
 {% endblock %}

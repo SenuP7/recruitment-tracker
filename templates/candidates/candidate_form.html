@@ -1,26 +1,94 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}{% if object %}Edit Candidate{% else %}Add Candidate{% endif %}{% endblock %}
+{% block title %}{% if object %}Edit {{ object }}{% else %}Add candidate{% endif %}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    {% if object %}
-        <h1>Edit Candidate</h1>
-    {% else %}
-        <h1>Add Candidate</h1>
-    {% endif %}
-</div>
+<p class="eyebrow"><a href="{% if object %}{% url 'candidate-detail' object.pk %}{% else %}{% url 'candidate-list' %}{% endif %}"><i data-lucide="arrow-left"></i> {% if object %}{{ object }}{% else %}Candidates{% endif %}</a></p>
 
-<div class="panel">
-    <form method="post">
+<header class="page-header">
+    <div class="page-header-text">
+        <h1>{% if object %}Edit candidate{% else %}Add a candidate{% endif %}</h1>
+        <p class="page-subtitle">{% if object %}Update {{ object.first_name }}'s details. Their applications and interviews aren't affected.{% else %}Create the person's record first — you can attach applications to roles afterwards.{% endif %}</p>
+    </div>
+</header>
+
+<div class="form-layout">
+    <form method="post" class="form-card" novalidate>
         {% csrf_token %}
-        {{ form.as_p }}
-        <div class="actions-bar">
-            <button type="submit" class="btn-primary">Save</button>
-            <a href="{% url 'candidate-list' %}" class="btn btn-secondary">Cancel</a>
+        {% include "components/form_errors.html" %}
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Identity</h2>
+                <p>The candidate's name as it should appear across the pipeline.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.first_name %}
+                {% include "components/field.html" with field=form.last_name %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Contact</h2>
+                <p>Email must be unique — it's how duplicate candidates are prevented.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.email wide=True %}
+                {% include "components/field.html" with field=form.phone %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-intro">
+                <h2>Placement</h2>
+                <p>Department controls which technical interviewers can see this candidate.</p>
+            </div>
+            <div class="field-grid">
+                {% include "components/field.html" with field=form.department %}
+                {% include "components/field.html" with field=form.current_status label="Current status" %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <span class="hint">Fields marked * are required.</span>
+            <div class="buttons">
+                <a href="{% if object %}{% url 'candidate-detail' object.pk %}{% else %}{% url 'candidate-list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="check"></i> {% if object %}Save changes{% else %}Create candidate{% endif %}</button>
+            </div>
         </div>
     </form>
+
+    <aside class="rail">
+        {% if object %}
+            <section class="card">
+                <div class="card-head"><h2><i data-lucide="user"></i> Current record</h2></div>
+                <div class="list-item">
+                    <span class="avatar avatar-lg">{{ object|initials }}</span>
+                    <span class="list-body">
+                        <span class="list-title">{{ object }}</span>
+                        <span class="list-sub">Added {{ object.created_at|date:"j M Y" }}</span>
+                    </span>
+                </div>
+                <div class="card-body" style="padding-top: var(--space-2)">
+                    <dl class="dl">
+                        <div class="dl-row"><dt>Status</dt><dd><span class="badge" data-status="{{ object.current_status }}">{{ object.current_status }}</span></dd></div>
+                        <div class="dl-row"><dt>Applications</dt><dd>{{ application_count }}</dd></div>
+                    </dl>
+                </div>
+            </section>
+        {% endif %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="lightbulb"></i> Good to know</h2></div>
+            <div class="card-body tips">
+                <p class="tip"><i data-lucide="mail"></i><span>Use the address the candidate applied with — when email notifications are enabled, updates go there.</span></p>
+                <p class="tip"><i data-lucide="building-2"></i><span>Leave department empty if the candidate isn't tied to one team yet.</span></p>
+                <p class="tip"><i data-lucide="git-branch"></i><span>Pipeline stages are tracked per application, so a candidate can be at different stages for different roles.</span></p>
+            </div>
+        </section>
+    </aside>
 </div>
 
 {% endblock %}

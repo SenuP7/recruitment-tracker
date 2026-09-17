@@ -508,3 +508,32 @@ class CVScreeningAccessControlTests(TestCase):
         client.login(username="cv_access_admin", password="pass12345")
         response = client.get(reverse("cv_screening:screening-results"))
         self.assertEqual(response.status_code, 200)
+
+
+class CVScreeningFlashMessageTests(TestCase):
+    """delete_cv_result is a function-based write action -- confirms
+    messages.success() (already imported in cv_screening/views.py but never
+    called before this) actually fires."""
+
+    def setUp(self):
+        group, _ = Group.objects.get_or_create(name="Recruiter")
+        self.user = User.objects.create_user("msg_recruiter", password="pass12345")
+        self.user.groups.add(group)
+
+        candidate = Candidate.objects.create(
+            first_name="Msg", last_name="Test", email="msgtest@example.com", phone="0"
+        )
+        role_profile = RoleKeywordProfile.objects.create(role_name="Msg Test Role")
+        self.cv = CandidateCV.objects.create(candidate=candidate, file="test_cv.docx")
+        self.result = CVMatchResult.objects.create(cv=self.cv, role_profile=role_profile, score=0.5)
+
+    def test_delete_cv_result_shows_success_message(self):
+        from django.contrib.messages import get_messages
+
+        client = Client()
+        client.login(username="msg_recruiter", password="pass12345")
+        response = client.post(reverse("cv_screening:delete-cv-result", args=[self.result.id]))
+
+        self.assertEqual(response.status_code, 302)
+        messages = [str(m) for m in get_messages(response.wsgi_request)]
+        self.assertIn("CV screening result deleted successfully.", messages)

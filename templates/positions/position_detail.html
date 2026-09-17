@@ -1,56 +1,128 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}Position Details{% endblock %}
+{% block title %}{{ position.title }}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>
-        <span class="icon-box icon-box-lg icon-box-inline">{{ position.title|first }}</span>
-        {{ position.title }}
-    </h1>
-</div>
+<p class="eyebrow"><a href="{% url 'position-list' %}"><i data-lucide="arrow-left"></i> Positions</a></p>
 
-<div class="detail-layout">
-    <div class="detail-card">
-        <div class="field-row">
-            <strong>Title</strong>
-            <span class="field-value">{{ position.title }}</span>
+<section class="record-header">
+    <div class="record-top">
+        <div class="record-identity">
+            <span class="avatar avatar-xl square">{{ position.title|initials }}</span>
+            <div>
+                <h1>{{ position.title }}</h1>
+                <div class="facts">
+                    <span class="badge" data-status="{% if position.is_open %}Open{% else %}Closed{% endif %}">{% if position.is_open %}Open{% else %}Closed{% endif %}</span>
+                    <span><i data-lucide="building-2"></i> {{ position.department }}</span>
+                    <span><i data-lucide="clock-3"></i> {{ position.minimum_experience }}+ years experience</span>
+                    <span><i data-lucide="calendar-plus"></i> Opened {{ position.created_at|date:"j M Y" }}</span>
+                </div>
+            </div>
         </div>
-        <div class="field-row">
-            <strong>Description</strong>
-            <span class="field-value">{{ position.description }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Minimum Experience</strong>
-            <span class="field-value mono">{{ position.minimum_experience }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Department</strong>
-            <span class="field-value">{{ position.department }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Open</strong>
-            <span class="field-value"><span class="badge" data-status="{{ position.is_open }}">{{ position.is_open }}</span></span>
-        </div>
-        <div class="field-row">
-            <strong>Created</strong>
-            <span class="field-value mono">{{ position.created_at }}</span>
+        <div class="page-actions">
+            {% if perms.positions.delete_position %}<a href="{% url 'position-delete' position.pk %}" class="btn btn-danger"><i data-lucide="trash-2"></i> Delete</a>{% endif %}
+            {% if perms.positions.change_position %}<a href="{% url 'position-update' position.pk %}" class="btn btn-primary"><i data-lucide="pencil"></i> Edit position</a>{% endif %}
         </div>
     </div>
 
-    <div class="sidebar-card">
-        <h2>Actions</h2>
-        <div class="actions-bar">
-            {% if perms.positions.change_position %}
-                <a href="{% url 'position-update' position.pk %}" class="btn btn-primary">Edit Position</a>
-            {% endif %}
-            {% if perms.positions.delete_position %}
-                <a href="{% url 'position-delete' position.pk %}" class="btn btn-danger">Delete Position</a>
-            {% endif %}
-            <a href="{% url 'position-list' %}" class="btn btn-secondary">Back to Positions</a>
-        </div>
+    {% if summary %}
+    <div class="record-stats stagger">
+        <div class="record-stat"><div class="record-stat-label">Applicants</div><div class="record-stat-value" data-countup>{{ summary.total }}</div></div>
+        <div class="record-stat"><div class="record-stat-label">Interviewing</div><div class="record-stat-value" data-countup>{{ summary.interviewing }}</div></div>
+        <div class="record-stat"><div class="record-stat-label">Accepted</div><div class="record-stat-value" data-countup>{{ summary.accepted }}</div></div>
+        <div class="record-stat"><div class="record-stat-label">Avg CV match</div><div class="record-stat-value">{% if summary.average_score is not None %}<span data-countup>{{ summary.average_score }}</span><small>%</small>{% else %}<span class="faint">—</span>{% endif %}</div></div>
     </div>
+    {% endif %}
+</section>
+
+<div class="layout-rail">
+    <div class="stack">
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="align-left"></i> About the role</h2></div>
+            <div class="card-body prose">{{ position.description|linebreaks }}</div>
+        </section>
+
+        {% if show_applicants %}
+        <section class="card">
+            <div class="card-head">
+                <h2><i data-lucide="users"></i> Applicants <span class="count-pill">{{ applicants|length }}</span></h2>
+                {% if perms.candidates.add_application %}<a href="{% url 'application-create' %}" class="btn btn-ghost btn-sm"><i data-lucide="plus"></i> Add</a>{% endif %}
+            </div>
+            {% if applicants %}
+            <div class="table-scroll-x">
+                <table class="data-table">
+                    <thead><tr><th>Candidate</th><th>Stage</th><th>CV match</th><th>Applied</th></tr></thead>
+                    <tbody>
+                    {% for application in applicants %}
+                        <tr data-href="{% url 'application-detail' application.pk %}">
+                            <td>
+                                <div class="cell-lead">
+                                    <span class="avatar avatar-sm">{{ application.candidate|initials }}</span>
+                                    <a class="cell-title" href="{% url 'application-detail' application.pk %}">{{ application.candidate }}</a>
+                                </div>
+                            </td>
+                            <td><span class="badge" data-status="{{ application.status }}">{{ application.status }}</span></td>
+                            <td>
+                                {% if application.cv_score is not None %}
+                                    <div class="score-cell"><div class="bar"><div class="bar-fill" style="--fill: {{ application.cv_score|score_pct }}%"></div></div><span class="mono">{{ application.cv_score|score_pct }}%</span></div>
+                                {% else %}<span class="faint">No CV yet</span>{% endif %}
+                            </td>
+                            <td class="mono muted">{{ application.applied_at|date:"d M Y" }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p class="list-empty"><i data-lucide="user-x"></i> No one has applied for this role yet.</p>
+            {% endif %}
+        </section>
+        {% endif %}
+    </div>
+
+    <aside class="rail">
+        {% if show_applicants %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="filter"></i> Stage breakdown</h2></div>
+            <div class="card-body">
+                {% if pipeline %}
+                    <div class="funnel funnel-compact">
+                        {% for step in pipeline %}
+                            <div class="funnel-row">
+                                <span class="funnel-label">{{ step.stage }}</span>
+                                <div class="bar"><div class="bar-fill" style="--fill: {{ step.count|percent_of:pipeline_max }}%"></div></div>
+                                <span class="funnel-count">{{ step.count }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="faint" style="font-size: var(--text-sm)">No applicants to break down yet.</p>
+                {% endif %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="list-checks"></i> Screening profile</h2></div>
+            <div class="card-body stack" style="gap: var(--space-4)">
+                {% if position.screening_profile %}
+                    <p class="muted" style="font-size: var(--text-sm)">{{ position.screening_profile.role_name }}</p>
+                    <div>
+                        <p class="skill-heading">Required skills</p>
+                        <div class="chips">{% for skill in required_skills %}<span class="chip solid">{{ skill.name }}</span>{% empty %}<span class="faint">None listed</span>{% endfor %}</div>
+                    </div>
+                    <div>
+                        <p class="skill-heading">Nice to have</p>
+                        <div class="chips">{% for skill in nice_skills %}<span class="chip outline">{{ skill.name }}</span>{% empty %}<span class="faint">None listed</span>{% endfor %}</div>
+                    </div>
+                {% else %}
+                    <p class="faint" style="font-size: var(--text-sm)">No screening profile is attached, so CVs for this role can't be scored automatically.</p>
+                {% endif %}
+            </div>
+        </section>
+    </aside>
 </div>
 
 {% endblock %}

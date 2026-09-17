@@ -1,52 +1,168 @@
 {% extends "base.html" %}
+{% load ui %}
 
-{% block title %}Application Details{% endblock %}
+{% block title %}{{ application.candidate }} · {{ application.position.title }}{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>
-        <span class="avatar avatar-lg avatar-inline">{{ application.candidate.first_name|first }}{{ application.candidate.last_name|first }}</span>
-        {{ application.candidate }}
-    </h1>
-</div>
+<p class="eyebrow"><a href="{% url 'application-list' %}"><i data-lucide="arrow-left"></i> Applications</a></p>
 
-<div class="detail-layout">
-    <div class="detail-card">
-        <div class="field-row">
-            <strong>Candidate</strong>
-            <span class="field-value">{{ application.candidate }}</span>
+<section class="record-header">
+    <div class="record-top">
+        <div class="record-identity">
+            <span class="avatar avatar-xl">{{ application.candidate|initials }}</span>
+            <div>
+                <h1>{{ application.candidate }}</h1>
+                <div class="facts">
+                    <span class="badge" data-status="{{ application.status }}">{{ application.status }}</span>
+                    <span><i data-lucide="briefcase"></i> {{ application.position.title }}</span>
+                    <span><i data-lucide="building-2"></i> {{ application.position.department }}</span>
+                    <span><i data-lucide="calendar-plus"></i> Applied {{ application.applied_at|date:"j M Y" }}</span>
+                </div>
+            </div>
         </div>
-        <div class="field-row">
-            <strong>Position</strong>
-            <span class="field-value">{{ application.position }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Department</strong>
-            <span class="field-value">{{ application.position.department }}</span>
-        </div>
-        <div class="field-row">
-            <strong>Status</strong>
-            <span class="field-value"><span class="badge" data-status="{{ application.status }}">{{ application.status }}</span></span>
-        </div>
-        <div class="field-row">
-            <strong>Applied</strong>
-            <span class="field-value mono">{{ application.applied_at }}</span>
+        <div class="page-actions">
+            {% if perms.candidates.delete_application %}<a href="{% url 'application-delete' application.pk %}" class="btn btn-danger"><i data-lucide="trash-2"></i> Delete</a>{% endif %}
+            {% if can_upload_cv %}<a href="{% url 'cv_screening:application-upload-cv' application.pk %}" class="btn btn-secondary"><i data-lucide="upload"></i> Screen CV</a>{% endif %}
+            {% if perms.candidates.change_application %}<a href="{% url 'application-update' application.pk %}" class="btn btn-primary"><i data-lucide="pencil"></i> Update stage</a>{% endif %}
         </div>
     </div>
 
-    <div class="sidebar-card">
-        <h2>Actions</h2>
-        <div class="actions-bar">
-            {% if perms.candidates.change_application %}
-                <a href="{% url 'application-update' application.pk %}" class="btn btn-primary">Edit Application</a>
-            {% endif %}
-            {% if perms.candidates.delete_application %}
-                <a href="{% url 'application-delete' application.pk %}" class="btn btn-danger">Delete Application</a>
-            {% endif %}
-            <a href="{% url 'application-list' %}" class="btn btn-secondary">Back to Applications</a>
-        </div>
+    <div class="stepper" style="margin-top: var(--space-6); position: relative; z-index: 1;">
+        {% for step in journey %}
+            <div class="step" data-state="{{ step.state }}">
+                <div class="step-bar"></div>
+                <span class="step-label">
+                    {% if step.state == "done" %}<i data-lucide="check"></i>{% elif step.state == "failed" %}<i data-lucide="x"></i>{% elif step.state == "current" %}<i data-lucide="circle-dot"></i>{% endif %}
+                    {{ step.label }}
+                </span>
+            </div>
+        {% endfor %}
     </div>
+</section>
+
+<div class="layout-rail">
+    <div class="stack">
+        {% if can_view_interviews %}
+        <section class="card">
+            <div class="card-head">
+                <h2><i data-lucide="calendar"></i> Interview rounds <span class="count-pill">{{ interviews|length }}</span></h2>
+                {% if perms.interviews.add_interview %}<a href="{% url 'interview-create' %}" class="btn btn-ghost btn-sm"><i data-lucide="plus"></i> Schedule</a>{% endif %}
+            </div>
+            {% if interviews %}
+            <div class="table-scroll-x">
+                <table class="data-table">
+                    <thead><tr><th>When</th><th>Round</th><th>Interviewer</th><th>Status</th><th>Feedback</th></tr></thead>
+                    <tbody>
+                    {% for interview in interviews %}
+                        <tr data-href="{% url 'interview-detail' interview.pk %}">
+                            <td>
+                                <div class="cell-lead">
+                                    <span class="date-chip"><span class="m">{{ interview.scheduled_date|date:"M" }}</span><span class="d">{{ interview.scheduled_date|date:"j" }}</span></span>
+                                    <span class="mono muted">{{ interview.scheduled_date|time:"H:i" }}</span>
+                                </div>
+                            </td>
+                            <td><a class="cell-title" href="{% url 'interview-detail' interview.pk %}">{{ interview.interview_type }}</a></td>
+                            <td class="muted">{{ interview.interviewer|default:"Unassigned" }}</td>
+                            <td><span class="badge" data-status="{{ interview.status }}">{{ interview.status }}</span></td>
+                            <td>
+                                {% if interview.feedback_count %}
+                                    <span class="rating" aria-label="Average {{ interview.average_rating|floatformat:1 }} of 5">{% for i in "12345" %}<i class="{% if forloop.counter <= interview.average_rating %}on{% endif %}"></i>{% endfor %}<span class="rating-value">{{ interview.average_rating|floatformat:1 }} · {{ interview.feedback_count }}</span></span>
+                                {% else %}
+                                    <span class="faint">None yet</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p class="list-empty"><i data-lucide="calendar-x"></i> No interviews scheduled for this application yet.</p>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {% if cv_result %}
+        <section class="card">
+            <div class="card-head">
+                <h2><i data-lucide="scan-search"></i> CV screening</h2>
+                <span class="card-head-meta">{{ cv_result.role_profile.role_name }} · {{ cv_result.computed_at|date:"j M Y" }}</span>
+            </div>
+            <div class="card-body stack">
+                <div class="meter">
+                    <div class="meter-top">
+                        <span class="meter-value">{{ cv_result.percentage_score }}<small>%</small></span>
+                        <span class="match" data-match="{{ cv_result.match_category }}">{{ cv_result.match_category }}</span>
+                    </div>
+                    <div class="bar"><div class="bar-fill strong" style="--fill: {{ cv_result.percentage_score }}%"></div></div>
+                </div>
+                <div class="grid-2">
+                    <div>
+                        <p class="skill-heading">Matched · {{ cv_coverage.matched }} of {{ cv_coverage.total }} required</p>
+                        <div class="chips">
+                            {% for skill in cv_result.matched_required.all %}<span class="chip solid"><i data-lucide="check"></i>{{ skill.name }}</span>{% endfor %}
+                            {% for skill in cv_result.matched_nice_to_have.all %}<span class="chip outline">{{ skill.name }}</span>{% endfor %}
+                            {% if not cv_result.matched_required.all and not cv_result.matched_nice_to_have.all %}<span class="faint">None</span>{% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <p class="skill-heading">Missing required</p>
+                        <div class="chips">
+                            {% for skill in cv_result.missing_required.all %}<span class="chip dashed">{{ skill.name }}</span>{% empty %}<span class="faint">Nothing missing</span>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-foot"><a href="{% url 'cv_screening:screening-result-detail' cv_result.pk %}">Full result <i data-lucide="arrow-right"></i></a></div>
+        </section>
+        {% elif can_upload_cv %}
+        <div class="empty">
+            <span class="empty-icon"><i data-lucide="file-scan"></i></span>
+            <h3>No CV screened for this role</h3>
+            <p>Upload the candidate's CV to score it against the {{ application.position.screening_profile.role_name }} profile.</p>
+            <a href="{% url 'cv_screening:application-upload-cv' application.pk %}" class="btn btn-primary"><i data-lucide="upload"></i> Screen CV</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <aside class="rail">
+        <a href="{% url 'candidate-detail' application.candidate.pk %}" class="card card-link">
+            <div class="card-head"><h2><i data-lucide="user"></i> Candidate</h2><i data-lucide="arrow-up-right" class="faint"></i></div>
+            <div class="card-body">
+                <dl class="dl">
+                    <div class="dl-row"><dt>Name</dt><dd>{{ application.candidate }}</dd></div>
+                    <div class="dl-row"><dt>Email</dt><dd class="mono">{{ application.candidate.email }}</dd></div>
+                    <div class="dl-row"><dt>Phone</dt><dd class="mono">{{ application.candidate.phone|default:"—" }}</dd></div>
+                </dl>
+            </div>
+        </a>
+
+        <a href="{% url 'position-detail' application.position.pk %}" class="card card-link">
+            <div class="card-head"><h2><i data-lucide="briefcase"></i> Position</h2><i data-lucide="arrow-up-right" class="faint"></i></div>
+            <div class="card-body">
+                <dl class="dl">
+                    <div class="dl-row"><dt>Title</dt><dd>{{ application.position.title }}</dd></div>
+                    <div class="dl-row"><dt>Department</dt><dd>{{ application.position.department }}</dd></div>
+                    <div class="dl-row"><dt>Experience</dt><dd>{{ application.position.minimum_experience }}+ years</dd></div>
+                </dl>
+            </div>
+        </a>
+
+        {% if other_applications %}
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="layers"></i> Other applications</h2></div>
+            <div class="list">
+                {% for other in other_applications %}
+                    <a href="{% url 'application-detail' other.pk %}" class="list-item">
+                        <span class="list-body"><span class="list-title">{{ other.position.title }}</span></span>
+                        <span class="list-trail"><span class="badge" data-status="{{ other.status }}">{{ other.status }}</span></span>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    </aside>
 </div>
 
 {% endblock %}

@@ -1,0 +1,11 @@
+Hi {candidate_name},
+
+An interview has been scheduled for your application to the {job_title} position.
+
+Interview type: {interview_type}
+Date/time: {scheduled_date}
+
+Please let us know as soon as possible if this time doesn't work for you.
+
+Thanks,
+The Recruitment Team

@@ -1,0 +1,59 @@
+{% extends "marketing/public_base.html" %}
+
+{% block title %}System status · Candidflow{% endblock %}
+{% block og_title %}System status · Candidflow{% endblock %}
+{% block meta_description %}Live status of Candidflow's web application, database, CV storage and email notifications.{% endblock %}
+
+{% block content %}
+<header class="doc-hero">
+    <div class="wrap">
+        <span class="section-tag">Status</span>
+        <h1>System status</h1>
+        <p class="doc-lede">These checks ran the moment this page loaded. Nothing here is typed in by hand.</p>
+    </div>
+</header>
+
+<div class="wrap status-page">
+    <section class="status-banner" data-state="{{ report.state }}" aria-live="polite">
+        <span class="status-banner-icon" aria-hidden="true">
+            {% if report.state == "operational" %}<i data-lucide="circle-check"></i>{% elif report.state == "degraded" %}<i data-lucide="triangle-alert"></i>{% else %}<i data-lucide="circle-x"></i>{% endif %}
+        </span>
+        <div>
+            <h2>{{ report.label }}</h2>
+            <p>Checked {{ report.checked_at|date:"j M Y, H:i:s" }} ({{ report.checked_at|date:"T" }})</p>
+        </div>
+        <a href="{% url 'status' %}" class="btn btn-ghost"><i data-lucide="rotate-cw" aria-hidden="true"></i> Check again</a>
+    </section>
+
+    <ul class="status-list">
+        {% for check in report.checks %}
+            <li class="status-row" data-state="{{ check.state }}">
+                <div class="status-row-main">
+                    <h3>{{ check.name }}</h3>
+                    <p>{{ check.description }}</p>
+                </div>
+                <div class="status-row-detail">
+                    <span class="status-pill"><span class="status-dot" aria-hidden="true"></span>{% if check.state == "operational" %}Operational{% elif check.state == "degraded" %}Degraded{% elif check.state == "outage" %}Outage{% else %}Inactive{% endif %}</span>
+                    <small>{{ check.detail }}</small>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div class="status-notes">
+        <div>
+            <h2>What these checks mean</h2>
+            <p><strong>Web application</strong> and <strong>Database</strong> are checked live on every load. <strong>CV storage</strong> and <strong>Email notifications</strong> are configuration checks: they confirm the service is set up, without making a call to AWS. <em>Inactive</em> means switched off on purpose in this environment, not broken.</p>
+        </div>
+        <div>
+            <h2>Monitoring and incidents</h2>
+            <p>Uptime monitors can poll <code>/healthz/</code>, which returns <code>OK</code> while the app is running. No incident history is published yet. If something is wrong and this page says it isn't, email <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a>.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+{% endblock %}

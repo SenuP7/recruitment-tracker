@@ -1,0 +1,72 @@
+{% extends "marketing/doc_base.html" %}
+
+{% block title %}Candidate notice · Candidflow{% endblock %}
+{% block og_title %}Candidate notice · Candidflow{% endblock %}
+{% block meta_description %}For applicants: the emails you'll receive, how your CV is screened, who sees your application, how long we keep it, and how to ask for a human review.{% endblock %}
+
+{% block doc_tag %}For applicants{% endblock %}
+{% block doc_title %}Candidate notice{% endblock %}
+{% block doc_lede %}You applied for a role, so we're keeping track of your application in Candidflow. This page explains what that means for you, in plain language.{% endblock %}
+
+{% block toc %}
+<li><a href="#what-we-hold">What we hold</a></li>
+<li><a href="#emails">Emails you'll get</a></li>
+<li><a href="#screening">How your CV is screened</a></li>
+<li><a href="#who-sees-it">Who sees your application</a></li>
+<li><a href="#how-long">How long we keep it</a></li>
+<li><a href="#your-choices">What you can ask for</a></li>
+{% endblock %}
+
+{% block doc_body %}
+<section id="what-we-hold">
+    <h2>What we hold about you</h2>
+    <p>Your name, email address and phone number; the roles you applied for and where each application stands; your CV and the skills found in it; your interview dates; and the feedback interviewers write after each round.</p>
+</section>
+
+<section id="emails">
+    <h2>Emails you'll get</h2>
+    <div class="info-grid">
+        <div class="info-card">
+            <i data-lucide="refresh-cw" aria-hidden="true"></i>
+            <h3>Your application moves stage</h3>
+            <p>For example from screening to an HR interview, or to a final decision. The email shows the role and the new stage.</p>
+        </div>
+        <div class="info-card">
+            <i data-lucide="calendar" aria-hidden="true"></i>
+            <h3>An interview is scheduled</h3>
+            <p>The email shows the role, the type of interview and when it is.</p>
+        </div>
+    </div>
+    <p>That's all we send. No newsletters and no marketing. If you think an email reached you by mistake, tell us at <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a>.</p>
+</section>
+
+<section id="screening">
+    <h2>How your CV is screened</h2>
+    <p>Your CV is automatically compared against the skills the role needs. A score of 70% or more passes screening, and a score below 40% is marked as not passing. <strong>Both can happen without a person reviewing your CV first</strong>, and you'll get an email when it does. Scores in between are reviewed by the recruitment team.</p>
+    <p class="callout">Keyword matching can miss things, like a skill described in different words. If you didn't pass screening and think that's wrong, <strong>you can ask for a person to review your CV</strong>. Email <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a> with the role you applied for.</p>
+</section>
+
+<section id="who-sees-it">
+    <h2>Who sees your application</h2>
+    <p>Only the recruitment team: recruiters, the people interviewing you, senior reviewers and hiring managers. Technical interviewers mainly work with applications in their own department. Every change to interview feedback is recorded, including who made it.</p>
+</section>
+
+<section id="how-long">
+    <h2>How long we keep it</h2>
+    <p>If you're not offered the role, we delete your details, CV and interview records 12 months after the final decision. If you're hired, the relevant details move to your employee record.</p>
+</section>
+
+<section id="your-choices">
+    <h2>What you can ask for</h2>
+    <ul>
+        <li>A copy of everything we hold about you, including interview feedback.</li>
+        <li>Corrections to anything that's wrong.</li>
+        <li>Withdrawing your application and deleting your data.</li>
+        <li>A person to review an automated screening result.</li>
+    </ul>
+    <p>Email <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a> and we'll reply within one month. The full details are in our <a href="{% url 'privacy' %}">privacy notice</a>.</p>
+</section>
+{% endblock %}
+
+{% block contact_title %}Questions about your application data?{% endblock %}
+{% block contact_text %}Email <a href="mailto:{{ contacts.privacy }}">{{ contacts.privacy }}</a>. For questions about the role itself, reply to the recruiter who contacted you.{% endblock %}

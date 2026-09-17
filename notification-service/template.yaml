@@ -1,0 +1,188 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Recruitment Tracker notification service -- SQS -> Lambda -> SES email pipeline,
+  with a DynamoDB audit log and a CloudWatch/SNS alarm on the DLQ. Decoupled from the
+  Django app on Elastic Beanstalk: Django only ever calls sqs:SendMessage.
+
+Parameters:
+  SenderEmail:
+    Type: String
+    Description: >
+      Email address to verify as the SES sender identity. Must be an address you
+      control -- SES will email it a verification link after this stack deploys.
+      In SES sandbox mode (the default), recipient addresses must ALSO be verified
+      individually before they can receive mail.
+  AlertEmail:
+    Type: String
+    Default: abdullah.racip@gmail.com
+    Description: >
+      Email address subscribed to the DLQ-depth CloudWatch alarm via SNS. You'll get
+      one SNS subscription-confirmation email to click after the first deploy.
+  MaxReceiveCount:
+    Type: Number
+    Default: 3
+    Description: Number of delivery attempts before a message moves to the DLQ.
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Timeout: 30
+    MemorySize: 128
+    Architectures: [x86_64]
+
+Resources:
+
+  # ---------- Queues ----------
+
+  NotificationDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: recruitment-tracker-notifications-dlq
+      MessageRetentionPeriod: 1209600 # 14 days -- max, gives plenty of time to investigate
+
+  NotificationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: recruitment-tracker-notifications
+      VisibilityTimeout: 60 # >= Lambda Timeout, standard SQS+Lambda guidance
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt NotificationDLQ.Arn
+        maxReceiveCount: !Ref MaxReceiveCount
+
+  # ---------- Audit log ----------
+
+  NotificationAuditTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: recruitment-tracker-notifications-audit
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: notification_id
+          AttributeType: S
+        - AttributeName: sent_at
+          AttributeType: S
+      KeySchema:
+        - AttributeName: notification_id
+          KeyType: HASH
+        - AttributeName: sent_at
+          KeyType: RANGE
+
+  # ---------- SES ----------
+
+  SenderIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: !Ref SenderEmail
+
+  # ---------- Lambda ----------
+
+  NotifierFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: recruitment-tracker-notifier
+      CodeUri: lambda/
+      Handler: notifier.handler.lambda_handler
+      Description: Consumes notification events from SQS, sends email via SES, logs to DynamoDB.
+      Environment:
+        Variables:
+          SES_SENDER_EMAIL: !Ref SenderEmail
+          AUDIT_TABLE_NAME: !Ref NotificationAuditTable
+      Events:
+        NotificationQueueTrigger:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt NotificationQueue.Arn
+            BatchSize: 1
+            # BatchSize 1 is deliberate: this handler doesn't implement SQS's
+            # partial-batch-failure reporting, so a larger batch would risk
+            # re-sending already-successful emails from the same batch whenever
+            # one message in it fails. See lambda/notifier/handler.py's docstring.
+      Policies:
+        - Statement:
+            - Sid: SendVerifiedEmail
+              Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: !Sub arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${SenderEmail}
+        - Statement:
+            - Sid: WriteAuditLog
+              Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource: !GetAtt NotificationAuditTable.Arn
+      # Note: SAM's SQS event source automatically grants the exact
+      # sqs:ReceiveMessage/DeleteMessage/GetQueueAttributes permissions needed on
+      # NotificationQueue -- no manual policy needed for that part. It also grants
+      # AWSLambdaBasicExecutionRole (CloudWatch Logs) by default.
+
+  # ---------- Django/EB publish-only access (NOT auto-attached -- see README) ----------
+
+  NotificationPublishPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: RecruitmentTrackerNotificationPublish
+      Description: >
+        Least-privilege policy for the Django/EB app: sqs:SendMessage on the
+        notification queue only. Attach this to the EB instance role manually
+        (see README) -- deliberately not auto-attached since the EB role's name
+        isn't known at template-authoring time, and this must not be folded into
+        the existing broader S3 role.
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublishNotificationEvents
+            Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt NotificationQueue.Arn
+
+  # ---------- Alerting ----------
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: notification-service-alerts
+
+  AlertSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
+
+  DLQDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: recruitment-tracker-notifications-dlq-depth
+      AlarmDescription: Fires when any message lands in the notifications DLQ -- notifications are failing silently otherwise.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt NotificationDLQ.QueueName
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+
+Outputs:
+  QueueUrl:
+    Description: Set this as NOTIFICATIONS_SQS_QUEUE_URL in the Django app's .env / EB environment properties.
+    Value: !Ref NotificationQueue
+  DeadLetterQueueUrl:
+    Value: !Ref NotificationDLQ
+  AuditTableName:
+    Value: !Ref NotificationAuditTable
+  NotifierFunctionName:
+    Value: !Ref NotifierFunction
+  NotificationPublishPolicyArn:
+    Description: Attach to the EB instance role -- aws iam attach-role-policy --role-name <role> --policy-arn <this>
+    Value: !Ref NotificationPublishPolicy
+  AlertTopicArn:
+    Value: !Ref AlertTopic

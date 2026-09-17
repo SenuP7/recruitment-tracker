@@ -1,15 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Error{% endblock %}
+{% block title %}Screening unavailable{% endblock %}
 
 {% block content %}
 
-<div class="page-head">
-    <h1>CV Screening Error</h1>
+<div class="empty" style="margin-top: var(--space-8)">
+    <span class="empty-icon"><i data-lucide="alert-triangle"></i></span>
+    <h3>CV screening couldn't continue</h3>
+    <p>{{ message }}</p>
+    <a href="{% url 'cv_screening:screening-results' %}" class="btn btn-secondary"><i data-lucide="arrow-left"></i> Back to CV screening</a>
 </div>
-
-<p class="alert alert-error">{{ message }}</p>
-
-<a href="/cv-screening/results/" class="btn btn-secondary">Back to Results</a>
 
 {% endblock %}
