@@ -177,3 +177,26 @@ class UploadContentTests(TestCase):
         upload = SimpleUploadedFile("cv.pdf", b"%PDF-1.7 body text", content_type="application/pdf")
         validate_cv_file(upload)
         self.assertTrue(upload.read().startswith(b"%PDF"))
+
+
+class ThrottleFailureModeTests(TestCase):
+    """A missing or broken cache must not lock everyone out of the site.
+    The cache table doesn't exist until `createcachetable` has run, and that
+    is easy to miss in a new environment."""
+
+    def test_sign_in_still_works_when_the_cache_is_unavailable(self):
+        from unittest import mock
+
+        user = User.objects.create_user("fail_open_user", password=PASSWORD)
+        user.groups.add(Group.objects.get_or_create(name="Recruiter")[0])
+
+        with mock.patch("accounts.throttling.cache") as broken:
+            broken.get.side_effect = Exception("relation candidflow_cache does not exist")
+            broken.add.side_effect = Exception("relation candidflow_cache does not exist")
+            broken.delete.side_effect = Exception("relation candidflow_cache does not exist")
+            response = self.client.post(
+                reverse("login"), {"username": "fail_open_user", "password": PASSWORD}
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("_auth_user_id", self.client.session)

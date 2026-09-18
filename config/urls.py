@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from django.http import HttpResponse
@@ -23,7 +24,8 @@ class FaviconRedirectView(RedirectView):
 
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    # Movable via DJANGO_ADMIN_PATH: the default path is scanned constantly.
+    path(f"{settings.ADMIN_PATH}/", admin.site.urls),
 
     path("healthz/", health_check, name="health-check"),
     path("favicon.ico", FaviconRedirectView.as_view(), name="favicon"),

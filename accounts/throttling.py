@@ -42,7 +42,15 @@ def client_ip(request):
 
 
 def _count(key):
-    return cache.get(key) or 0
+    """Fails open. If the cache is unreachable -- the table hasn't been
+    created in a new environment, say -- throttling stops working, but people
+    can still sign in. A lockout that locks everyone out is worse than no
+    lockout."""
+    try:
+        return cache.get(key) or 0
+    except Exception as error:
+        logger.error("Throttle cache unavailable (%s); allowing the request", error)
+        return 0
 
 
 def _record(key, window):
@@ -56,6 +64,9 @@ def _record(key, window):
         # The entry expired between add and incr.
         cache.set(key, 1, window)
         return 1
+    except Exception as error:
+        logger.error("Throttle cache unavailable (%s); attempt not counted", error)
+        return 0
 
 
 def is_locked_out(request, username=""):
@@ -76,9 +87,12 @@ def record_failed_login(request, username=""):
 
 
 def clear_login_attempts(request, username=""):
-    cache.delete(f"login-attempts:ip:{client_ip(request)}")
-    if username:
-        cache.delete(f"login-attempts:user:{username.lower()}")
+    try:
+        cache.delete(f"login-attempts:ip:{client_ip(request)}")
+        if username:
+            cache.delete(f"login-attempts:user:{username.lower()}")
+    except Exception as error:
+        logger.error("Throttle cache unavailable (%s); counters not cleared", error)
 
 
 def reset_requests_exhausted(request):

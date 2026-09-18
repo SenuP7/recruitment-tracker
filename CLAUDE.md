@@ -43,7 +43,7 @@ Only commit when the user asks.
 - The empty override doesn't select SQLite by parsing a URL: the mere
   presence of a `DATABASE_URL` value picks the Postgres branch, which reads
   its connection details from `DB_*` (see `.env.example`).
-- Current suite: **247 tests, all passing** (2026-09-18).
+- Current suite: **263 tests, all passing** (2026-09-18).
 - The notification Lambda has its own pytest suite in
   `notification-service/tests`.
 - The user runs their own server on **port 8000** against the real Postgres.
@@ -377,11 +377,13 @@ python manage.py seed_demo --clear              # remove it again
 - **No password is hardcoded anywhere in the repo.** `seed_demo` generates one
   per run and prints it; set `CANDIDFLOW_DEMO_PASSWORD` to choose your own.
   A test fails if a literal password reappears in that command.
-- **Known leak, 2026-09-18:** the live RDS password, username and hostname
-  were hardcoded in `config/settings.py` in commit `c65b19b` and removed in
-  `d04c797`. Both are pushed to a **public** GitHub repo, so the credential
-  must be treated as compromised until rotated. Removing it from current files
-  does nothing; history is still readable.
+- **Leak, handled 2026-09-18:** the live RDS password, username and hostname
+  were hardcoded in `config/settings.py` in commit `c65b19b`. History was
+  rewritten with `git filter-repo` and all four branches force-pushed, so the
+  values are gone from every reachable commit. **GitHub still serves the old
+  commits by their original SHA** (verified), and will until Support purges
+  them, so the credential is compromised until it is rotated. Rotation is not
+  optional.
 - **`SECRET_KEY`** falls back to a development placeholder when the
   environment variable is missing. That fallback must never be used in a
   deployed environment.
@@ -413,3 +415,49 @@ application, so applying is what creates one.
   live, in local mode, or off, and can put one test message through the
   configured path. With email off, nobody can confirm an application, accept
   an invite or reset a password.
+
+## Production configuration
+
+Everything below is off under `DEBUG` and under the test runner (`RUNNING_TESTS`
+in settings), so local work and tests are unaffected.
+
+- **HTTPS:** `SECURE_SSL_REDIRECT`, HSTS (1 hour to start, raise via
+  `DJANGO_HSTS_SECONDS`), secure + HttpOnly cookies, nosniff, same-origin
+  referrer policy.
+- **Behind the load balancer:** `SECURE_PROXY_SSL_HEADER` reads
+  `X-Forwarded-Proto`. Without it the redirect loops. It is only safe because
+  the app is unreachable except through the balancer.
+- **`/healthz/` is exempt** from the redirect (`SECURE_REDIRECT_EXEMPT`), or a
+  plain-HTTP health check gets a 301 and the instance is marked unhealthy.
+- **Startup guards:** with `DEBUG` off, a missing `SECRET_KEY` or empty
+  `DJANGO_ALLOWED_HOSTS` raises rather than starting.
+- **Static files** use hashed names (manifest storage) only in deploys, so
+  `collectstatic` must run first. The favicon URL resolves per request for the
+  same reason.
+- **Cache:** `DatabaseCache` in `candidflow_cache`. Run
+  `manage.py createcachetable` in every environment. Throttling fails open if
+  it's missing, so a forgotten table degrades protection rather than locking
+  everyone out.
+- **Admin path** is `DJANGO_ADMIN_PATH` (default `admin`).
+- **Logging** goes to stdout at INFO.
+
+Required environment variables in production: `SECRET_KEY`,
+`DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS` (with scheme),
+`DATABASE_URL` + `DB_*`, `NOTIFICATIONS_SQS_QUEUE_URL`, and the
+`CANDIDFLOW_*_EMAIL` contacts.
+
+## Authentication protections
+
+- **Sign-in throttling** (`accounts/throttling.py`): 6 failures per username
+  and 20 per IP in 15 minutes; checked *before* the password, so a lockout
+  can't be brute-forced past, and cleared on success.
+- **Password reset** is capped at 5 per IP per hour and always renders the
+  same confirmation page, so neither form reveals who has an account.
+
+## Uploads
+
+- Validated by **file signature** as well as extension
+  (`cv_screening/uploads.py`): a `.pdf` that isn't a PDF is refused.
+- `score_cv_safely()` is the only way CVs get scored. A malformed PDF used to
+  return a 500 on all three upload paths; now the file is kept, the failure is
+  logged, and the person is told it couldn't be read.
