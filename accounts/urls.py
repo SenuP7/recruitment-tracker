@@ -3,13 +3,19 @@ from django.contrib.auth import views as auth_views
 
 from .login_forms import StaffLoginForm
 from .password_reset import PipelinePasswordResetForm
-from .views import GlobalSearchView, PostLoginRedirectView, ProfileView
+from .views import (
+    GlobalSearchView,
+    PostLoginRedirectView,
+    ProfileView,
+    ThrottledLoginView,
+    ThrottledPasswordResetView,
+)
 
 
 urlpatterns = [
     path(
         "login/",
-        auth_views.LoginView.as_view(
+        ThrottledLoginView.as_view(
             template_name="accounts/login.html",
             authentication_form=StaffLoginForm,
         ),
@@ -32,7 +38,7 @@ urlpatterns = [
     # (see accounts/password_reset.py), not Django's own EMAIL_BACKEND.
     path(
         "password-reset/",
-        auth_views.PasswordResetView.as_view(
+        ThrottledPasswordResetView.as_view(
             template_name="accounts/password_reset_form.html",
             form_class=PipelinePasswordResetForm,
             success_url="/accounts/password-reset/sent/",

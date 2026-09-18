@@ -10,6 +10,7 @@ sign of other applicants -- is simply never put in the context.
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.models import Group, User
+from django.http import FileResponse
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -19,9 +20,8 @@ from django.views.generic import DetailView, TemplateView
 
 from candidates.models import Application, CandidateInvite
 from candidates.views import build_journey
-from cv_screening.matching import score_cv_against_role
 from cv_screening.models import CandidateCV
-from cv_screening.uploads import validate_cv_file
+from cv_screening.uploads import score_cv_safely, validate_cv_file
 from interviews.models import Interview, StaffNotification
 
 from .forms import AcceptInviteForm, CandidateCVUploadForm, email_is_available
@@ -136,15 +136,17 @@ class PortalCVUploadView(CandidateRequiredMixin, View):
 
         cv = CandidateCV.objects.create(candidate=self.candidate, file=uploaded_file)
 
-        role_profile = application.position.screening_profile
-        if role_profile:
-            score_cv_against_role(cv, role_profile)
+        # A CV we can't parse is still a CV a recruiter can open, so it is
+        # kept and the candidate is told -- not turned into a 500.
+        _, unreadable = score_cv_safely(cv, application.position.screening_profile)
 
         if application.status == "Applied":
             application.status = "CV Screening"
             application.save(update_fields=["status"])
 
         messages.success(request, "Your CV was uploaded. The recruitment team will review it.")
+        if unreadable:
+            messages.warning(request, unreadable)
         return redirect("portal:application-detail", pk=application.pk)
 
     def _context(self, application, form, error=None):
@@ -264,3 +266,20 @@ class AcceptInviteView(View):
 
 
 PORTAL_HOME = reverse_lazy("portal:overview")
+
+
+class PortalCVDownloadView(CandidateRequiredMixin, View):
+    """Lets a candidate open the CV they sent us.
+
+    Scoped to their own record: the staff download view
+    (cv_screening.view_cv) takes any CV id and is staff-only, so without this
+    a candidate had no way to check what we actually hold about them.
+    """
+
+    def get(self, request, *args, **kwargs):
+        cv = get_object_or_404(CandidateCV, pk=self.kwargs["pk"], candidate=self.candidate)
+        return FileResponse(
+            cv.file.open("rb"),
+            as_attachment=True,
+            filename=cv.file.name.rsplit("/", 1)[-1],
+        )

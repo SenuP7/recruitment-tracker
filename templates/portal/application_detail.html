@@ -66,6 +66,9 @@
         <div class="card-body stack">
             {% if cv %}
                 <p><i data-lucide="file-text"></i> Uploaded {{ cv.uploaded_at|date:"j M Y" }}</p>
+                <a href="{% url 'portal:cv-download' cv.pk %}" class="btn btn-secondary btn-sm">
+                    <i data-lucide="download"></i> Download the CV we hold
+                </a>
             {% else %}
                 <p class="faint">We don't have a CV from you yet.</p>
             {% endif %}

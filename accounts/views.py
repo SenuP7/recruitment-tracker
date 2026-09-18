@@ -1,4 +1,8 @@
+import logging
+
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponseRedirect
 from django.db.models import Q
 from django.shortcuts import redirect
 from django.views import View
@@ -6,10 +10,13 @@ from django.views.generic import DetailView, TemplateView
 
 from django.contrib.auth.models import User
 
+from accounts import throttling
 from accounts.decorators import user_in_groups
 from candidates.models import Candidate
 from positions.models import Position
 
+
+logger = logging.getLogger(__name__)
 
 ROLE_SUMMARIES = {
     "Recruiter": "Creates and manages candidates, applications, positions and interview schedules across every department.",
@@ -117,3 +124,43 @@ class GlobalSearchView(LoginRequiredMixin, TemplateView):
         context["candidates"] = candidates
         context["positions"] = positions
         return context
+
+class ThrottledLoginView(auth_views.LoginView):
+    """Sign-in with brute-force protection.
+
+    The lockout is counted per username and per IP, and a locked-out attempt
+    is refused without checking the password at all, so it says nothing about
+    whether the account exists. A successful sign-in clears the counters.
+    """
+
+    def post(self, request, *args, **kwargs):
+        username = request.POST.get("username", "")
+        if throttling.is_locked_out(request, username):
+            form = self.get_form()
+            form.is_valid()
+            form.add_error(None, throttling.LOCKED_OUT_MESSAGE)
+            return self.form_invalid(form)
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        throttling.clear_login_attempts(request=self.request, username=form.get_user().get_username())
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        if throttling.LOCKED_OUT_MESSAGE not in form.non_field_errors():
+            throttling.record_failed_login(self.request, self.request.POST.get("username", ""))
+        return super().form_invalid(form)
+
+
+class ThrottledPasswordResetView(auth_views.PasswordResetView):
+    """Reset emails cost money and land in someone else's inbox, so the form
+    can't be used as a free mailer. Throttled requests render the same 'check
+    your email' page as real ones, which keeps the form quiet about who has
+    an account."""
+
+    def form_valid(self, form):
+        if throttling.reset_requests_exhausted(self.request):
+            logger.info("Password reset throttled for %s", throttling.client_ip(self.request))
+            return HttpResponseRedirect(self.get_success_url())
+        throttling.record_reset_request(self.request)
+        return super().form_valid(form)

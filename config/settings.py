@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 
 from dotenv import load_dotenv
 
@@ -20,16 +21,45 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 
+def env_flag(name, default):
+    return os.environ.get(name, "True" if default else "False") == "True"
+
+
+# The test runner forces DEBUG off, so "not DEBUG" alone can't mean "this is
+# production": without this, every test would be answered with an HTTPS
+# redirect and the production guards below would refuse to start.
+RUNNING_TESTS = "test" in sys.argv
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-fallback-key-never-use-in-prod")
+DEV_SECRET_KEY = "dev-only-fallback-key-never-use-in-prod"
+# An empty SECRET_KEY= line in .env is the same as not setting one.
+SECRET_KEY = os.environ.get("SECRET_KEY") or DEV_SECRET_KEY
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
+DEBUG = env_flag("DJANGO_DEBUG", False)
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if os.environ.get("DJANGO_ALLOWED_HOSTS") else []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
+
+# Refuse to start rather than run a deployed site on a published key or with
+# an ALLOWED_HOSTS that rejects every request. A deploy that fails loudly is
+# far better than one that silently signs sessions with a key from the repo.
+if not DEBUG and not RUNNING_TESTS:
+    if SECRET_KEY == DEV_SECRET_KEY:
+        raise RuntimeError(
+            "SECRET_KEY is unset, so the development fallback would be used. "
+            "Generate one: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+        )
+    if not ALLOWED_HOSTS:
+        raise RuntimeError(
+            "DJANGO_ALLOWED_HOSTS is empty, so every request would be rejected. "
+            "Set it to your domain (and the load balancer health-check host)."
+        )
 
 # Application definition
 
@@ -51,7 +81,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -135,7 +164,15 @@ STORAGES = {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        # Manifest storage appends a content hash to every file name, so a
+        # deploy never leaves a browser on last week's stylesheet. It needs
+        # collectstatic to have run first, which is true of a deploy but not
+        # of a dev server or the test runner -- hence the switch.
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+            if not DEBUG and not RUNNING_TESTS
+            else "whitenoise.storage.CompressedStaticFilesStorage"
+        ),
     },
 }
 
@@ -193,3 +230,94 @@ CANDIDFLOW_COMPANY_NAME = os.environ.get("CANDIDFLOW_COMPANY_NAME", "Candidflow"
 # Staff land on the dashboard or their profile, candidates in the portal --
 # accounts.views.PostLoginRedirectView decides which.
 LOGIN_REDIRECT_URL = "/accounts/after-login/"
+
+# --- HTTPS, cookies and proxying -------------------------------------------
+#
+# In production the app sits behind an AWS load balancer that terminates TLS
+# and forwards plain HTTP, so Django can only tell the browser used HTTPS by
+# reading X-Forwarded-Proto. Without this header mapping, SECURE_SSL_REDIRECT
+# would see "http", redirect, and loop forever.
+#
+# This is only safe because the app is never reachable except through that
+# load balancer -- if it were, a client could simply send the header itself.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# On by default for a real deployment, off while DEBUG or under tests, where
+# a redirect would break every request.
+HTTPS_ENABLED = env_flag("DJANGO_HTTPS", not DEBUG and not RUNNING_TESTS)
+
+SECURE_SSL_REDIRECT = HTTPS_ENABLED
+
+# The load balancer health-checks over plain HTTP. A 301 would read as
+# unhealthy and take the instance out of service, so this one path answers
+# on either scheme.
+SECURE_REDIRECT_EXEMPT = [r"^healthz/?$"]
+
+SESSION_COOKIE_SECURE = HTTPS_ENABLED
+CSRF_COOKIE_SECURE = HTTPS_ENABLED
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
+# HSTS tells browsers never to try HTTP again, and that is not reversible
+# within the max-age -- so it starts at one hour. Raise it to 2592000 (30
+# days) once HTTPS has been stable, and only add subdomains or preload when
+# every subdomain is certain to be HTTPS.
+SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", 3600 if HTTPS_ENABLED else 0))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_flag("DJANGO_HSTS_SUBDOMAINS", False)
+SECURE_HSTS_PRELOAD = False
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+
+# Django checks the Origin header on unsafe requests. Behind TLS termination
+# the origin is https://<domain> while the request arrives as http, so each
+# public domain has to be listed here with its scheme.
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
+# --- Cache -----------------------------------------------------------------
+#
+# Used for sign-in throttling and the public status footer. A database table
+# rather than local memory, because more than one process serves requests:
+# per-process counters would give an attacker N times the attempts. Create it
+# once per environment with:
+#
+#     python manage.py createcachetable
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "candidflow_cache",
+    }
+}
+
+# --- Logging ---------------------------------------------------------------
+#
+# Django's default configuration only mails errors to ADMINS, which is unset,
+# so an exception in production would leave no trace at all. Everything goes
+# to stdout, which is what Elastic Beanstalk and CloudWatch collect.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "standard"},
+    },
+    "root": {"handlers": ["console"], "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO")},
+    "loggers": {
+        "django.request": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+        "django.security": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        # Every email that fails to publish is logged here; without it, a
+        # broken queue is silent and candidates simply never hear from us.
+        "notification_client": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}
+
+# The admin is a high-value target and its default path is guessed constantly.
+# Set DJANGO_ADMIN_PATH to something unguessable in production.
+ADMIN_PATH = os.environ.get("DJANGO_ADMIN_PATH", "admin").strip("/")

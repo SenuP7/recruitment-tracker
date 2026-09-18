@@ -163,21 +163,16 @@ def _application_for(candidate, pending):
 def _attach_cv(candidate, application, pending):
     """Copies the held file onto a real CV record and scores it. The score
     never decides the outcome -- a recruiter confirms that (cv_screening)."""
-    from cv_screening.matching import score_cv_against_role
     from cv_screening.models import CandidateCV
+    from cv_screening.uploads import score_cv_safely
 
     cv = CandidateCV(candidate=candidate)
     pending.cv.open("rb")
     cv.file.save(pending.cv.name.rsplit("/", 1)[-1], pending.cv, save=True)
 
-    profile = application.position.screening_profile
-    if profile is not None:
-        try:
-            score_cv_against_role(cv, profile)
-        except Exception:
-            # An unreadable CV is a recruiter's problem to look at, not a
-            # reason to lose the application.
-            pass
+    # An unreadable CV is a recruiter's problem to look at, not a reason to
+    # lose the application.
+    score_cv_safely(cv, application.position.screening_profile)
 
     application.status = "CV Screening"
     application.save(update_fields=["status"])

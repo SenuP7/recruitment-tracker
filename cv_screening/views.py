@@ -5,6 +5,7 @@ from django.http import FileResponse
 
 from accounts.decorators import RECRUITMENT_STAFF_GROUPS, group_required
 from .matching import extract_text, score_cv_against_role
+from .uploads import score_cv_safely
 from .models import CandidateCV, RoleKeywordProfile, CVMatchResult
 from candidates.models import Candidate
 
@@ -201,13 +202,14 @@ def upload_application_cv(request, application_id):
         )
 
 
-        extract_text(cv)
+        result, unreadable = score_cv_safely(cv, role_profile)
 
-
-        result = score_cv_against_role(
-            cv,
-            role_profile
-        )
+        if unreadable:
+            messages.warning(
+                request,
+                "The file was stored, but no text could be read from it, so there's no "
+                "score. It may be a scan or an image-only PDF.",
+            )
 
         # The score never decides the outcome on its own. It used to set
         # "CV Screening Passed"/"Failed" straight away, which emailed the

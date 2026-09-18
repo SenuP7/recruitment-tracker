@@ -6,14 +6,27 @@ from django.views.generic import RedirectView
 
 
 def health_check(request):
+    """Hit over plain HTTP by the load balancer, so it's exempt from the
+    HTTPS redirect (see SECURE_REDIRECT_EXEMPT)."""
     return HttpResponse("OK")
+
+
+class FaviconRedirectView(RedirectView):
+    """Resolved per request, not at import time: under hashed static storage
+    the file name isn't known until collectstatic has run, and URLs are
+    imported before that during a deploy."""
+
+    permanent = True
+
+    def get_redirect_url(self, *args, **kwargs):
+        return static("img/favicon.ico")
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
 
     path("healthz/", health_check, name="health-check"),
-    path("favicon.ico", RedirectView.as_view(url=static("img/favicon.ico"), permanent=True)),
+    path("favicon.ico", FaviconRedirectView.as_view(), name="favicon"),
 
     path("accounts/", include("accounts.urls")),
     path("candidates/", include("candidates.urls")),
