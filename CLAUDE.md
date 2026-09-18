@@ -200,6 +200,17 @@ Files:
 - **Static file storage.** WhiteNoise `CompressedStaticFilesStorage` is
   non-manifest, so `static()` at import time is safe.
 
+## Test and demo data in the real database
+
+- **`candidate01`** is linked to a candidate record named **"Test Candidate
+  (QA)"** (`test.candidate01@candidflow.example`, a reserved domain that can
+  never receive mail). It is a permanent candidate-side test login, and it is
+  meant to be obvious in the candidate list that it isn't a real applicant.
+- **Real candidates create their own records** by applying; those are marked
+  `source="public"`. Anything staff-entered is `source="staff"`.
+- **`seed_demo` data is separate again**: `demo.` usernames and
+  `@demo.candidflow.example` addresses, removed with `--clear --yes`.
+
 ## Throwaway accounts
 
 `__*_check__` / `__*_preview__` users are created for verification and
@@ -443,8 +454,14 @@ in settings), so local work and tests are unaffected.
 
 Required environment variables in production: `SECRET_KEY`,
 `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS` (with scheme),
-`DATABASE_URL` + `DB_*`, `NOTIFICATIONS_SQS_QUEUE_URL`, and the
-`CANDIDFLOW_*_EMAIL` contacts.
+`DATABASE_URL` + `DB_*`, `NOTIFICATIONS_SQS_QUEUE_URL`, `DJANGO_ADMIN_PATH`
+and the `CANDIDFLOW_*_EMAIL` contacts. All of them are listed with notes in
+`.env.example`.
+
+Decisions taken 2026-09-18: HSTS covers the main domain only (subdomains off
+until every one is known to be HTTPS); the admin moves off `/admin/` via
+`DJANGO_ADMIN_PATH`; contact addresses are three separate aliases
+(help/privacy/security) on a real domain, still to be supplied.
 
 ## Authentication protections
 
