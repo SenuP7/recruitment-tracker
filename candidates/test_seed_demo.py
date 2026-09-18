@@ -1,4 +1,6 @@
+import os
 from io import StringIO
+from unittest import mock
 
 from django.contrib.auth.models import Group, User
 from django.core.management import call_command
@@ -16,12 +18,34 @@ DEMO_STORAGES = {
 }
 
 
+DEMO_PASSWORD = "seed-demo-test-pw-42"
+
+
 @override_settings(STORAGES=DEMO_STORAGES)
+@mock.patch.dict(os.environ, {"CANDIDFLOW_DEMO_PASSWORD": DEMO_PASSWORD})
 class SeedDemoTests(TestCase):
     def seed(self, *args):
         out = StringIO()
         call_command("seed_demo", *args, stdout=out, stderr=StringIO())
         return out.getvalue()
+
+    def test_no_password_is_baked_into_the_repository(self):
+        """A copy of the repo must not hand anyone a working login."""
+        from pathlib import Path
+
+        source = Path(__file__).resolve().parent.joinpath(
+            "management", "commands", "seed_demo.py"
+        ).read_text()
+        self.assertNotIn("demo-pass", source)
+        self.assertIn("secrets.token_urlsafe", source)
+
+    def test_a_generated_password_is_printed_and_works(self):
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("CANDIDFLOW_DEMO_PASSWORD", None)
+            output = self.seed()
+        printed = output.split("password for all of them: ")[1].split(")")[0]
+        self.assertGreater(len(printed), 12)
+        self.assertTrue(self.client.login(username="demo.recruiter", password=printed))
 
     def test_it_builds_one_worked_example_end_to_end(self):
         self.seed("--with-permissions")
@@ -53,7 +77,7 @@ class SeedDemoTests(TestCase):
 
         for username in ("demo.recruiter", "demo.hr", "demo.tech", "demo.senior", "demo.lead"):
             with self.subTest(user=username):
-                self.assertTrue(self.client.login(username=username, password="demo-pass-12345"))
+                self.assertTrue(self.client.login(username=username, password=DEMO_PASSWORD))
                 response = self.client.get(reverse("application-detail", args=[application.pk]))
                 self.assertEqual(response.status_code, 200)
                 self.client.logout()
@@ -61,7 +85,7 @@ class SeedDemoTests(TestCase):
     def test_the_candidate_login_reaches_their_own_portal(self):
         self.seed("--with-permissions")
         self.assertTrue(
-            self.client.login(username="maya@demo.candidflow.example", password="demo-pass-12345")
+            self.client.login(username="maya@demo.candidflow.example", password=DEMO_PASSWORD)
         )
         response = self.client.get(reverse("portal:overview"))
         self.assertContains(response, "Backend Engineer")
@@ -98,5 +122,16 @@ class SeedDemoTests(TestCase):
 
     @override_settings(DATABASES={"default": {"ENGINE": "django.db.backends.postgresql", "NAME": "x"}})
     def test_it_refuses_a_non_sqlite_database_without_confirmation(self):
-        with self.assertRaises(CommandError):
+        with self.assertRaises(CommandError) as refusal:
             call_command("seed_demo", stdout=StringIO())
+        self.assertIn("--yes", str(refusal.exception))
+
+    @override_settings(DATABASES={"default": {"ENGINE": "django.db.backends.postgresql", "NAME": "x"}})
+    def test_refusing_to_clear_tells_you_how_to_clear(self):
+        """The refusal has to name the command you actually wanted. Saying
+        'writes demo data ... re-run with --yes' sends you off to re-seed."""
+        with self.assertRaises(CommandError) as refusal:
+            call_command("seed_demo", "--clear", stdout=StringIO())
+        message = str(refusal.exception)
+        self.assertIn("--clear --yes", message)
+        self.assertIn("deletes", message)

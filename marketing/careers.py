@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
-from django.views.generic import DetailView, ListView
+from django.views.generic import DetailView, ListView, TemplateView
 
 from candidates.applications import (
     RATE_LIMITED_MESSAGE,
@@ -57,6 +57,25 @@ class CareersListView(PublicPageMixin, ListView):
         context = super().get_context_data(**kwargs)
         context["query"] = self.query
         context["total_open"] = open_positions().count()
+        return context
+
+
+class SignupView(PublicPageMixin, TemplateView):
+    """There is no separate sign-up form: an account is created by applying
+    and confirming the email. This page says so and sends people to a role."""
+
+    template_name = "marketing/signup.html"
+    nav_key = "signup"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        roles = list(open_positions().order_by("-id")[:5])
+        total = open_positions().count()
+        context.update({
+            "positions": roles,
+            "total_open": total,
+            "more_count": max(total - len(roles), 0),
+        })
         return context
 
 

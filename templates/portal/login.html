@@ -20,8 +20,12 @@
     {% csrf_token %}
 
     <div class="field">
-        <label for="id_username">Email address</label>
-        <input type="email" name="username" id="id_username" autocomplete="username" autofocus required>
+        <label for="id_username">Email address or username</label>
+        {% comment %}
+        type="text", not "email": accounts created before the portal have plain
+        usernames, and the browser would refuse to submit them.
+        {% endcomment %}
+        <input type="text" name="username" id="id_username" autocomplete="username" inputmode="email" autofocus required>
     </div>
 
     <div class="field">
@@ -43,7 +47,8 @@
 
 <p class="auth-foot">
     <a href="{% url 'password_reset' %}">Forgot your password?</a>
-    <span class="faint">Haven't applied yet? <a href="{% url 'careers' %}">See our open roles</a>.</span>
+    <span class="faint">Haven't applied yet? <a href="{% url 'signup' %}">Create an account</a>.</span>
     <span class="faint">Part of the recruitment team? <a href="{% url 'login' %}">Staff sign-in</a>.</span>
+    <span class="faint">By signing in you accept our <a href="{% url 'terms' %}">terms of use</a> and <a href="{% url 'privacy' %}">privacy notice</a>.</span>
 </p>
 {% endblock %}

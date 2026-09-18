@@ -157,3 +157,32 @@ class ErrorPagesTests(TestCase):
         response = server_error(request)
         self.assertEqual(response.status_code, 500)
         self.assertIn(b"Something went wrong on our side.", response.content)
+
+
+class SecurityTxtExpiryTests(TestCase):
+    def test_the_expiry_is_not_about_to_lapse(self):
+        """RFC 9116 says an expired security.txt should be treated as stale.
+        This fails 60 days out so it gets bumped deliberately, not noticed
+        by a researcher who couldn't report something."""
+        from datetime import date, timedelta
+
+        from .views import SECURITY_TXT_EXPIRES
+
+        self.assertGreater(
+            SECURITY_TXT_EXPIRES,
+            date.today() + timedelta(days=60),
+            "Bump SECURITY_TXT_EXPIRES in marketing/views.py",
+        )
+
+    def test_contact_addresses_can_be_set_without_a_code_change(self):
+        import os
+        from unittest import mock
+
+        with mock.patch.dict(os.environ, {"CANDIDFLOW_HELP_EMAIL": "careers@example.org"}):
+            import importlib
+
+            from . import views
+
+            importlib.reload(views)
+            self.assertEqual(views.CONTACTS["help"], "careers@example.org")
+        importlib.reload(views)

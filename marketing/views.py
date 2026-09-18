@@ -1,3 +1,4 @@
+import os
 from datetime import date
 
 from django.conf import settings
@@ -9,17 +10,21 @@ from . import status
 
 # One place to change the public contact details every page quotes.
 CONTACTS = {
-    "help": "help@candidflow.example",
-    "privacy": "privacy@candidflow.example",
-    "security": "security@candidflow.example",
+    "help": os.environ.get("CANDIDFLOW_HELP_EMAIL", "help@candidflow.example"),
+    "privacy": os.environ.get("CANDIDFLOW_PRIVACY_EMAIL", "privacy@candidflow.example"),
+    "security": os.environ.get("CANDIDFLOW_SECURITY_EMAIL", "security@candidflow.example"),
 }
 
 LEGAL_UPDATED = date(2026, 9, 17)
 
+# RFC 9116 requires an expiry under a year out. Bump this when it nears --
+# marketing/tests.py fails once it's within 60 days, so it can't lapse quietly.
+SECURITY_TXT_EXPIRES = date(2027, 9, 16)
+
 # Pages listed in sitemap.xml, in footer order. The app itself is excluded
 # (and disallowed in robots.txt) -- only the public site is indexable.
 PUBLIC_PAGES = (
-    "landing", "careers", "help", "status", "security", "privacy",
+    "landing", "careers", "signup", "help", "status", "security", "privacy",
     "terms", "cookies", "accessibility", "candidate-notice",
 )
 
@@ -96,7 +101,7 @@ def security_txt(request):
     """RFC 9116. Expires must be under a year out -- bump it with the policy."""
     lines = [
         f"Contact: mailto:{CONTACTS['security']}",
-        "Expires: 2027-09-16T00:00:00.000Z",
+        f"Expires: {SECURITY_TXT_EXPIRES:%Y-%m-%d}T00:00:00.000Z",
         "Preferred-Languages: en",
         f"Canonical: {request.build_absolute_uri(reverse('security-txt'))}",
         f"Policy: {request.build_absolute_uri(reverse('security'))}#report",

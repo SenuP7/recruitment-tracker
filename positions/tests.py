@@ -41,3 +41,46 @@ class PositionListPaginationTests(TestCase):
         response = client.get(reverse("position-list"), {"page": 2})
 
         self.assertEqual(len(response.context["positions"]), 2)
+
+
+class ClosedPositionAccessTests(TestCase):
+    """The list already hides the Closed tab from non-managers, so leaving the
+    page reachable by direct link contradicted what the list implied."""
+
+    def setUp(self):
+        from django.contrib.auth.models import Permission, User
+
+        from accounts.models import Department
+        from positions.models import Position
+
+        department = Department.objects.create(name="Engineering")
+        self.open_position = Position.objects.create(
+            title="Open Role", description="Hiring", department=department, is_open=True
+        )
+        self.closed_position = Position.objects.create(
+            title="Closed Role", description="Not hiring", department=department, is_open=False
+        )
+
+        self.viewer = User.objects.create_user("viewer_only", password="pos-pass-12345")
+        self.viewer.user_permissions.add(Permission.objects.get(codename="view_position"))
+
+        self.manager = User.objects.create_user("position_manager", password="pos-pass-12345")
+        self.manager.user_permissions.add(
+            Permission.objects.get(codename="view_position"),
+            Permission.objects.get(codename="change_position"),
+        )
+
+    def test_viewer_cannot_open_a_closed_role_by_url(self):
+        self.client.force_login(self.viewer)
+        response = self.client.get(reverse("position-detail", args=[self.closed_position.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_viewer_can_still_open_an_open_role(self):
+        self.client.force_login(self.viewer)
+        response = self.client.get(reverse("position-detail", args=[self.open_position.pk]))
+        self.assertEqual(response.status_code, 200)
+
+    def test_manager_can_open_a_closed_role(self):
+        self.client.force_login(self.manager)
+        response = self.client.get(reverse("position-detail", args=[self.closed_position.pk]))
+        self.assertEqual(response.status_code, 200)

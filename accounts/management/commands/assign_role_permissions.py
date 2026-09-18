@@ -229,29 +229,18 @@ class Command(BaseCommand):
         # ---------------------------------------------------------
         # CANDIDATE
         # ---------------------------------------------------------
+        #
+        # Deliberately none. These four view_* permissions used to be granted
+        # here, and they are model-wide: they let a candidate account read
+        # EVERY candidate, application, interview and feedback entry, not just
+        # their own. Candidates now use the portal (portal/), which scopes
+        # every query to the record linked to their login and needs no model
+        # permissions at all. Granting any here would reopen that hole.
 
-        add_permissions(
-            candidate,
-            Candidate,
-            ["view"]
-        )
+        candidate.permissions.clear()
 
-        add_permissions(
-            candidate,
-            Application,
-            ["view"]
-        )
-
-        add_permissions(
-            candidate,
-            Interview,
-            ["view"]
-        )
-
-        add_permissions(
-            candidate,
-            InterviewFeedback,
-            ["view"]
+        self.stdout.write(
+            f"{candidate.name}: cleared (the portal scopes by record, not by permission)"
         )
 
         # ---------------------------------------------------------

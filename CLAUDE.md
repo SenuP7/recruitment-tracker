@@ -16,7 +16,6 @@ Apps:
 - `dashboard`: see `dashboard/CLAUDE.md`
 - `marketing`: the public site (see Public site below)
 - `portal`: the candidate portal (see Candidate portal below)
-- `notifications`: stub, no views/urls; unused
 
 Outside Django:
 - `notification_client/`: publishes email events
@@ -44,7 +43,7 @@ Only commit when the user asks.
 - The empty override doesn't select SQLite by parsing a URL: the mere
   presence of a `DATABASE_URL` value picks the Postgres branch, which reads
   its connection details from `DB_*` (see `.env.example`).
-- Current suite: **229 tests, all passing** (2026-09-18).
+- Current suite: **247 tests, all passing** (2026-09-18).
 - The notification Lambda has its own pytest suite in
   `notification-service/tests`.
 - The user runs their own server on **port 8000** against the real Postgres.
@@ -85,34 +84,30 @@ for g in Group.objects.all():
 - **Record pages** (candidate, position, interview) check permissions per
   section in the view (`user.has_perm(...)` or `user_in_groups`). A section
   the user can't access is not rendered at all.
-- **Positions list:** shows Open to everyone. The Closed tab only appears
-  for users with `positions.change_position`.
+- **Positions:** the list shows Open to everyone, and the Closed tab only
+  appears for users with `positions.change_position`. `PositionDetailView`
+  filters to `is_open=True` for everyone else, so a closed role 404s by
+  direct URL too.
 
-**Candidate group** permissions, last verified 2026-08-20:
-`candidates.view_application`, `candidates.view_candidate`,
-`interviews.view_interview`, `interviews.view_interviewfeedback`,
-`positions.view_position`.
+**Candidate group holds no permissions** (cleared in the real database on
+2026-09-18, with the user's approval). Those model-wide `view_*` grants let a
+candidate account read every candidate, application and interview, not just
+their own. The portal scopes by the record linked to the login instead, so it
+needs none. `assign_role_permissions` now clears the group rather than
+granting them — don't add any back.
 
-(History: an earlier attempt stripped all of these and left candidates
-seeing nothing. It was reverted in `71ae719`, and `view_position` was added
-afterwards.)
+(History: an early attempt to strip them predated the portal and left
+candidates unable to see anything at all. It was reverted in `71ae719`. This
+time the portal replaces what they lost.)
 
 ### Known gaps (flagged, not built)
 
-- **Closed positions** are hidden from lists for non-managers but still
-  reachable by direct URL. A restriction was added once and then reverted,
-  because it wasn't approved. It's awaiting the user's decision.
-- **Unassigned interviews:** feedback creation doesn't check that the author
-  is the interview's assigned `interviewer`. That field is optional, and
-  existing interviews have none.
+- **Feedback isn't restricted to the assigned interviewer**, and that is
+  deliberate (user's decision, 2026-09-18): rounds get covered at short
+  notice, and every entry records its author anyway.
 - **Security page claims only what's verified.** No HTTPS redirect, HSTS or
   secure-cookie settings exist yet; add them at deployment and then update
   `templates/marketing/security.html`.
-- **Candidate group permissions in the real database.** The portal needs
-  none, and the middleware keeps candidates out of staff pages, but the
-  group may still hold the old `view_*` permissions. Strip them by hand
-  (see Candidate portal below); it's a DB-only change, so it won't show in
-  git.
 
 Closed since: candidate self-service scoping (the portal), and the
 automatic CV pass/fail decision (a recruiter now confirms outcomes).
@@ -288,13 +283,8 @@ and candidate pages never mix.
 - **Password reset** exists for everyone now. The email is published to the
   notification pipeline by `accounts/password_reset.py`, so Django's
   `EMAIL_BACKEND` is still unused.
-- **Permissions to strip by hand** (DB-only, not in migrations) once the
-  portal is live:
-
-```python
-from django.contrib.auth.models import Group
-Group.objects.get(name="Candidate").permissions.clear()
-```
+- **The Candidate group has no permissions**, and must not be given any.
+  See Access control above.
 
 ## Screening outcomes are a human decision
 
@@ -376,4 +366,50 @@ python manage.py seed_demo --clear              # remove it again
   Group permissions are only touched with `--with-permissions`, which applies
   the same matrix as `assign_role_permissions` except that the Candidate group
   is left empty (the portal needs no model permissions).
-- Passwords are all `demo-pass-12345`. Never run this against production.
+- **The password is generated per run and printed**, never stored in the repo.
+  Set `CANDIDFLOW_DEMO_PASSWORD` to pick your own. Clear the demo afterwards
+  with `--clear --yes`; don't leave it in a real database.
+
+## Secrets
+
+- **`.env` is gitignored and has never been committed.** `.env.example` holds
+  the empty template.
+- **No password is hardcoded anywhere in the repo.** `seed_demo` generates one
+  per run and prints it; set `CANDIDFLOW_DEMO_PASSWORD` to choose your own.
+  A test fails if a literal password reappears in that command.
+- **Known leak, 2026-09-18:** the live RDS password, username and hostname
+  were hardcoded in `config/settings.py` in commit `c65b19b` and removed in
+  `d04c797`. Both are pushed to a **public** GitHub repo, so the credential
+  must be treated as compromised until rotated. Removing it from current files
+  does nothing; history is still readable.
+- **`SECRET_KEY`** falls back to a development placeholder when the
+  environment variable is missing. That fallback must never be used in a
+  deployed environment.
+
+## Signing up (candidates)
+
+There is no separate sign-up form, on purpose: an account exists to follow an
+application, so applying is what creates one.
+
+- `/signup/` (`marketing/careers.py` `SignupView`) explains the three steps,
+  lists up to five open roles and links straight into the apply form. It has
+  no form of its own — a test asserts that, since a second, unverified way to
+  create an account would undo the confirmation step.
+- Linked from the public nav ("Create account"), the footer, the careers page
+  and the candidate sign-in page.
+- **The candidate sign-in username field is `type="text"`**, not `"email"`.
+  Accounts created before the portal have plain usernames and the browser
+  would refuse to submit them. The server never required an email.
+
+## Housekeeping commands
+
+- `manage.py purge_pending_applications [--days N] [--dry-run]` deletes
+  unconfirmed public applications and their CVs once their link expired more
+  than `PENDING_RETENTION_DAYS` (30) ago. **This has to run on a schedule** —
+  cron, an Elastic Beanstalk periodic task or an EventBridge rule — because
+  the privacy notice promises that deletion. Confirmed applications are
+  candidate records by then and are never touched.
+- `manage.py check_notifications [--send EMAIL]` reports whether email is
+  live, in local mode, or off, and can put one test message through the
+  configured path. With email off, nobody can confirm an application, accept
+  an invite or reset a password.

@@ -303,3 +303,62 @@ class LoginDoorTests(TestCase):
             reverse("portal:login"), {"username": "stranger", "password": PASSWORD}
         )
         self.assertContains(response, "linked to an application")
+
+
+class SignupPageTests(TestCase):
+    """Signing up is applying: the page has to say so and hand people a role,
+    not offer a second, unverified way to create an account."""
+
+    def setUp(self):
+        self.department = Department.objects.create(name="Engineering")
+        self.open_position = Position.objects.create(
+            title="Backend Engineer", description="Builds APIs", department=self.department, is_open=True
+        )
+        Position.objects.create(
+            title="Secret Role", description="Not hiring", department=self.department, is_open=False
+        )
+
+    def test_it_explains_the_flow_and_links_to_an_open_role(self):
+        response = self.client.get(reverse("signup"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Backend Engineer")
+        self.assertNotContains(response, "Secret Role")
+        self.assertContains(response, reverse("careers-apply", args=[self.open_position.pk]))
+
+    def test_there_is_no_account_creation_form_on_it(self):
+        response = self.client.get(reverse("signup"))
+        self.assertNotContains(response, 'type="password"')
+        self.assertNotContains(response, "<form")
+
+    def test_it_is_reachable_from_the_public_pages(self):
+        for name in ("landing", "careers", "portal:login"):
+            with self.subTest(page=name):
+                self.assertContains(self.client.get(reverse(name)), reverse("signup"))
+
+    def test_the_candidate_login_accepts_a_plain_username(self):
+        """Accounts predating the portal have plain usernames; an email-typed
+        input would stop the browser submitting them."""
+        response = self.client.get(reverse("portal:login"))
+        self.assertContains(response, 'name="username" id="id_username"')
+        self.assertNotContains(response, 'type="email" name="username"')
+
+
+class LoginLegalLinksTests(TestCase):
+    def test_both_sign_in_pages_link_the_terms_and_privacy_notice(self):
+        for name in ("login", "portal:login"):
+            with self.subTest(page=name):
+                response = self.client.get(reverse(name))
+                self.assertContains(response, reverse("terms"))
+                self.assertContains(response, reverse("privacy"))
+
+
+class TemplateCommentTests(TestCase):
+    """`{# #}` is single-line only in Django; a multi-line one renders as text
+    on the page, which is how one leaked onto the sign-in form."""
+
+    def test_no_comment_text_leaks_onto_the_sign_in_pages(self):
+        for name in ("login", "portal:login"):
+            with self.subTest(page=name):
+                content = self.client.get(reverse(name)).content.decode()
+                self.assertNotIn("{#", content)
+                self.assertNotIn('type="text", not', content)

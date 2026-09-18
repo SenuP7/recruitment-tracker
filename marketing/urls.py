@@ -15,6 +15,7 @@ def page(route, name, nav_key=None):
 urlpatterns = [
     page("", "landing"),
     path("careers/", careers.CareersListView.as_view(), name="careers"),
+    path("signup/", careers.SignupView.as_view(), name="signup"),
     path("careers/<int:pk>/", careers.CareersDetailView.as_view(), name="careers-detail"),
     path("careers/<int:pk>/apply/", careers.CareersApplyView.as_view(), name="careers-apply"),
     path("apply/confirm/<str:token>/", careers.ApplicationConfirmView.as_view(), name="application-confirm"),

@@ -444,6 +444,22 @@ main { position: relative; z-index: 1; }
 .apply-next svg { width: 17px; height: 17px; color: var(--text-tertiary); flex: none; }
 .apply-next a, .apply-sent p a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
 
+/* ---- signup explainer ------------------------------------------------------------------- */
+
+.nav-signup { font-size: 13.5px; color: var(--text-secondary); transition: color 0.12s ease; }
+.nav-signup:hover { color: var(--text); }
+.signup-page { padding-top: 48px; padding-bottom: 40px; }
+.signup-steps { list-style: none; margin: 0 0 56px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.signup-steps li { display: flex; flex-direction: column; gap: 14px; }
+.signup-num { width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 13px; background: var(--slate-200); color: var(--slate-900); }
+.signup-steps h2 { font-size: 16px; letter-spacing: -0.02em; margin-bottom: 6px; }
+.signup-steps p { font-size: 13.5px; line-height: 1.65; }
+.signup-roles { margin-bottom: 40px; }
+.signup-roles > h2 { font-size: 20px; letter-spacing: -0.025em; margin-bottom: 16px; }
+.signup-roles .careers-row h3 { font-size: 16px; letter-spacing: -0.02em; margin-bottom: 4px; }
+.signup-roles .careers-count a { color: var(--text); }
+.careers-note p + p { margin-top: 10px; }
+
 /* ---- error pages ----------------------------------------------------------------------- */
 
 .error-page { padding: 140px 0 120px; text-align: center; }
@@ -481,6 +497,8 @@ main { position: relative; z-index: 1; }
   .faq-group { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .faq-head { position: static; }
   .trust-grid, .help-contacts { grid-template-columns: minmax(0, 1fr); }
+  .signup-steps { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .nav-signup { display: none; }
   .fact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .careers-detail { grid-template-columns: minmax(0, 1fr); gap: 32px; }
   .careers-apply-rail { position: static; }

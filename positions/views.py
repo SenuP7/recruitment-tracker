@@ -94,7 +94,13 @@ class PositionDetailView(
     raise_exception = True
 
     def get_queryset(self):
-        return Position.objects.select_related("department", "screening_profile")
+        """Closed roles are managers-only, matching the list: the Closed tab
+        is already hidden from everyone without change_position, so leaving
+        the page itself open by direct link contradicted that."""
+        queryset = Position.objects.select_related("department", "screening_profile")
+        if self.request.user.has_perm("positions.change_position"):
+            return queryset
+        return queryset.filter(is_open=True)
 
     def get_context_data(self, **kwargs):
         from dashboard.services import annotate_latest_cv_result, get_pipeline_counts

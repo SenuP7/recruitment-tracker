@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'candidates',
     'cv_screening',
     'interviews',
-    'notifications',
     'dashboard',
     'marketing',
     'portal',

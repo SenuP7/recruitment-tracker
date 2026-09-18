@@ -1,0 +1,77 @@
+{% extends "marketing/public_base.html" %}
+
+{% block title %}Create an account · Candidflow{% endblock %}
+{% block og_title %}Create an account · Candidflow{% endblock %}
+{% block meta_description %}Your Candidflow account is created when you apply for a role and confirm your email. Browse the open roles and apply in a couple of minutes.{% endblock %}
+
+{% block content %}
+<header class="doc-hero">
+    <div class="wrap">
+        <span class="section-tag">Create an account</span>
+        <h1>Applying is how you get an account.</h1>
+        <p class="doc-lede">There's no separate sign-up form, and that's deliberate: an account exists to follow an application, so we create one when you make your first application and confirm your email address.</p>
+    </div>
+</header>
+
+<div class="wrap signup-page">
+    <ol class="signup-steps">
+        <li>
+            <span class="signup-num">1</span>
+            <div>
+                <h2>Pick a role</h2>
+                <p>Anything on our open roles page. Applying takes a couple of minutes and you'll need your CV as a PDF or Word file.</p>
+            </div>
+        </li>
+        <li>
+            <span class="signup-num">2</span>
+            <div>
+                <h2>Confirm your email</h2>
+                <p>We send you a link. Nothing reaches the hiring team until you use it, which is what stops anyone applying in your name.</p>
+            </div>
+        </li>
+        <li>
+            <span class="signup-num">3</span>
+            <div>
+                <h2>Choose a password</h2>
+                <p>That's your account. From then on you can sign in to see the stage each application is at, the interviews booked with you, and to replace your CV while screening is in progress.</p>
+            </div>
+        </li>
+    </ol>
+
+    {% if positions %}
+        <section class="signup-roles">
+            <h2>Open roles right now</h2>
+            <ul class="careers-list">
+                {% for position in positions %}
+                    <li class="careers-row">
+                        <div>
+                            <h3><a href="{% url 'careers-detail' position.pk %}">{{ position.title }}</a></h3>
+                            <p class="careers-meta">{% if position.department %}{{ position.department.name }}{% else %}Department to be confirmed{% endif %}</p>
+                        </div>
+                        <a href="{% url 'careers-apply' position.pk %}" class="btn btn-ghost">Apply <span class="arrow">→</span></a>
+                    </li>
+                {% endfor %}
+            </ul>
+            {% if more_count %}
+                <p class="careers-count"><a href="{% url 'careers' %}">See all {{ total_open }} open roles →</a></p>
+            {% endif %}
+        </section>
+    {% else %}
+        <section class="signup-roles">
+            <h2>No roles are open right now</h2>
+            <p class="faint">When something opens, it'll appear on the <a href="{% url 'careers' %}">open roles</a> page and you can apply from there.</p>
+        </section>
+    {% endif %}
+
+    <aside class="careers-note">
+        <h2>Already applied?</h2>
+        <p>If you've confirmed your email, <a href="{% url 'portal:login' %}">sign in</a> with the address you applied with. Lost the link, or never got one? Email <a href="mailto:{{ contacts.help }}">{{ contacts.help }}</a>.</p>
+        <p class="faint">Staff accounts work differently: an administrator creates them, and you sign in <a href="{% url 'login' %}">here</a>.</p>
+    </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+{% endblock %}

@@ -12,6 +12,8 @@ nothing else. `--clear` removes it and stops.
 """
 
 import io
+import os
+import secrets
 from datetime import timedelta
 
 from django.conf import settings
@@ -32,7 +34,10 @@ from positions.models import Position
 
 DEMO_EMAIL_DOMAIN = "demo.candidflow.example"
 DEMO_USER_PREFIX = "demo."
-DEMO_PASSWORD = "demo-pass-12345"
+# No password lives in this file. Each run generates one and prints it, so a
+# copy of the repo never hands anyone a working login. Set
+# CANDIDFLOW_DEMO_PASSWORD to choose your own (handy when re-seeding often).
+DEMO_PASSWORD_ENV = "CANDIDFLOW_DEMO_PASSWORD"
 DEMO_TAG = "[demo]"
 
 STAFF = [
@@ -136,7 +141,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        self.check_database(options["yes"])
+        self.password = os.environ.get(DEMO_PASSWORD_ENV) or secrets.token_urlsafe(12)
+        self.check_database(options["yes"], clearing=options["clear"])
         self.base_url = options["base_url"].rstrip("/")
 
         if options["clear"]:
@@ -160,13 +166,25 @@ class Command(BaseCommand):
 
     # -- guards ---------------------------------------------------------
 
-    def check_database(self, confirmed):
+    def check_database(self, confirmed, clearing=False):
+        """Both writing and clearing need confirming on a real database, but
+        they must say which one they're about to do -- a message about writing
+        demo data invites exactly the wrong fix when you asked to remove it."""
         engine = settings.DATABASES["default"]["ENGINE"]
         if "sqlite" in engine or confirmed:
             return
+
+        if clearing:
+            raise CommandError(
+                "This deletes the demo candidates, applications and logins from the database "
+                "you're pointed at, which is not local SQLite.\n"
+                "Re-run as:  manage.py seed_demo --clear --yes"
+            )
+
         raise CommandError(
             "This writes demo candidates and logins into the database you're pointed at, "
-            "which is not local SQLite. Re-run with --yes if that's really what you want."
+            "which is not local SQLite.\n"
+            "Re-run as:  manage.py seed_demo --yes"
         )
 
     # -- cleanup --------------------------------------------------------
@@ -216,7 +234,7 @@ class Command(BaseCommand):
             user = User.objects.create_user(
                 username,
                 email=f"{username.split('.')[1]}@{DEMO_EMAIL_DOMAIN}",
-                password=DEMO_PASSWORD,
+                password=self.password,
                 first_name=first_name,
                 last_name=last_name,
             )
@@ -274,7 +292,7 @@ class Command(BaseCommand):
         portal_user = User.objects.create_user(
             candidate.email,
             email=candidate.email,
-            password=DEMO_PASSWORD,
+            password=self.password,
             first_name=candidate.first_name,
             last_name=candidate.last_name,
         )
@@ -426,7 +444,8 @@ class Command(BaseCommand):
         write("  Interviews    HR round completed (rated 4/5, passed, with a reply)")
         write("                Technical round scheduled in 3 days")
         write("")
-        write("LOGINS (password for all of them: " + DEMO_PASSWORD + ")")
+        write("LOGINS (password for all of them: " + self.password + ")")
+        write("  This password was generated for this run. It is not stored anywhere else.")
         write(f"  Staff sign-in     {self.base_url}{reverse('login')}")
         for username, first_name, last_name, group_name in STAFF:
             write(f"    {username:<16} {group_name}")
@@ -467,3 +486,4 @@ class Command(BaseCommand):
                     "Run with --with-permissions to set them (this affects real users too)."
                 ))
         write("Remove it all again with: manage.py seed_demo --clear")
+        write(f"Set {DEMO_PASSWORD_ENV} before seeding if you want to choose the password.")

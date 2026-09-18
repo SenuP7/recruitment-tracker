@@ -184,13 +184,28 @@ def _attach_cv(candidate, application, pending):
     return cv
 
 
+# How long after a link expires an unconfirmed application is kept. The
+# privacy notice promises deletion within 30 days; changing this changes what
+# that page has to say.
+PENDING_RETENTION_DAYS = 30
+
+
+def expired_pending_queryset(days=None):
+    """Unconfirmed submissions whose link expired longer ago than the
+    retention period. Confirmed ones are candidate records by now and are
+    never included."""
+    cutoff = timezone.now() - timedelta(days=days if days is not None else PENDING_RETENTION_DAYS)
+    return PendingApplication.objects.filter(
+        verified_at__isnull=True, expires_at__lt=cutoff
+    ).select_related("position")
+
+
 def purge_expired_pending(days=None):
     """Housekeeping: unconfirmed submissions, and the CVs attached to them,
-    shouldn't sit in storage for ever."""
-    cutoff = timezone.now() - timedelta(days=days or 30)
-    stale = PendingApplication.objects.filter(verified_at__isnull=True, expires_at__lt=cutoff)
+    shouldn't sit in storage for ever. Run by
+    manage.py purge_pending_applications."""
     count = 0
-    for pending in stale:
+    for pending in expired_pending_queryset(days):
         pending.cv.delete(save=False)
         pending.delete()
         count += 1

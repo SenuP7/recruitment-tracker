@@ -169,8 +169,8 @@ class FeedbackAuditLog(models.Model):
 
 
 class StaffNotification(models.Model):
-    """In-app notification for staff users (not candidates -- see the
-    dormant `notifications` app for that, deliberately left untouched).
+    """In-app notification for staff users. Candidates are told about their
+    applications by email instead (notification_client).
     Currently only triggered when someone other than the feedback's author
     edits or deletes it; `link` is a relative URL to the relevant page."""
 
