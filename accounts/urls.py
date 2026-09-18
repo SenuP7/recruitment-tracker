@@ -4,6 +4,7 @@ from django.contrib.auth import views as auth_views
 from .login_forms import StaffLoginForm
 from .password_reset import PipelinePasswordResetForm
 from .views import (
+    AuditLogView,
     GlobalSearchView,
     PostLoginRedirectView,
     ProfileView,
@@ -72,6 +73,12 @@ urlpatterns = [
         "profile/",
         ProfileView.as_view(),
         name="profile",
+    ),
+
+    path(
+        "audit-log/",
+        AuditLogView.as_view(),
+        name="audit-log",
     ),
 
     path(

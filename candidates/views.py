@@ -20,6 +20,7 @@ from accounts.listing import ListToolbarMixin, Tab
 from accounts.models import Department
 from cv_screening.models import CVMatchResult
 
+from accounts import audit
 from .invites import send_candidate_invite
 from .models import Candidate, CandidateInvite, Application
 
@@ -348,6 +349,7 @@ class CandidateInviteView(LoginRequiredMixin, PermissionRequiredMixin, View):
         else:
             invite = CandidateInvite.issue(candidate, created_by=request.user)
             send_candidate_invite(request, invite)
+            audit.record(audit.CANDIDATE_INVITED, request=request, target=candidate, email=invite.email)
             messages.success(request, f"Invite sent to {invite.email}.")
 
         return redirect("candidate-detail", pk=candidate.pk)

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load ui %}
+
+{% block title %}Audit log{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow">Accountability</p>
+        <h1>Audit log</h1>
+        <p class="page-subtitle">Every recorded action, and who took it. Entries can't be edited or removed, and are kept for {{ retention_days }} days.</p>
+    </div>
+</header>
+
+{% include "components/list_toolbar.html" %}
+
+<section class="card">
+    {% if events %}
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th scope="col">When</th>
+                        <th scope="col">Who</th>
+                        <th scope="col">Action</th>
+                        <th scope="col">Record</th>
+                        <th scope="col">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for event in events %}
+                    <tr>
+                        <td class="mono muted">{{ event.created_at|date:"j M Y, H:i" }}</td>
+                        <td>
+                            <span class="cell-title">{{ event.actor_label }}</span>
+                            {% if event.ip_address %}<span class="mono muted" style="font-size: var(--text-xs)">{{ event.ip_address }}</span>{% endif %}
+                        </td>
+                        <td>{{ event.action_label }}</td>
+                        <td class="muted">{{ event.target_label|default:"—" }}</td>
+                        <td class="muted">
+                            {% for key, value in event.detail.items %}
+                                <span class="chip outline">{{ key }}: {{ value }}</span>
+                            {% empty %}—{% endfor %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty">
+            <span class="empty-icon"><i data-lucide="scroll-text"></i></span>
+            <h3>Nothing recorded yet</h3>
+            <p>Actions appear here as people sign in and work with records.</p>
+        </div>
+    {% endif %}
+</section>
+
+{% include "components/pagination.html" %}
+{% endblock %}

@@ -70,6 +70,11 @@
         <a href="{% url 'position-list' %}" class="nav-item{% if '/positions/' in request.path %} active{% endif %}" title="Positions">
             <i data-lucide="briefcase"></i><span>Positions</span>
         </a>
+        {% if can_view_audit_log %}
+            <a href="{% url 'audit-log' %}" class="nav-item{% if '/accounts/audit-log/' in request.path %} active{% endif %}" title="Audit log">
+                <i data-lucide="scroll-text"></i><span>Audit log</span>
+            </a>
+        {% endif %}
         {% if can_access_cv_screening %}
             <a href="{% url 'cv_screening:screening-results' %}" class="nav-item{% if '/cv-screening/' in request.path %} active{% endif %}" title="CV screening">
                 <i data-lucide="scan-search"></i><span>CV screening</span>

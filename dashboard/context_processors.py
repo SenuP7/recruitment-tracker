@@ -11,6 +11,9 @@ views, so the nav can never show a link the user would then get denied on."""
 from accounts.decorators import user_in_groups
 
 
+AUDIT_VIEWER_GROUPS = ("Leadership Manager", "Administrator")
+
+
 def dashboard_access(request):
     user = getattr(request, "user", None)
     allowed = user is not None and user_in_groups(user)
@@ -18,4 +21,7 @@ def dashboard_access(request):
     return {
         "can_access_dashboard": allowed,
         "can_access_cv_screening": allowed,
+        # Same check the view enforces (accounts.views.AuditLogView), so the
+        # link can never appear for someone who would then get a 403.
+        "can_view_audit_log": user is not None and user_in_groups(user, AUDIT_VIEWER_GROUPS),
     }

@@ -2,16 +2,20 @@ import logging
 
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseRedirect
 from django.db.models import Q
 from django.shortcuts import redirect
 from django.views import View
-from django.views.generic import DetailView, TemplateView
+from django.views.generic import DetailView, ListView, TemplateView
 
 from django.contrib.auth.models import User
 
 from accounts import throttling
+from accounts.audit import AUDIT_RETENTION_DAYS
 from accounts.decorators import user_in_groups
+from accounts.listing import ListToolbarMixin, Tab
+from accounts.models import AuditEvent
 from candidates.models import Candidate
 from positions.models import Position
 
@@ -164,3 +168,63 @@ class ThrottledPasswordResetView(auth_views.PasswordResetView):
             return HttpResponseRedirect(self.get_success_url())
         throttling.record_reset_request(self.request)
         return super().form_valid(form)
+
+
+class AuditLogView(LoginRequiredMixin, ListToolbarMixin, ListView):
+    """Read-only view of the audit trail.
+
+    Restricted to Leadership Managers, Administrators and superusers: the log
+    contains every action anyone took, plus IP addresses on sign-ins, so it is
+    more sensitive than the records it describes.
+    """
+
+    model = AuditEvent
+    template_name = "accounts/audit_log.html"
+    context_object_name = "events"
+    paginate_by = 50
+
+    search_fields = ("actor_label", "target_label", "action")
+    search_placeholder = "Search by person, record or action"
+    sort_options = {
+        "newest": ("Newest first", ("-created_at",)),
+        "oldest": ("Oldest first", ("created_at",)),
+    }
+    default_sort = "newest"
+
+    AUDIT_VIEWER_GROUPS = ("Leadership Manager", "Administrator")
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and not user_in_groups(
+            request.user, self.AUDIT_VIEWER_GROUPS
+        ):
+            raise PermissionDenied("The audit log is limited to leadership and administrators.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_base_queryset(self):
+        return AuditEvent.objects.select_related("actor")
+
+    def get_tabs(self):
+        return [
+            Tab("all", "All"),
+            Tab("auth", "Sign-in", Q(action__startswith="auth.")),
+            Tab("staff", "Staff", Q(action__startswith="staff.")),
+            Tab("candidates", "Candidates", Q(action__startswith="candidate.") | Q(action__startswith="application.")),
+            Tab("interviews", "Interviews", Q(action__startswith="interview.") | Q(action__startswith="delegation.")),
+        ]
+
+    def apply_extra_filters(self, queryset):
+        self.active_actor = self.request.GET.get("actor", "").strip()
+        if self.active_actor.isdigit():
+            queryset = queryset.filter(actor_id=self.active_actor)
+        return queryset
+
+    def get_extra_toolbar_context(self):
+        return {
+            "actors": User.objects.filter(audit_events__isnull=False).distinct().order_by("username"),
+            "active_actor": self.active_actor,
+        }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["retention_days"] = AUDIT_RETENTION_DAYS
+        return context

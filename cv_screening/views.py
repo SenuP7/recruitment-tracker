@@ -3,6 +3,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
 from django.http import FileResponse
 
+from accounts import audit
 from accounts.decorators import RECRUITMENT_STAFF_GROUPS, group_required
 from .matching import extract_text, score_cv_against_role
 from .uploads import score_cv_safely
@@ -357,10 +358,12 @@ def confirm_screening_outcome(request, application_id):
     elif outcome == "pass":
         application.status = "CV Screening Passed"
         application.save(update_fields=["status"])
+        audit.record(audit.SCREENING_DECIDED, request=request, target=application, outcome="passed")
         messages.success(request, "Screening marked as passed.")
     elif outcome == "fail":
         application.status = "CV Screening Failed"
         application.save(update_fields=["status"])
+        audit.record(audit.SCREENING_DECIDED, request=request, target=application, outcome="failed")
         messages.success(request, "Screening marked as not passed.")
     else:
         messages.error(request, "Choose whether the CV passed screening.")

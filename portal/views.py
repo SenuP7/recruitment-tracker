@@ -18,6 +18,7 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import DetailView, TemplateView
 
+from accounts import audit
 from candidates.models import Application, CandidateInvite
 from candidates.views import build_journey
 from cv_screening.models import CandidateCV
@@ -185,6 +186,13 @@ class PortalWithdrawView(CandidateRequiredMixin, View):
             cancelled.update(status="Cancelled")
             self._notify(recipients, application)
 
+        audit.record(
+            audit.APPLICATION_WITHDRAWN,
+            actor=request.user,
+            request=request,
+            target=application,
+            position=application.position.title,
+        )
         messages.success(request, "Your application has been withdrawn.")
         return redirect("portal:overview")
 
