@@ -26,11 +26,16 @@ BROAD_GROUPS = {
     "HR Interviewer",
     "Senior Reviewer",
     "Leadership Manager",
+    # Administrators run the system, so they see the whole pipeline.
+    "Administrator",
 }
 
 # Groups restricted to their own department's data.
 DEPARTMENT_SCOPED_GROUPS = {
     "Technical Interviewer",
+    # A chief runs one department, so their dashboard is that department --
+    # the same rule as a technical interviewer.
+    "Department Chief",
 }
 
 # Every other group (e.g. "Candidate") -- and anyone in no recognized

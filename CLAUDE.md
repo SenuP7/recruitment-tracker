@@ -4,8 +4,11 @@ Internal Django 5.0 recruitment tracker, branded **Candidflow**. Server-rendered
 class-based views + ModelForms + templates, HTMX on the dashboard only. No
 DRF/API layer.
 
-Six roles via Django Groups: Recruiter, HR Interviewer, Technical Interviewer,
-Senior Reviewer, Leadership Manager, Candidate.
+Eight roles via Django Groups: Recruiter, HR Interviewer, Technical
+Interviewer, Senior Reviewer, Leadership Manager, Department Chief,
+Administrator, Candidate. Roles are shared; accounts never are. Every staff
+member has their own login, and `accounts.decorators.RECRUITMENT_STAFF_GROUPS`
+is what "is this a staff account?" means everywhere in the app.
 
 Apps:
 - `accounts`: login/logout, profile, global search, shared mixins, the list toolbar, `ui` template tags
@@ -43,7 +46,7 @@ Only commit when the user asks.
 - The empty override doesn't select SQLite by parsing a URL: the mere
   presence of a `DATABASE_URL` value picks the Postgres branch, which reads
   its connection details from `DB_*` (see `.env.example`).
-- Current suite: **263 tests, all passing** (2026-09-18).
+- Current suite: **337 tests, all passing** (2026-09-18).
 - The notification Lambda has its own pytest suite in
   `notification-service/tests`.
 - The user runs their own server on **port 8000** against the real Postgres.
@@ -478,3 +481,83 @@ until every one is known to be HTTPS); the admin moves off `/admin/` via
 - `score_cv_safely()` is the only way CVs get scored. A malformed PDF used to
   return a 500 on all three upload paths; now the file is kept, the failure is
   logged, and the person is told it couldn't be read.
+
+## Audit log
+
+`accounts/audit.py` + `AuditEvent`. One append-only table for the whole app;
+`FeedbackAuditLog` stays as it is for feedback before/after values.
+
+- **Write with** `audit.record(action, actor=..., request=..., target=..., **detail)`.
+  It never raises: a failed audit write must not roll back the action.
+- **Sign-in, sign-out and failed sign-in** come from Django's auth signals
+  (`accounts/signals.py`), so they record however the sign-in happened.
+- **Immutable:** `save()` refuses to rewrite an existing row.
+- **Labels are snapshots**, so entries survive the actor or target being
+  deleted.
+- **IP and user agent are kept for authentication events only** — personal
+  data, and only useful there.
+- **Readable by** Leadership Manager, Administrator and superusers.
+- **Retention:** 730 days, applied by `manage.py purge_audit_events`.
+
+## Staff accounts
+
+`accounts/staff.py` (rules) and `accounts/staff_views.py` (screens). Kept out
+of the Django admin deliberately: these actions must follow the rules and be
+audited, and the admin would let a superuser bypass both.
+
+- **Administrators create accounts**; the work email is the username. The
+  account starts with **no usable password** — the person sets their own from
+  an emailed link (`StaffInvite`, 7 days, one use). An administrator never
+  knows a colleague's password.
+- **`must_change_password`** is enforced by middleware, not per view.
+- **Deactivate, never delete:** `is_active=False` plus session revocation.
+  Django's ModelBackend re-checks `is_active` per request, so open sessions
+  stop working immediately. Feedback and audit history survive, and nobody
+  else with the same role is affected.
+- **The last administrator** cannot be demoted or deactivated.
+- **Sessions:** staff get 8 hours of *idle* time
+  (`SESSION_SAVE_EVERY_REQUEST` makes it rolling); candidates keep two weeks.
+  "Sign out everywhere" is `revoke-my-sessions`.
+- **`ASSIGNABLE_ROLES`** is de-duplicated: Department Chief and Administrator
+  are in `RECRUITMENT_STAFF_GROUPS` too.
+
+## Departments and chiefs
+
+`Department.chiefs` (M2M) records who chairs a department; the **Department
+Chief** group carries the permissions. Several chiefs per department is
+deliberate. Naming a chief also grants the role. Chiefs are department-scoped
+on the dashboard, like technical interviewers.
+
+## Interview ownership and delegation
+
+Three separate concepts, never collapsed into one field:
+
+- **`Interview.created_by`** — who scheduled it.
+- **`Interview.assigned_interviewer`** — who owns it (renamed from
+  `interviewer`; the column was renamed, not recreated).
+- **`InterviewDelegation`** — who it's been offered to, by whom, why, and
+  what they said. Its own table so history survives reassignment.
+- **`Interview.conducting_interviewer`** is the single answer to "who is
+  turning up": the delegate only once they have **accepted**.
+
+Rules (all decided with the user, all tested in `interviews/test_delegation.py`):
+
+- Only the assigned interviewer, a chief of that department, or an
+  administrator may delegate; only the person asked may answer. Enforced on
+  GET and POST.
+- **One hop.** A delegate cannot delegate onward.
+- Declining needs a reason and returns the round. A new offer supersedes the
+  outstanding one.
+- Cross-department delegation is **allowed and flagged**, not blocked.
+- Pending offers expire 48 hours before the interview
+  (`manage.py expire_delegations`); cancelling or completing closes them.
+- Candidates see none of it — not the delegation, not the reason, not any
+  interviewer's name.
+
+Interviews also carry `location` and `meeting_link`, which candidates see.
+
+## Housekeeping commands (all need scheduling)
+
+- `purge_pending_applications` — unconfirmed public applications (30 days).
+- `purge_audit_events` — audit entries (730 days).
+- `expire_delegations` — pending offers close to the interview (48 hours).

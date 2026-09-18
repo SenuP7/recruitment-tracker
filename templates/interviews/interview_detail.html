@@ -81,7 +81,7 @@
                         <span class="date-chip"><span class="m">{{ round.scheduled_date|date:"M" }}</span><span class="d">{{ round.scheduled_date|date:"j" }}</span></span>
                         <span class="list-body">
                             <span class="list-title">{{ round.interview_type }} interview</span>
-                            <span class="list-sub">{{ round.assigned_interviewer|default:"Unassigned" }}</span>
+                            <span class="list-sub">{{ round.assigned_interviewer|person }}</span>
                         </span>
                         <span class="list-trail"><span class="badge" data-status="{{ round.status }}">{{ round.status }}</span></span>
                     </a>
@@ -99,11 +99,11 @@
                     <div class="dl-row"><dt>Round</dt><dd>{{ interview.interview_type }}</dd></div>
                     <div class="dl-row"><dt>Date</dt><dd class="mono">{{ interview.scheduled_date|date:"d M Y" }}</dd></div>
                     <div class="dl-row"><dt>Time</dt><dd class="mono">{{ interview.scheduled_date|time:"H:i" }}</dd></div>
-                    <div class="dl-row"><dt>Assigned to</dt><dd>{{ interview.assigned_interviewer|default:"Unassigned" }}</dd></div>
+                    <div class="dl-row"><dt>Assigned to</dt><dd>{{ interview.assigned_interviewer|person }}</dd></div>
                     {% if conducting_interviewer and conducting_interviewer != interview.assigned_interviewer %}
-                        <div class="dl-row"><dt>Being conducted by</dt><dd>{{ conducting_interviewer }}</dd></div>
+                        <div class="dl-row"><dt>Being conducted by</dt><dd>{{ conducting_interviewer|person }}</dd></div>
                     {% endif %}
-                    <div class="dl-row"><dt>Scheduled by</dt><dd>{{ interview.created_by|default:"—" }}</dd></div>
+                    <div class="dl-row"><dt>Scheduled by</dt><dd>{{ interview.created_by|person }}</dd></div>
                     {% if interview.location %}<div class="dl-row"><dt>Location</dt><dd>{{ interview.location }}</dd></div>{% endif %}
                     {% if interview.meeting_link %}<div class="dl-row"><dt>Meeting link</dt><dd><a href="{{ interview.meeting_link }}" rel="noopener">Join</a></dd></div>{% endif %}
                     <div class="dl-row"><dt>Status</dt><dd>{{ interview.status }}</dd></div>
@@ -119,13 +119,13 @@
             <div class="card-body stack">
                 {% if delegation %}
                     <p style="font-size: var(--text-sm)">
-                        <strong>{{ delegation.from_user|default:"Someone" }}</strong> asked
-                        <strong>{{ delegation.to_user }}</strong> to conduct this round.
+                        <strong>{{ delegation.from_user|person }}</strong> asked
+                        <strong>{{ delegation.to_user|person }}</strong> to conduct this round.
                     </p>
                     <blockquote class="quote">{{ delegation.reason }}</blockquote>
 
                     {% if delegation.status == "pending" %}
-                        <p class="faint" style="font-size: var(--text-sm)">Until it's accepted, this interview is still {{ interview.assigned_interviewer|default:"unassigned" }}'s responsibility.</p>
+                        <p class="faint" style="font-size: var(--text-sm)">Until it's accepted, this interview is still {{ interview.assigned_interviewer|person }}'s responsibility.</p>
                     {% endif %}
                     {% if delegation.crosses_departments %}
                         <p class="faint" style="font-size: var(--text-sm)"><i data-lucide="info"></i> This crosses departments, which is allowed.</p>
@@ -171,7 +171,7 @@
                             {% for entry in delegation_history %}
                                 <li class="list-row">
                                     <div class="list-main">
-                                        <strong>{{ entry.from_user|default:"Someone" }} → {{ entry.to_user }}</strong>
+                                        <strong>{{ entry.from_user|person }} → {{ entry.to_user|person }}</strong>
                                         <span class="faint">{{ entry.get_status_display }} · {{ entry.created_at|date:"j M Y, H:i" }}{% if entry.response_note %} · "{{ entry.response_note }}"{% endif %}</span>
                                     </div>
                                 </li>

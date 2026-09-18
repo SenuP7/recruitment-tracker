@@ -24,6 +24,12 @@ RECRUITMENT_STAFF_GROUPS = (
     "Senior Reviewer",
     "Leadership Manager",
     "Technical Interviewer",
+    # Added with the delegation work: a chief may be asked to conduct an
+    # interview, and an administrator runs the system. Both are staff, so
+    # both belong here -- this tuple is what "is this a staff account?"
+    # means throughout the app.
+    "Department Chief",
+    "Administrator",
 )
 
 

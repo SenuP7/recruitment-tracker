@@ -6,6 +6,14 @@ class GroupRequiredMixin(LoginRequiredMixin):
     allowed_groups = []
 
     def dispatch(self, request, *args, **kwargs):
+        # Not signed in is a different answer from not allowed. Let
+        # LoginRequiredMixin send them to the sign-in page: since staff
+        # sessions expire after 8 hours, and a deactivated account is
+        # signed out mid-visit, a bare 403 would be the normal daily
+        # experience of a session running out.
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+
         user_groups = request.user.groups.values_list(
             "name",
             flat=True

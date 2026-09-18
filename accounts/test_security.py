@@ -200,3 +200,37 @@ class ThrottleFailureModeTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("_auth_user_id", self.client.session)
+
+
+class ExpiredSessionTests(TestCase):
+    """A session that has run out, or an account switched off mid-visit,
+    should land on the sign-in page -- not a bare 403. With 8-hour staff
+    sessions this is the ordinary daily experience."""
+
+    def test_an_anonymous_visitor_is_sent_to_sign_in_not_refused(self):
+        for url in (reverse("dashboard:dashboard"), "/cv-screening/results/"):
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 302)
+                self.assertIn("/accounts/login/", response["Location"])
+
+    def test_a_deactivated_staff_member_is_sent_to_sign_in(self):
+        user = User.objects.create_user("deactivated_mid_visit", password=PASSWORD)
+        user.groups.add(Group.objects.get_or_create(name="Recruiter")[0])
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(reverse("dashboard:dashboard")).status_code, 200)
+
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        response = self.client.get(reverse("dashboard:dashboard"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response["Location"])
+
+    def test_someone_signed_in_without_the_role_still_gets_403(self):
+        """The change must not turn a real authorisation failure into a
+        redirect loop."""
+        user = User.objects.create_user("wrong_role", password=PASSWORD)
+        user.groups.add(Group.objects.get_or_create(name="Candidate")[0])
+        self.client.force_login(user)
+        self.assertEqual(self.client.get("/cv-screening/results/").status_code, 403)

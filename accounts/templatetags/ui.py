@@ -56,3 +56,16 @@ def score_pct(score):
     if score is None:
         return None
     return round(float(score) * 100)
+
+
+@register.filter
+def person(user):
+    """A person's name for display, falling back to their username.
+
+    Staff usernames are email addresses now, so `{{ user }}` alone would put
+    'tomas.ilic@example.com' in the middle of a sentence.
+    """
+    if user is None:
+        return "Unassigned"
+    full_name = user.get_full_name() if hasattr(user, "get_full_name") else ""
+    return full_name or getattr(user, "username", str(user))

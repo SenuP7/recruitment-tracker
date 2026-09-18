@@ -274,3 +274,18 @@ class SessionRevocationTests(TestCase):
         user = make_user("session_staff", roles=["Recruiter"])
         self.client.post(reverse("login"), {"username": "session_staff", "password": PASSWORD})
         self.assertEqual(self.client.session.get_expiry_age(), staff.STAFF_SESSION_SECONDS)
+
+
+class AssignableRolesTests(TestCase):
+    def test_each_role_is_offered_exactly_once(self):
+        """Department Chief and Administrator belong to the staff-groups
+        tuple as well, so a naive concatenation listed them twice on the
+        staff page."""
+        self.assertEqual(len(staff.ASSIGNABLE_ROLES), len(set(staff.ASSIGNABLE_ROLES)))
+
+    def test_candidates_are_never_assignable(self):
+        self.assertNotIn("Candidate", staff.ASSIGNABLE_ROLES)
+
+    def test_the_new_roles_are_offered(self):
+        self.assertIn(staff.DEPARTMENT_CHIEF_GROUP, staff.ASSIGNABLE_ROLES)
+        self.assertIn(staff.ADMIN_GROUP, staff.ASSIGNABLE_ROLES)

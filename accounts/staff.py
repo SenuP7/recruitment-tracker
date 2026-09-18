@@ -38,9 +38,14 @@ logger = logging.getLogger(__name__)
 ADMIN_GROUP = "Administrator"
 DEPARTMENT_CHIEF_GROUP = "Department Chief"
 
-# Every role a staff account can hold. Candidates are deliberately absent:
-# a person is either staff or a candidate, never both.
-ASSIGNABLE_ROLES = tuple(RECRUITMENT_STAFF_GROUPS) + (DEPARTMENT_CHIEF_GROUP, ADMIN_GROUP)
+# Every role a staff account can hold, in a stable order and without
+# duplicates -- Department Chief and Administrator are part of
+# RECRUITMENT_STAFF_GROUPS as well, and appending them again listed each of
+# them twice on the staff page. Candidates are deliberately absent: a person
+# is either staff or a candidate, never both.
+ASSIGNABLE_ROLES = tuple(
+    dict.fromkeys(tuple(RECRUITMENT_STAFF_GROUPS) + (DEPARTMENT_CHIEF_GROUP, ADMIN_GROUP))
+)
 
 # Staff see everyone's data, so their sessions are much shorter than a
 # candidate's. Rolling, because SESSION_SAVE_EVERY_REQUEST makes each request

@@ -55,7 +55,7 @@
                         <td>{{ interview.interview_type }}</td>
                         <td>
                             {% if interview.assigned_interviewer %}
-                                <div class="cell-lead"><span class="avatar avatar-sm">{{ interview.assigned_interviewer.username|initials }}</span><span>{{ interview.assigned_interviewer }}</span></div>
+                                <div class="cell-lead"><span class="avatar avatar-sm">{{ interview.assigned_interviewer|person|initials }}</span><span>{{ interview.assigned_interviewer|person }}</span></div>
                             {% else %}
                                 <span class="faint">Unassigned</span>
                             {% endif %}
