@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Departments{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow">Administration</p>
+        <h1>Departments</h1>
+        <p class="page-subtitle">Who chairs each department. Chiefs can be asked to conduct an interview their team can't take, so they appear first when someone delegates.</p>
+    </div>
+</header>
+
+<div class="stack">
+    {% for row in rows %}
+        <section class="card">
+            <div class="card-head">
+                <h2>{{ row.department.name }}</h2>
+                <span class="card-head-meta">
+                    {% if row.chiefs %}
+                        {{ row.chiefs|length }} chief{{ row.chiefs|length|pluralize }}
+                    {% else %}
+                        No chief yet
+                    {% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'department-chiefs' row.department.pk %}" class="stack">
+                    {% csrf_token %}
+                    <div class="role-checks">
+                        {% for option in row.candidates_for_chief %}
+                            <label class="role-check">
+                                <input type="checkbox" name="chiefs" value="{{ option.user.pk }}" {% if option.is_chief %}checked{% endif %}>
+                                <span>{{ option.user.get_full_name|default:option.user.username }}</span>
+                            </label>
+                        {% empty %}
+                            <p class="faint">No active staff accounts to choose from yet.</p>
+                        {% endfor %}
+                    </div>
+                    <div class="buttons">
+                        <button type="submit" class="btn btn-secondary btn-sm">Save chiefs</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    {% empty %}
+        <div class="empty">
+            <span class="empty-icon"><i data-lucide="building-2"></i></span>
+            <h3>No departments yet</h3>
+            <p>Departments are created with candidates and positions; once one exists it will appear here.</p>
+        </div>
+    {% endfor %}
+</div>
+
+<p class="faint">Naming someone a chief also gives them the Department Chief role. Removing them here leaves the role in place — take it off in <a href="{% url 'staff-list' %}">staff accounts</a> if they no longer need it.</p>
+{% endblock %}

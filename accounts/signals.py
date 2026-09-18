@@ -18,6 +18,15 @@ from . import audit
 def _record_login(sender, request, user, **kwargs):
     audit.record(audit.LOGIN, actor=user, request=request, target=user)
 
+    # Staff can see every candidate's data, so their session is much shorter
+    # than a candidate's. Set per sign-in rather than globally, because the
+    # same setting covers both audiences.
+    from .decorators import user_in_groups
+    from .staff import STAFF_SESSION_SECONDS
+
+    if request is not None and user_in_groups(user):
+        request.session.set_expiry(STAFF_SESSION_SECONDS)
+
 
 @receiver(user_logged_out)
 def _record_logout(sender, request, user, **kwargs):

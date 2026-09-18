@@ -2,6 +2,18 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 
 from .login_forms import StaffLoginForm
+from .staff_views import (
+    DepartmentChiefsView,
+    DepartmentListView,
+    RevokeMySessionsView,
+    StaffAcceptInviteView,
+    StaffCreateView,
+    StaffDeactivateView,
+    StaffListView,
+    StaffReactivateView,
+    StaffResendInviteView,
+    StaffRolesView,
+)
 from .password_reset import PipelinePasswordResetForm
 from .views import (
     AuditLogView,
@@ -74,6 +86,18 @@ urlpatterns = [
         ProfileView.as_view(),
         name="profile",
     ),
+
+    # Staff account administration.
+    path("staff/", StaffListView.as_view(), name="staff-list"),
+    path("staff/new/", StaffCreateView.as_view(), name="staff-create"),
+    path("staff/<int:pk>/roles/", StaffRolesView.as_view(), name="staff-roles"),
+    path("staff/<int:pk>/deactivate/", StaffDeactivateView.as_view(), name="staff-deactivate"),
+    path("staff/<int:pk>/reactivate/", StaffReactivateView.as_view(), name="staff-reactivate"),
+    path("staff/<int:pk>/resend-invite/", StaffResendInviteView.as_view(), name="staff-resend-invite"),
+    path("staff/setup/<str:token>/", StaffAcceptInviteView.as_view(), name="staff-accept-invite"),
+    path("departments/", DepartmentListView.as_view(), name="department-list"),
+    path("departments/<int:pk>/chiefs/", DepartmentChiefsView.as_view(), name="department-chiefs"),
+    path("sessions/revoke/", RevokeMySessionsView.as_view(), name="revoke-my-sessions"),
 
     path(
         "audit-log/",

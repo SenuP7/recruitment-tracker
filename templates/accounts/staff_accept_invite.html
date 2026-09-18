@@ -1,0 +1,44 @@
+{% extends "accounts/auth_base.html" %}
+
+{% block title %}Set your password · Candidflow{% endblock %}
+{% block aside_heading %}Welcome to the team.{% endblock %}
+{% block aside_text %}Choose a password only you know. The administrator who created your account can't see it, and never could.{% endblock %}
+{% block aside_points %}
+    <li><i data-lucide="user-check"></i> Your own account, not a shared one</li>
+    <li><i data-lucide="shield-check"></i> Access follows the roles you've been given</li>
+    <li><i data-lucide="scroll-text"></i> Your actions are recorded under your name</li>
+{% endblock %}
+{% block aside_footnote %}Staff account setup{% endblock %}
+
+{% block panel %}
+<h1>Set your password</h1>
+<p class="lede">You're setting up <strong>{{ invite.email }}</strong>. That's the address you'll sign in with.</p>
+
+<form method="post">
+    {% csrf_token %}
+
+    {% if form.errors %}
+        <div class="error" role="alert">
+            <i data-lucide="alert-circle"></i>
+            <span>{% for field in form %}{% for error in field.errors %}{{ error }} {% endfor %}{% endfor %}</span>
+        </div>
+    {% endif %}
+
+    <div class="field">
+        <label for="id_new_password1">Choose a password</label>
+        <input type="password" name="new_password1" id="id_new_password1" autocomplete="new-password" autofocus required>
+        <p class="help">At least 12 characters, and not something easy to guess.</p>
+    </div>
+
+    <div class="field">
+        <label for="id_new_password2">Confirm password</label>
+        <input type="password" name="new_password2" id="id_new_password2" autocomplete="new-password" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Set my password</button>
+</form>
+
+<p class="auth-foot">
+    <span class="faint">By signing in you accept our <a href="{% url 'terms' %}">terms of use</a> and <a href="{% url 'privacy' %}">privacy notice</a>.</span>
+</p>
+{% endblock %}

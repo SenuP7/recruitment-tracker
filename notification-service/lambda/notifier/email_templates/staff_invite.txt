@@ -1,0 +1,14 @@
+Hi {recipient_name},
+
+An account has been created for you on {company_name}, the recruitment
+tracker. Set your password here:
+
+{setup_url}
+
+The link works until {expires_at} and can only be used once. Nobody else
+knows your password -- not even the administrator who created the account.
+
+If you weren't expecting this, tell your administrator before using the link.
+
+Thanks,
+The Recruitment Team

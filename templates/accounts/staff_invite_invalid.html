@@ -1,0 +1,20 @@
+{% extends "accounts/auth_base.html" %}
+
+{% block title %}Link no longer works · Candidflow{% endblock %}
+{% block aside_heading %}That link has expired.{% endblock %}
+{% block aside_text %}Setup links last a week and can only be used once. Your administrator can send a new one.{% endblock %}
+{% block aside_points %}
+    <li><i data-lucide="timer"></i> Valid for 7 days</li>
+    <li><i data-lucide="repeat"></i> A new link replaces the old one</li>
+{% endblock %}
+{% block aside_footnote %}Staff account setup{% endblock %}
+
+{% block panel %}
+<h1>This link no longer works</h1>
+<p class="lede">It may have expired, been used already, or been replaced by a newer one. Ask your administrator to resend it.</p>
+<a href="{% url 'login' %}" class="btn btn-primary">Go to sign-in</a>
+
+<p class="auth-foot">
+    <span class="faint">Already set your password? <a href="{% url 'password_reset' %}">Reset it here</a> if you've forgotten it.</span>
+</p>
+{% endblock %}

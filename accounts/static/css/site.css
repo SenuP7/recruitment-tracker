@@ -627,6 +627,15 @@ body.auth-page { min-height: 100vh; display: grid; grid-template-columns: minmax
 .auth-foot a:hover { color: var(--text); }
 .login-panel .buttons { margin-top: var(--space-6); }
 
+/* ---- Role and chief checkboxes ------------------------------------------------ */
+
+.role-form { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+.role-checks { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.role-check { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border-strong); font-size: var(--text-xs); color: var(--text-secondary); cursor: pointer; transition: border-color .12s ease, color .12s ease; }
+.role-check:hover { border-color: var(--slate-500); color: var(--text); }
+.role-check input { accent-color: var(--slate-200); width: 13px; height: 13px; }
+.role-check:has(input:checked) { border-color: var(--slate-200); color: var(--text); background: var(--surface-raised); }
+
 /* ---- Candidate portal ------------------------------------------------------------------ */
 /* A deliberately plain, single-column surface: candidates get one page about
    themselves, not the staff shell with its sidebar and pipeline views. */

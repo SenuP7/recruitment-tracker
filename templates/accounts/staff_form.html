@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Add staff member{% endblock %}
+
+{% block content %}
+<p class="eyebrow"><a href="{% url 'staff-list' %}"><i data-lucide="arrow-left"></i> Staff accounts</a></p>
+
+<header class="page-header">
+    <div>
+        <h1>Add a staff member</h1>
+        <p class="page-subtitle">They'll be emailed a link to set their own password. You won't know it, and neither will anyone else.</p>
+    </div>
+</header>
+
+<div class="form-layout">
+    <form method="post" class="stack">
+        {% csrf_token %}
+        {% include "components/form_errors.html" %}
+
+        <section class="card form-section">
+            <div class="card-head"><h2>Who they are</h2></div>
+            <div class="card-body field-grid">
+                {% include "components/field.html" with field=form.first_name %}
+                {% include "components/field.html" with field=form.last_name %}
+                {% include "components/field.html" with field=form.email wide=True %}
+                {% include "components/field.html" with field=form.job_title %}
+                {% include "components/field.html" with field=form.department %}
+            </div>
+        </section>
+
+        <section class="card form-section">
+            <div class="card-head"><h2>What they can do</h2></div>
+            <div class="card-body">
+                {% include "components/field.html" with field=form.roles wide=True %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <div class="buttons">
+                <a href="{% url 'staff-list' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create account and send setup link</button>
+            </div>
+        </div>
+    </form>
+
+    <aside class="rail">
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="shield-check"></i> How this works</h2></div>
+            <div class="card-body stack">
+                <p class="faint" style="font-size: var(--text-sm)">The account is created with no password at all. The setup link lasts 7 days and works once.</p>
+                <p class="faint" style="font-size: var(--text-sm)">Roles are shared; accounts aren't. Two recruiters each get their own login, and deactivating one leaves the other alone.</p>
+                <p class="faint" style="font-size: var(--text-sm)">Creating the account, changing roles and deactivating are all recorded in the audit log under your name.</p>
+            </div>
+        </section>
+    </aside>
+</div>
+{% endblock %}

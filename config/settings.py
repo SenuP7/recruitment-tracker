@@ -88,6 +88,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'accounts.middleware.ForcePasswordChangeMiddleware',
     'portal.middleware.CandidatePortalMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -184,7 +185,11 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
+        # 12 rather than Django's 8: a staff account can read every
+        # candidate's record, and candidates share the same rule for
+        # simplicity.
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 12},
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -257,6 +262,12 @@ SESSION_COOKIE_SECURE = HTTPS_ENABLED
 CSRF_COOKIE_SECURE = HTTPS_ENABLED
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
+
+# Each request pushes the expiry out, which turns SESSION_COOKIE_AGE into idle
+# time rather than total time signed in. Staff sessions are shortened to 8
+# hours at sign-in (accounts/signals.py); candidates keep the default, since a
+# candidate checking their application every few days shouldn't be signed out.
+SESSION_SAVE_EVERY_REQUEST = True
 CSRF_COOKIE_SAMESITE = "Lax"
 
 # HSTS tells browsers never to try HTTP again, and that is not reversible

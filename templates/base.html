@@ -70,6 +70,14 @@
         <a href="{% url 'position-list' %}" class="nav-item{% if '/positions/' in request.path %} active{% endif %}" title="Positions">
             <i data-lucide="briefcase"></i><span>Positions</span>
         </a>
+        {% if can_manage_staff %}
+            <a href="{% url 'staff-list' %}" class="nav-item{% if '/accounts/staff/' in request.path %} active{% endif %}" title="Staff accounts">
+                <i data-lucide="users-round"></i><span>Staff accounts</span>
+            </a>
+            <a href="{% url 'department-list' %}" class="nav-item{% if '/accounts/departments/' in request.path %} active{% endif %}" title="Departments">
+                <i data-lucide="building-2"></i><span>Departments</span>
+            </a>
+        {% endif %}
         {% if can_view_audit_log %}
             <a href="{% url 'audit-log' %}" class="nav-item{% if '/accounts/audit-log/' in request.path %} active{% endif %}" title="Audit log">
                 <i data-lucide="scroll-text"></i><span>Audit log</span>

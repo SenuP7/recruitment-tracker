@@ -2,7 +2,11 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
-from candidates.models import Candidate, CandidateCV, Application
+# CandidateCV lives in cv_screening; it was moved out of candidates in
+# migration 0002 and this import was never updated, so the command has
+# been failing on import since then.
+from candidates.models import Candidate, Application
+from cv_screening.models import CandidateCV
 from interviews.models import Interview, InterviewFeedback
 from positions.models import Position
 
@@ -16,12 +20,18 @@ class Command(BaseCommand):
         # GET THE SIX ROLE GROUPS
         # ---------------------------------------------------------
 
-        recruiter = Group.objects.get(name="Recruiter")
-        hr = Group.objects.get(name="HR Interviewer")
-        tech = Group.objects.get(name="Technical Interviewer")
-        senior = Group.objects.get(name="Senior Reviewer")
-        leadership = Group.objects.get(name="Leadership Manager")
-        candidate = Group.objects.get(name="Candidate")
+        # get_or_create so a fresh environment can be set up in one command;
+        # the six original groups already exist in the real database.
+        recruiter, _ = Group.objects.get_or_create(name="Recruiter")
+        hr, _ = Group.objects.get_or_create(name="HR Interviewer")
+        tech, _ = Group.objects.get_or_create(name="Technical Interviewer")
+        senior, _ = Group.objects.get_or_create(name="Senior Reviewer")
+        leadership, _ = Group.objects.get_or_create(name="Leadership Manager")
+        candidate, _ = Group.objects.get_or_create(name="Candidate")
+
+        # Roles added with the staff/delegation work.
+        chief, _ = Group.objects.get_or_create(name="Department Chief")
+        administrator, _ = Group.objects.get_or_create(name="Administrator")
 
         self.stdout.write(
             self.style.SUCCESS("Groups loaded successfully.")
@@ -225,6 +235,32 @@ class Command(BaseCommand):
             InterviewFeedback,
             ["view"]
         )
+
+        # ---------------------------------------------------------
+        # DEPARTMENT CHIEF
+        # ---------------------------------------------------------
+        #
+        # A chief runs a department and may be asked to conduct interviews
+        # their team can't take, so they read the recruitment record and
+        # write feedback -- but they don't administer candidates.
+
+        add_permissions(chief, Candidate, ["view"])
+        add_permissions(chief, Application, ["view"])
+        add_permissions(chief, Position, ["view"])
+        add_permissions(chief, Interview, ["view", "change"])
+        add_permissions(chief, InterviewFeedback, ["add", "change", "view"])
+
+        # ---------------------------------------------------------
+        # ADMINISTRATOR
+        # ---------------------------------------------------------
+        #
+        # Runs the system: full access to recruitment records, plus the staff
+        # and audit screens, which are gated on the group itself rather than
+        # on a model permission (see accounts/staff_views.py).
+
+        for model in (Candidate, CandidateCV, Application, Position, Interview):
+            add_permissions(administrator, model, ["add", "change", "delete", "view"])
+        add_permissions(administrator, InterviewFeedback, ["view", "change", "delete"])
 
         # ---------------------------------------------------------
         # CANDIDATE

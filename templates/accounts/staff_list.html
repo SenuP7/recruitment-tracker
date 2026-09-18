@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load ui %}
+
+{% block title %}Staff accounts{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow">Administration</p>
+        <h1>Staff accounts</h1>
+        <p class="page-subtitle">Everyone with access to the recruitment side. Each person has their own account, and several people can hold the same role.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'staff-create' %}" class="btn btn-primary"><i data-lucide="user-plus"></i> Add staff member</a>
+    </div>
+</header>
+
+<section class="card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th scope="col">Person</th>
+                    <th scope="col">Roles</th>
+                    <th scope="col">Department</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td>
+                        <div class="cell-lead">
+                            <span class="avatar">{{ row.user.get_full_name|default:row.user.username|initials }}</span>
+                            <span>
+                                <span class="cell-title">{{ row.user.get_full_name|default:row.user.username }}</span>
+                                <span class="mono muted">{{ row.user.username }}</span>
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <form method="post" action="{% url 'staff-roles' row.user.pk %}" class="role-form">
+                            {% csrf_token %}
+                            <div class="role-checks">
+                                {% for role in row.roles %}
+                                    <label class="role-check">
+                                        <input type="checkbox" name="roles" value="{{ role.name }}" {% if role.held %}checked{% endif %}>
+                                        <span>{{ role.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                            <button type="submit" class="btn btn-secondary btn-sm">Save roles</button>
+                        </form>
+                    </td>
+                    <td class="muted">{{ row.user.profile.department|default:"—" }}</td>
+                    <td>
+                        {% if not row.user.is_active %}
+                            <span class="badge" data-status="Rejected">Deactivated</span>
+                        {% elif row.invite_pending %}
+                            <span class="badge" data-status="CV Screening">Invite pending</span>
+                        {% else %}
+                            <span class="badge" data-status="Accepted">Active</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="buttons">
+                            {% if row.user.is_active %}
+                                {% if row.invite_pending %}
+                                    <form method="post" action="{% url 'staff-resend-invite' row.user.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-secondary btn-sm">Resend link</button>
+                                    </form>
+                                {% endif %}
+                                <a href="{% url 'staff-deactivate' row.user.pk %}" class="btn btn-secondary btn-sm">Deactivate</a>
+                            {% else %}
+                                <form method="post" action="{% url 'staff-reactivate' row.user.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-secondary btn-sm">Reactivate</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5" class="muted">No staff accounts yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<p class="faint">Deactivating blocks sign-in immediately and ends any open session. Feedback and audit history are kept, and nobody else with the same role is affected.</p>
+{% endblock %}

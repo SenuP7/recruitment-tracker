@@ -33,6 +33,11 @@ EVENT_TEMPLATE_REGISTRY = {
         body_file="application_confirm.txt",
         required_fields=("candidate_name", "company_name", "job_title", "confirm_url", "expires_at"),
     ),
+    "staff_invite": TemplateSpec(
+        subject_template="Set up your {company_name} account",
+        body_file="staff_invite.txt",
+        required_fields=("recipient_name", "company_name", "setup_url", "expires_at"),
+    ),
     "portal_invite": TemplateSpec(
         subject_template="Set up your {company_name} account",
         body_file="portal_invite.txt",

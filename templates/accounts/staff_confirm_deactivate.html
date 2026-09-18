@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Deactivate {{ staff_member.get_full_name|default:staff_member.username }}{% endblock %}
+
+{% block content %}
+<p class="eyebrow"><a href="{% url 'staff-list' %}"><i data-lucide="arrow-left"></i> Staff accounts</a></p>
+
+<div class="confirm-wrap">
+    <section class="card confirm-card">
+        <div class="card-body stack" style="gap: var(--space-5)">
+            <span class="empty-icon"><i data-lucide="user-x"></i></span>
+            <div>
+                <h1>Deactivate this account?</h1>
+                <p class="page-subtitle"><strong>{{ staff_member.get_full_name|default:staff_member.username }}</strong> ({{ staff_member.username }}) will no longer be able to sign in.</p>
+            </div>
+
+            <div class="confirm-impact">
+                <p class="skill-heading">What happens</p>
+                <ul class="confirm-list">
+                    <li><i data-lucide="corner-down-right"></i> Sign-in is blocked immediately.</li>
+                    <li><i data-lucide="corner-down-right"></i> Any session they have open ends on their next click.</li>
+                    <li><i data-lucide="corner-down-right"></i> Their feedback, interviews and audit history are kept.</li>
+                    <li><i data-lucide="corner-down-right"></i> Nobody else with the same role is affected.</li>
+                    <li><i data-lucide="corner-down-right"></i> You can reactivate them later.</li>
+                </ul>
+            </div>
+
+            <form method="post" class="stack">
+                {% csrf_token %}
+                <div class="field">
+                    <label for="id_reason">Reason (recorded in the audit log)</label>
+                    <input type="text" id="id_reason" name="reason" placeholder="Left the company, moved team, …">
+                </div>
+                <div class="buttons">
+                    <a href="{% url 'staff-list' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i data-lucide="user-x"></i> Deactivate</button>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}
