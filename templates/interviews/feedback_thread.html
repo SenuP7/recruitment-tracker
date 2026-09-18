@@ -82,7 +82,7 @@
                     <div class="dl-row"><dt>Feedback entries</dt><dd>{{ feedback_threads|length }}</dd></div>
                     <div class="dl-row"><dt>Replies</dt><dd>{{ reply_count }}</dd></div>
                     <div class="dl-row"><dt>Average rating</dt><dd>{% if average_rating %}{{ average_rating }} / 5{% else %}—{% endif %}</dd></div>
-                    <div class="dl-row"><dt>Interviewer</dt><dd>{{ interview.interviewer|default:"Unassigned" }}</dd></div>
+                    <div class="dl-row"><dt>Interviewer</dt><dd>{{ interview.assigned_interviewer|default:"Unassigned" }}</dd></div>
                     <div class="dl-row"><dt>Status</dt><dd>{{ interview.status }}</dd></div>
                 </dl>
             </div>

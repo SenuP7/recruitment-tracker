@@ -48,7 +48,12 @@
                         </span>
                         <div class="list-main">
                             <strong>{{ interview.interview_type }} interview</strong>
-                            <span class="faint">{{ interview.scheduled_date|date:"l j F, H:i" }}</span>
+                            <span class="faint">
+                                {{ interview.scheduled_date|date:"l j F, H:i" }}
+                                {% if application.position.department %} · with the {{ application.position.department.name }} team{% endif %}
+                            </span>
+                            {% if interview.location %}<span class="faint"><i data-lucide="map-pin"></i> {{ interview.location }}</span>{% endif %}
+                            {% if interview.meeting_link %}<a href="{{ interview.meeting_link }}" rel="noopener" class="portal-meeting-link"><i data-lucide="video"></i> Join the call</a>{% endif %}
                         </div>
                         <span class="badge" data-status="{{ interview.status }}">{{ interview.status }}</span>
                     </li>

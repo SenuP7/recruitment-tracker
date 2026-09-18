@@ -110,12 +110,12 @@ class PortalContentTests(TestCase):
     def setUp(self):
         self.candidate = make_candidate("sam@example.com")
         self.application = make_application(self.candidate, status="HR Interview")
-        self.interviewer = User.objects.create_user("tech_int", password=PASSWORD)
+        self.assigned_interviewer = User.objects.create_user("tech_int", password=PASSWORD)
         self.interview = Interview.objects.create(
             application=self.application,
             interview_type="Technical",
             scheduled_date=timezone.now() + timedelta(days=3),
-            interviewer=self.interviewer,
+            assigned_interviewer=self.assigned_interviewer,
         )
         self.client.login(username="sam@example.com", password=PASSWORD)
 
@@ -129,7 +129,7 @@ class PortalContentTests(TestCase):
 
         InterviewFeedback.objects.create(
             interview=self.interview,
-            author=self.interviewer,
+            author=self.assigned_interviewer,
             rating=2,
             comments="Struggled with the system design question.",
             recommendation="Reject",
@@ -149,12 +149,12 @@ class WithdrawTests(TestCase):
         self.application = make_application(self.candidate, status="HR Interview")
         self.recruiter = User.objects.create_user("recruiter3", password=PASSWORD)
         self.recruiter.groups.add(Group.objects.get_or_create(name="Recruiter")[0])
-        self.interviewer = User.objects.create_user("hr_int", password=PASSWORD)
+        self.assigned_interviewer = User.objects.create_user("hr_int", password=PASSWORD)
         self.interview = Interview.objects.create(
             application=self.application,
             interview_type="HR",
             scheduled_date=timezone.now() + timedelta(days=2),
-            interviewer=self.interviewer,
+            assigned_interviewer=self.assigned_interviewer,
         )
         self.client.login(username="sam@example.com", password=PASSWORD)
 
@@ -170,7 +170,7 @@ class WithdrawTests(TestCase):
     def test_staff_are_notified(self):
         self.client.post(reverse("portal:withdraw", args=[self.application.pk]))
         recipients = set(StaffNotification.objects.values_list("recipient_id", flat=True))
-        self.assertEqual(recipients, {self.recruiter.id, self.interviewer.id})
+        self.assertEqual(recipients, {self.recruiter.id, self.assigned_interviewer.id})
 
     def test_a_closed_application_cannot_be_withdrawn_again(self):
         self.application.status = "Rejected"

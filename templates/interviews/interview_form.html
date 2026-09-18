@@ -47,7 +47,9 @@
                 <p>The interviewer sees this round under My interviews.</p>
             </div>
             <div class="field-grid">
-                {% include "components/field.html" with field=form.interviewer %}
+                {% include "components/field.html" with field=form.assigned_interviewer %}
+                {% include "components/field.html" with field=form.location %}
+                {% include "components/field.html" with field=form.meeting_link wide=True %}
                 {% include "components/field.html" with field=form.status %}
             </div>
         </section>

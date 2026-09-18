@@ -1,0 +1,11 @@
+Hi {candidate_name},
+
+Your {interview_type} interview for the {job_title} role has been moved.
+
+New date/time: {scheduled_date}
+{location_line}
+If that time doesn't work for you, reply to this email and we'll find
+another.
+
+Thanks,
+The Recruitment Team

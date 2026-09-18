@@ -766,7 +766,7 @@ class FeedbackFlashMessageTests(FeedbackTestBase):
 
 
 class MyInterviewsViewTests(FeedbackTestBase):
-    """MyInterviewsListView scopes to interviewer=request.user; existing
+    """MyInterviewsListView scopes to assigned_interviewer=request.user; existing
     interviews with no interviewer assigned show up for nobody."""
 
     def setUp(self):
@@ -774,7 +774,7 @@ class MyInterviewsViewTests(FeedbackTestBase):
         self.interviewer_a = self.make_user("interviewer_a", "Technical Interviewer", ["view_interview"])
         self.interviewer_b = self.make_user("interviewer_b", "Technical Interviewer", ["view_interview"])
 
-        self.interview.interviewer = self.interviewer_a
+        self.interview.assigned_interviewer = self.interviewer_a
         self.interview.save()
 
         Interview.objects.create(
@@ -782,7 +782,7 @@ class MyInterviewsViewTests(FeedbackTestBase):
             interview_type="Technical",
             scheduled_date=timezone.now() + datetime.timedelta(days=2),
             status="Scheduled",
-            interviewer=self.interviewer_b,
+            assigned_interviewer=self.interviewer_b,
         )
         Interview.objects.create(
             application=self.application,
@@ -808,7 +808,7 @@ class MyInterviewsViewTests(FeedbackTestBase):
 
         interviews = response.context["interviews"]
         self.assertEqual(len(interviews), 1)
-        self.assertEqual(interviews[0].interviewer, self.interviewer_b)
+        self.assertEqual(interviews[0].assigned_interviewer, self.interviewer_b)
 
     def test_different_user_sees_zero(self):
         other = self.make_user("uninvolved", "Recruiter", ["view_interview"])
@@ -833,7 +833,7 @@ class InterviewerAssignmentFormTests(FeedbackTestBase):
         from .forms import InterviewForm
 
         form = InterviewForm()
-        queryset_usernames = set(form.fields["interviewer"].queryset.values_list("username", flat=True))
+        queryset_usernames = set(form.fields["assigned_interviewer"].queryset.values_list("username", flat=True))
 
         self.assertIn("staff_candidate_for_dropdown", queryset_usernames)
         self.assertIn("super_dropdown", queryset_usernames)
@@ -865,8 +865,8 @@ class InterviewerAssignmentFormTests(FeedbackTestBase):
             "scheduled_date": future,
             "scheduled_time": "09:30",
             "status": "Scheduled",
-            "interviewer": self.staff_user.id,
+            "assigned_interviewer": self.staff_user.id,
         })
         self.assertEqual(response.status_code, 302)
         interview = Interview.objects.exclude(pk=self.interview.pk).get()
-        self.assertEqual(interview.interviewer, self.staff_user)
+        self.assertEqual(interview.assigned_interviewer, self.staff_user)

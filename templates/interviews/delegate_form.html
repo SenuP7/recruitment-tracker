@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load ui %}
+
+{% block title %}Delegate interview{% endblock %}
+
+{% block content %}
+<p class="eyebrow"><a href="{% url 'interview-detail' interview.pk %}"><i data-lucide="arrow-left"></i> Back to interview</a></p>
+
+<header class="page-header">
+    <div>
+        <h1>Ask someone else to conduct this</h1>
+        <p class="page-subtitle">{{ interview.interview_type }} interview with {{ interview.application.candidate }} on {{ interview.scheduled_date|date:"j M Y, H:i" }}.</p>
+    </div>
+</header>
+
+<div class="form-layout">
+    <form method="post" class="stack">
+        {% csrf_token %}
+
+        {% if errors %}
+            <div class="alert alert-error" role="alert">
+                <i data-lucide="alert-circle"></i>
+                <span>{% for field, message in errors.items %}{{ message }} {% endfor %}</span>
+            </div>
+        {% endif %}
+
+        <section class="card form-section">
+            <div class="card-head"><h2>Who should conduct it</h2></div>
+            <div class="card-body stack">
+                <p class="faint" style="font-size: var(--text-sm)">Chiefs of this department are listed first. Anyone who interviews can be asked.</p>
+                <div class="delegate-options">
+                    {% for person in delegates %}
+                        <label class="delegate-option">
+                            <input type="radio" name="to_user" value="{{ person.pk }}" required>
+                            <span class="delegate-body">
+                                <span class="delegate-name">
+                                    {{ person.get_full_name|default:person.username }}
+                                    {% if person.pk in chief_ids %}<span class="chip solid">Chief</span>{% endif %}
+                                </span>
+                                <span class="faint">
+                                    {% if person.profile.job_title %}{{ person.profile.job_title }} · {% endif %}
+                                    {{ person.profile.department|default:"No department" }}
+                                </span>
+                            </span>
+                        </label>
+                    {% empty %}
+                        <p class="faint">No other active staff to ask.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <section class="card form-section">
+            <div class="card-head"><h2>Why</h2></div>
+            <div class="card-body">
+                <div class="field">
+                    <label for="id_reason">Reason</label>
+                    <textarea id="id_reason" name="reason" rows="3" required>{{ reason }}</textarea>
+                    <p class="help">Recorded in the audit log and shown to the person you're asking. The candidate never sees it.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <div class="buttons">
+                <a href="{% url 'interview-detail' interview.pk %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="user-round-plus"></i> Send the request</button>
+            </div>
+        </div>
+    </form>
+
+    <aside class="rail">
+        <section class="card">
+            <div class="card-head"><h2><i data-lucide="info"></i> What happens next</h2></div>
+            <div class="card-body stack">
+                <p class="faint" style="font-size: var(--text-sm)">The interview <strong>stays yours</strong> until they accept. An unanswered request is not cover.</p>
+                <p class="faint" style="font-size: var(--text-sm)">They can decline with a reason, and you'll be told either way.</p>
+                <p class="faint" style="font-size: var(--text-sm)">If nobody answers within 48 hours of the interview, it comes back to you automatically.</p>
+                <p class="faint" style="font-size: var(--text-sm)">They can't pass it on again — one hop only, so it's always clear who is turning up.</p>
+                <p class="faint" style="font-size: var(--text-sm)">The candidate sees none of this.</p>
+            </div>
+        </section>
+    </aside>
+</div>
+{% endblock %}

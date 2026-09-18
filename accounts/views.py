@@ -67,11 +67,11 @@ class ProfileView(LoginRequiredMixin, DetailView):
         context.update({
             "roles": [{"name": g.name, "summary": ROLE_SUMMARIES.get(g.name, "")} for g in groups],
             "my_upcoming_interviews": list(
-                Interview.objects.filter(interviewer=user, status="Scheduled", scheduled_date__gte=now)
+                Interview.objects.filter(assigned_interviewer=user, status="Scheduled", scheduled_date__gte=now)
                 .select_related("application__candidate", "application__position")
                 .order_by("scheduled_date")[:5]
             ),
-            "my_interview_count": Interview.objects.filter(interviewer=user).count(),
+            "my_interview_count": Interview.objects.filter(assigned_interviewer=user).count(),
             "my_feedback": list(
                 InterviewFeedback.objects.filter(author=user, parent__isnull=True)
                 .select_related("interview__application__candidate")

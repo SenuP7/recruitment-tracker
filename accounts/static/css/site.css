@@ -627,6 +627,18 @@ body.auth-page { min-height: 100vh; display: grid; grid-template-columns: minmax
 .auth-foot a:hover { color: var(--text); }
 .login-panel .buttons { margin-top: var(--space-6); }
 
+/* ---- Delegation ---------------------------------------------------------------- */
+
+.delegate-options { display: flex; flex-direction: column; gap: var(--space-2); }
+.delegate-option { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-md); cursor: pointer; transition: border-color .12s ease, background .12s ease; }
+.delegate-option:hover { border-color: var(--slate-500); }
+.delegate-option:has(input:checked) { border-color: var(--accent); background: var(--surface-2); }
+.delegate-option input { margin-top: 3px; accent-color: var(--accent); }
+.delegate-body { display: flex; flex-direction: column; gap: 2px; font-size: var(--text-sm); }
+.delegate-name { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 600; color: var(--text); }
+.delegation-history summary { cursor: pointer; font-size: var(--text-sm); color: var(--text-secondary); padding: var(--space-2) 0; }
+.delegation-history summary:hover { color: var(--text); }
+
 /* ---- Role and chief checkboxes ------------------------------------------------ */
 
 .role-form { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }

@@ -28,6 +28,16 @@ EVENT_TEMPLATE_REGISTRY = {
         body_file="interview_scheduled.txt",
         required_fields=("candidate_name", "job_title", "interview_type", "scheduled_date"),
     ),
+    "interview_updated": TemplateSpec(
+        subject_template="Your {interview_type} interview has moved - {job_title}",
+        body_file="interview_updated.txt",
+        required_fields=("candidate_name", "job_title", "interview_type", "scheduled_date", "location_line"),
+    ),
+    "interview_cancelled": TemplateSpec(
+        subject_template="Your {interview_type} interview has been cancelled - {job_title}",
+        body_file="interview_cancelled.txt",
+        required_fields=("candidate_name", "job_title", "interview_type", "scheduled_date"),
+    ),
     "application_confirm": TemplateSpec(
         subject_template="Confirm your application for {job_title}",
         body_file="application_confirm.txt",

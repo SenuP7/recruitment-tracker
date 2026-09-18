@@ -46,6 +46,8 @@ STAFF = [
     ("demo.tech", "Tomas", "Ilic", "Technical Interviewer"),
     ("demo.senior", "Sara", "Boateng", "Senior Reviewer"),
     ("demo.lead", "Leo", "Marchetti", "Leadership Manager"),
+    ("demo.chief", "Chiara", "Rossi", "Department Chief"),
+    ("demo.admin", "Adaeze", "Nwosu", "Administrator"),
 ]
 
 # Mirrors accounts/management/commands/assign_role_permissions.py, with one
@@ -245,6 +247,9 @@ class Command(BaseCommand):
             UserProfile.objects.update_or_create(user=user, defaults={"department": department})
             people[group_name] = user
 
+        department, _ = Department.objects.get_or_create(name="Engineering")
+        department.chiefs.set([people["Department Chief"]])
+
         return people
 
     def create_role(self):
@@ -352,7 +357,9 @@ class Command(BaseCommand):
             interview_type="HR",
             scheduled_date=now - timedelta(days=4),
             status="Completed",
-            interviewer=staff["HR Interviewer"],
+            assigned_interviewer=staff["HR Interviewer"],
+            created_by=staff["Recruiter"],
+            location="Meeting room 1",
         )
         root = InterviewFeedback.objects.create(
             interview=hr_round,
@@ -372,12 +379,26 @@ class Command(BaseCommand):
             comments="Agreed. Worth pushing on system design in the technical round.",
         )
 
-        Interview.objects.create(
+        technical = Interview.objects.create(
             application=application,
             interview_type="Technical",
-            scheduled_date=now + timedelta(days=3, hours=2),
+            scheduled_date=now + timedelta(days=9, hours=2),
             status="Scheduled",
-            interviewer=staff["Technical Interviewer"],
+            assigned_interviewer=staff["Technical Interviewer"],
+            created_by=staff["Recruiter"],
+            location="Meeting room 2, or remote",
+            meeting_link="https://meet.example.com/demo-technical",
+        )
+
+        # An offer waiting for an answer: the round is still the technical
+        # interviewer's responsibility until the chief accepts.
+        from interviews import delegation
+
+        delegation.offer(
+            technical,
+            to_user=staff["Department Chief"],
+            reason="I'm at a conference that week -- could you take this one?",
+            actor=staff["Technical Interviewer"],
         )
 
     def create_extras(self, position, staff):
@@ -442,7 +463,8 @@ class Command(BaseCommand):
         if result:
             write(f"  CV score      {round(result.score * 100)}% - {result.match_category()}, 1 required skill missing")
         write("  Interviews    HR round completed (rated 4/5, passed, with a reply)")
-        write("                Technical round scheduled in 3 days")
+        write("                Technical round in 9 days, offered to the department chief")
+        write("                and waiting for them to accept")
         write("")
         write("LOGINS (password for all of them: " + self.password + ")")
         write("  This password was generated for this run. It is not stored anywhere else.")

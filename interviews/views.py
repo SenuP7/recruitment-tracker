@@ -1,8 +1,10 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Avg, Count, Q
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views import View
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import (
@@ -18,8 +20,17 @@ from accounts.decorators import RECRUITMENT_STAFF_GROUPS, user_in_groups
 from accounts.listing import ListToolbarMixin, Tab
 from accounts.mixins import AuthorOrGroupRequiredMixin
 
+from accounts import audit
+from accounts.staff import is_administrator
+from . import delegation
 from .forms import FeedbackForm, InterviewForm
-from .models import Interview, InterviewFeedback, FeedbackAuditLog, StaffNotification
+from .models import (
+    FeedbackAuditLog,
+    Interview,
+    InterviewDelegation,
+    InterviewFeedback,
+    StaffNotification,
+)
 
 # Roles allowed to edit feedback they didn't author themselves -- the
 # "authorized role" half of AC3, confirmed with the user. Kept as a module
@@ -89,7 +100,7 @@ class InterviewListToolbarMixin(ListToolbarMixin):
 
     def annotate(self, queryset):
         return queryset.select_related(
-            "application__candidate", "application__position", "interviewer"
+            "application__candidate", "application__position", "assigned_interviewer"
         ).annotate(feedback_count=Count("feedback_entries", filter=Q(feedback_entries__parent__isnull=True)))
 
 
@@ -117,9 +128,11 @@ class MyInterviewsListView(
     InterviewListToolbarMixin,
     ListView
 ):
-    """Same permission/template as InterviewListView -- just scoped to
-    interviews where request.user is the assigned interviewer. Existing
-    interviews with no interviewer assigned never show up here for anyone."""
+    """Same permission and template as InterviewListView, scoped to the
+    interviews this person is actually expected to conduct: the ones assigned
+    to them, plus any delegation they have accepted. An offer they haven't
+    answered is deliberately absent -- it isn't theirs until they say so, and
+    it appears as a notification instead."""
 
     model = Interview
     template_name = "interviews/interview_list.html"
@@ -127,7 +140,13 @@ class MyInterviewsListView(
     paginate_by = 25
 
     def get_base_queryset(self):
-        return self.annotate(Interview.objects.filter(interviewer=self.request.user))
+        user = self.request.user
+        return self.annotate(
+            Interview.objects.filter(
+                Q(assigned_interviewer=user)
+                | Q(delegations__to_user=user, delegations__status=InterviewDelegation.ACCEPTED)
+            ).distinct()
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -156,7 +175,7 @@ class InterviewDetailView(
             "application__candidate__department",
             "application__position",
             "application__position__department",
-            "interviewer",
+            "assigned_interviewer",
         )
 
     def get_context_data(self, **kwargs):
@@ -187,7 +206,37 @@ class InterviewDetailView(
             )
 
         now = timezone.now()
+
+        # Ownership and delegation. `conducting_interviewer` is the answer to
+        # "who is actually turning up", which is the assigned interviewer
+        # until somebody has accepted a delegation.
+        current_delegation = (
+            interview.delegations.filter(status__in=InterviewDelegation.OPEN_STATUSES)
+            .select_related("from_user", "to_user")
+            .first()
+        )
+
         context.update({
+            "delegation": current_delegation,
+            "delegation_history": list(
+                interview.delegations.select_related("from_user", "to_user")[:10]
+            ),
+            "conducting_interviewer": interview.conducting_interviewer,
+            "can_delegate": (
+                interview.status == "Scheduled" and delegation.can_delegate(user, interview)
+            ),
+            "can_respond_to_delegation": (
+                current_delegation is not None and delegation.can_respond(user, current_delegation)
+            ),
+            "can_withdraw_delegation": (
+                current_delegation is not None
+                and current_delegation.is_open
+                and (
+                    current_delegation.from_user_id == user.pk
+                    or is_administrator(user)
+                    or interview.assigned_interviewer_id == user.pk
+                )
+            ),
             "can_view_feedback": can_view_feedback,
             "feedback_summary": feedback_summary,
             "latest_feedback": latest_feedback,
@@ -195,7 +244,7 @@ class InterviewDetailView(
             "is_overdue": interview.status == "Scheduled" and interview.scheduled_date < now,
             "other_rounds": list(
                 interview.application.interviews.exclude(pk=interview.pk)
-                .select_related("interviewer")
+                .select_related("assigned_interviewer")
                 .order_by("scheduled_date")
             ),
         })
@@ -217,6 +266,22 @@ class InterviewCreateView(
     success_message = "Interview created successfully."
     raise_exception = True
 
+    def form_valid(self, form):
+        # Who scheduled it, which is not necessarily who conducts it.
+        form.instance.created_by = self.request.user
+        response = super().form_valid(form)
+        audit.record(
+            audit.INTERVIEW_CREATED,
+            request=self.request,
+            target=self.object,
+            interviewer=(
+                self.object.assigned_interviewer.get_username()
+                if self.object.assigned_interviewer
+                else None
+            ),
+        )
+        return response
+
 
 class InterviewUpdateView(
     LoginRequiredMixin,
@@ -232,6 +297,24 @@ class InterviewUpdateView(
     success_url = reverse_lazy("interview-list")
     success_message = "Interview updated successfully."
     raise_exception = True
+
+    def form_valid(self, form):
+        """Records the change, and closes any open delegation once the round
+        is no longer happening -- an offer on a cancelled interview is just
+        noise in somebody's list."""
+        was_status = Interview.objects.values_list("status", flat=True).get(pk=self.object.pk)
+        response = super().form_valid(form)
+
+        action = {
+            "Cancelled": audit.INTERVIEW_CANCELLED,
+            "Completed": audit.INTERVIEW_COMPLETED,
+        }.get(self.object.status if self.object.status != was_status else "", audit.INTERVIEW_UPDATED)
+        audit.record(action, request=self.request, target=self.object, status=self.object.status)
+
+        if self.object.status in ("Cancelled", "Completed"):
+            delegation.close_for_interview(self.object, actor=self.request.user, request=self.request)
+
+        return response
 
 
 class InterviewDeleteView(
@@ -301,7 +384,7 @@ class InterviewFeedbackCreateView(
         context = super().get_context_data(**kwargs)
         interview_id = context["form"]["interview"].value()
         context["context_interview"] = (
-            Interview.objects.select_related("application__candidate", "application__position", "interviewer")
+            Interview.objects.select_related("application__candidate", "application__position", "assigned_interviewer")
             .filter(pk=interview_id)
             .first()
             if str(interview_id or "").isdigit()
@@ -549,3 +632,120 @@ class StaffNotificationListView(LoginRequiredMixin, ListView):
         # "mark read" control needed for a first pass.
         self.get_queryset().filter(is_read=False).update(is_read=True)
         return response
+
+# ============================================================
+# DELEGATION
+# ============================================================
+
+class DelegateInterviewView(LoginRequiredMixin, View):
+    """Offering a round to someone else.
+
+    Authorisation is checked server-side on both GET and POST: hiding the
+    button would stop nobody from posting the form.
+    """
+
+    template_name = "interviews/delegate_form.html"
+
+    def get_interview(self):
+        return get_object_or_404(
+            Interview.objects.select_related("application__candidate", "application__position"),
+            pk=self.kwargs["pk"],
+        )
+
+    def get(self, request, *args, **kwargs):
+        interview = self.get_interview()
+        if not delegation.can_delegate(request.user, interview):
+            raise PermissionDenied("Only the assigned interviewer, a chief of that department or an administrator can delegate this.")
+        return render(request, self.template_name, self.page(interview))
+
+    def post(self, request, *args, **kwargs):
+        interview = self.get_interview()
+        if not delegation.can_delegate(request.user, interview):
+            raise PermissionDenied("Only the assigned interviewer, a chief of that department or an administrator can delegate this.")
+
+        if interview.status != "Scheduled":
+            messages.error(request, "Only a scheduled interview can be delegated.")
+            return redirect("interview-detail", pk=interview.pk)
+
+        to_user_id = request.POST.get("to_user", "")
+        reason = request.POST.get("reason", "").strip()
+        candidates = delegation.eligible_delegates(interview, exclude_user=request.user)
+        chosen = next((user for user in candidates if str(user.pk) == to_user_id), None)
+
+        errors = {}
+        if chosen is None:
+            errors["to_user"] = "Choose who should conduct this interview."
+        if not reason:
+            errors["reason"] = "Say why you're asking them. It's recorded, and it's internal."
+        if errors:
+            return render(request, self.template_name, self.page(interview, errors=errors, reason=reason))
+
+        delegation.offer(interview, to_user=chosen, reason=reason, actor=request.user, request=request)
+        messages.success(
+            request,
+            f"Asked {chosen.get_full_name() or chosen.get_username()} to conduct this interview. "
+            "It stays yours until they accept.",
+        )
+        return redirect("interview-detail", pk=interview.pk)
+
+    def page(self, interview, errors=None, reason=""):
+        return {
+            "interview": interview,
+            "delegates": delegation.eligible_delegates(interview, exclude_user=self.request.user),
+            "chief_ids": set(
+                getattr(interview.application.position, "department", None).chiefs.values_list("id", flat=True)
+            ) if getattr(interview.application.position, "department", None) else set(),
+            "errors": errors or {},
+            "reason": reason,
+        }
+
+
+class DelegationRespondView(LoginRequiredMixin, View):
+    """Accept or decline. Only the person who was asked may do either."""
+
+    def post(self, request, pk, *args, **kwargs):
+        record = get_object_or_404(
+            InterviewDelegation.objects.select_related("interview__application__candidate"), pk=pk
+        )
+
+        if not delegation.can_respond(request.user, record):
+            raise PermissionDenied("This delegation isn't yours to answer.")
+
+        note = request.POST.get("note", "").strip()
+        action = request.POST.get("action")
+
+        if action == "accept":
+            delegation.accept(record, actor=request.user, request=request, note=note)
+            messages.success(request, "You're down to conduct this interview.")
+        elif action == "decline":
+            if not note:
+                messages.error(request, "Please say why you can't take it, so it can be covered.")
+                return redirect("interview-detail", pk=record.interview.pk)
+            delegation.decline(record, actor=request.user, request=request, note=note)
+            messages.success(request, "Declined. It's gone back to whoever asked you.")
+        else:
+            messages.error(request, "Choose whether you're accepting or declining.")
+
+        return redirect("interview-detail", pk=record.interview.pk)
+
+
+class DelegationWithdrawView(LoginRequiredMixin, View):
+    """Taking back an offer, by whoever made it or an administrator."""
+
+    def post(self, request, pk, *args, **kwargs):
+        record = get_object_or_404(InterviewDelegation, pk=pk)
+
+        allowed = (
+            record.from_user_id == request.user.pk
+            or is_administrator(request.user)
+            or record.interview.assigned_interviewer_id == request.user.pk
+        )
+        if not allowed:
+            raise PermissionDenied("Only the person who asked, or an administrator, can withdraw this.")
+        if not record.is_open:
+            messages.info(request, "That delegation is already closed.")
+            return redirect("interview-detail", pk=record.interview.pk)
+
+        delegation.withdraw(record, actor=request.user, request=request)
+        messages.success(request, "Delegation withdrawn.")
+        return redirect("interview-detail", pk=record.interview.pk)

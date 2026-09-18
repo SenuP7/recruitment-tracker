@@ -32,13 +32,25 @@ CANDIDATE_GROUP = "Candidate"
 
 # Interview fields a candidate may see. Who is interviewing them is
 # deliberately not among them.
-INTERVIEW_FIELDS = ("id", "application_id", "interview_type", "scheduled_date", "status")
+INTERVIEW_FIELDS = (
+    "id", "application_id", "interview_type", "scheduled_date", "status",
+    "location", "meeting_link",
+)
 
 
 def candidate_interviews(applications):
+    """Rounds a candidate may see.
+
+    `only()` is an efficiency measure, not the control: the control is that
+    no template renders an interviewer, and nothing here exposes one. The
+    candidate sees the round, when it is, where it is, and which team is
+    running it -- never who, and never that it was delegated.
+    """
     return (
         Interview.objects.filter(application__in=applications)
-        .only(*INTERVIEW_FIELDS)
+        .select_related("application__position__department")
+        .only(*INTERVIEW_FIELDS, "application__position__department__name",
+              "application__position__title")
         .order_by("scheduled_date")
     )
 
@@ -200,7 +212,9 @@ class PortalWithdrawView(CandidateRequiredMixin, View):
         """The people who would otherwise turn up to an interview, plus the
         recruiters who own the pipeline."""
         interviewers = set(
-            scheduled_interviews.exclude(interviewer__isnull=True).values_list("interviewer_id", flat=True)
+            scheduled_interviews.exclude(assigned_interviewer__isnull=True).values_list(
+                "assigned_interviewer_id", flat=True
+            )
         )
         recruiters = set(
             User.objects.filter(groups__name="Recruiter", is_active=True).values_list("id", flat=True)

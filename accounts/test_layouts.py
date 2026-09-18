@@ -169,7 +169,7 @@ class InterviewListTabTests(LayoutFixtures):
         self.assertEqual(list(response.context["interviews"]), [self.overdue])
 
     def test_my_interviews_tabs_stay_scoped_to_the_user(self):
-        self.upcoming.interviewer = self.user
+        self.upcoming.assigned_interviewer = self.user
         self.upcoming.save()
         response = self.client.get(reverse("my-interviews"))
         self.assertEqual(list(response.context["interviews"]), [self.upcoming])

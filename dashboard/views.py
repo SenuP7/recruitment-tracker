@@ -46,7 +46,7 @@ def build_attention_rail(user, scoped_applications):
 
     upcoming = list(
         Interview.objects.filter(in_scope, status="Scheduled", scheduled_date__gte=now)
-        .select_related("application__candidate", "application__position", "interviewer")
+        .select_related("application__candidate", "application__position", "assigned_interviewer")
         .order_by("scheduled_date")[:5]
     )
     overdue_count = Interview.objects.filter(in_scope, status="Scheduled", scheduled_date__lt=now).count()

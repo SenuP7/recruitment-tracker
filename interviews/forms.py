@@ -28,17 +28,17 @@ class InterviewForm(forms.ModelForm):
         model = Interview
         fields = [
             "application", "interview_type", "scheduled_date", "scheduled_time",
-            "status", "interviewer",
+            "status", "assigned_interviewer", "location", "meeting_link",
         ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Only recruitment staff can be assigned as an interviewer -- excludes
         # Candidate-group accounts and anyone in no recognized group.
-        self.fields["interviewer"].queryset = User.objects.filter(
+        self.fields["assigned_interviewer"].queryset = User.objects.filter(
             Q(groups__name__in=RECRUITMENT_STAFF_GROUPS) | Q(is_superuser=True)
         ).distinct().order_by("username")
-        self.fields["interviewer"].required = False
+        self.fields["assigned_interviewer"].required = False
 
         if self.instance and self.instance.pk and self.instance.scheduled_date:
             local_dt = timezone.localtime(self.instance.scheduled_date)

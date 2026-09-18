@@ -81,7 +81,7 @@
                         <span class="date-chip"><span class="m">{{ round.scheduled_date|date:"M" }}</span><span class="d">{{ round.scheduled_date|date:"j" }}</span></span>
                         <span class="list-body">
                             <span class="list-title">{{ round.interview_type }} interview</span>
-                            <span class="list-sub">{{ round.interviewer|default:"Unassigned" }}</span>
+                            <span class="list-sub">{{ round.assigned_interviewer|default:"Unassigned" }}</span>
                         </span>
                         <span class="list-trail"><span class="badge" data-status="{{ round.status }}">{{ round.status }}</span></span>
                     </a>
@@ -99,9 +99,86 @@
                     <div class="dl-row"><dt>Round</dt><dd>{{ interview.interview_type }}</dd></div>
                     <div class="dl-row"><dt>Date</dt><dd class="mono">{{ interview.scheduled_date|date:"d M Y" }}</dd></div>
                     <div class="dl-row"><dt>Time</dt><dd class="mono">{{ interview.scheduled_date|time:"H:i" }}</dd></div>
-                    <div class="dl-row"><dt>Interviewer</dt><dd>{{ interview.interviewer|default:"Unassigned" }}</dd></div>
+                    <div class="dl-row"><dt>Assigned to</dt><dd>{{ interview.assigned_interviewer|default:"Unassigned" }}</dd></div>
+                    {% if conducting_interviewer and conducting_interviewer != interview.assigned_interviewer %}
+                        <div class="dl-row"><dt>Being conducted by</dt><dd>{{ conducting_interviewer }}</dd></div>
+                    {% endif %}
+                    <div class="dl-row"><dt>Scheduled by</dt><dd>{{ interview.created_by|default:"—" }}</dd></div>
+                    {% if interview.location %}<div class="dl-row"><dt>Location</dt><dd>{{ interview.location }}</dd></div>{% endif %}
+                    {% if interview.meeting_link %}<div class="dl-row"><dt>Meeting link</dt><dd><a href="{{ interview.meeting_link }}" rel="noopener">Join</a></dd></div>{% endif %}
                     <div class="dl-row"><dt>Status</dt><dd>{{ interview.status }}</dd></div>
                 </dl>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-head">
+                <h2><i data-lucide="user-round-plus"></i> Who's conducting it</h2>
+                {% if delegation %}<span class="badge" data-status="{% if delegation.status == 'accepted' %}Accepted{% else %}CV Screening{% endif %}">{{ delegation.get_status_display }}</span>{% endif %}
+            </div>
+            <div class="card-body stack">
+                {% if delegation %}
+                    <p style="font-size: var(--text-sm)">
+                        <strong>{{ delegation.from_user|default:"Someone" }}</strong> asked
+                        <strong>{{ delegation.to_user }}</strong> to conduct this round.
+                    </p>
+                    <blockquote class="quote">{{ delegation.reason }}</blockquote>
+
+                    {% if delegation.status == "pending" %}
+                        <p class="faint" style="font-size: var(--text-sm)">Until it's accepted, this interview is still {{ interview.assigned_interviewer|default:"unassigned" }}'s responsibility.</p>
+                    {% endif %}
+                    {% if delegation.crosses_departments %}
+                        <p class="faint" style="font-size: var(--text-sm)"><i data-lucide="info"></i> This crosses departments, which is allowed.</p>
+                    {% endif %}
+
+                    {% if can_respond_to_delegation %}
+                        <form method="post" action="{% url 'delegation-respond' delegation.pk %}" class="stack">
+                            {% csrf_token %}
+                            <div class="field">
+                                <label for="id_note">A note back (required if you're declining)</label>
+                                <input type="text" id="id_note" name="note" placeholder="On leave that week, double-booked, …">
+                            </div>
+                            <div class="buttons">
+                                <button type="submit" name="action" value="decline" class="btn btn-secondary">Can't take it</button>
+                                <button type="submit" name="action" value="accept" class="btn btn-primary">I'll conduct it</button>
+                            </div>
+                        </form>
+                    {% elif can_withdraw_delegation %}
+                        <form method="post" action="{% url 'delegation-withdraw' delegation.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm">Withdraw the request</button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <p class="faint" style="font-size: var(--text-sm)">
+                        {% if interview.assigned_interviewer %}
+                            {{ interview.assigned_interviewer }} is down to conduct this.
+                        {% else %}
+                            No interviewer assigned yet.
+                        {% endif %}
+                    </p>
+                    {% if can_delegate %}
+                        <a href="{% url 'interview-delegate' interview.pk %}" class="btn btn-secondary btn-sm">
+                            <i data-lucide="user-round-plus"></i> Ask someone else to conduct it
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                {% if delegation_history %}
+                    <details class="delegation-history">
+                        <summary>Delegation history ({{ delegation_history|length }})</summary>
+                        <ul class="list">
+                            {% for entry in delegation_history %}
+                                <li class="list-row">
+                                    <div class="list-main">
+                                        <strong>{{ entry.from_user|default:"Someone" }} → {{ entry.to_user }}</strong>
+                                        <span class="faint">{{ entry.get_status_display }} · {{ entry.created_at|date:"j M Y, H:i" }}{% if entry.response_note %} · "{{ entry.response_note }}"{% endif %}</span>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </details>
+                {% endif %}
             </div>
         </section>
 

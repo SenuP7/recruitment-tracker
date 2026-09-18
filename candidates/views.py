@@ -189,7 +189,7 @@ class CandidateDetailView(
 
             interviews = list(
                 Interview.objects.filter(application__candidate=candidate)
-                .select_related("application__position", "interviewer")
+                .select_related("application__position", "assigned_interviewer")
                 .annotate(feedback_count=Count("feedback_entries", filter=Q(feedback_entries__parent__isnull=True)))
                 .order_by("scheduled_date")
             )
@@ -493,7 +493,7 @@ class ApplicationDetailView(
             from interviews.models import Interview
 
             interviews = list(
-                application.interviews.select_related("interviewer")
+                application.interviews.select_related("assigned_interviewer")
                 .annotate(
                     feedback_count=Count("feedback_entries", filter=Q(feedback_entries__parent__isnull=True)),
                     average_rating=Avg("feedback_entries__rating", filter=Q(feedback_entries__parent__isnull=True)),

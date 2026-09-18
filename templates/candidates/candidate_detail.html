@@ -166,7 +166,7 @@
                     <span class="date-chip"><span class="m">{{ next_interview.scheduled_date|date:"M" }}</span><span class="d">{{ next_interview.scheduled_date|date:"j" }}</span></span>
                     <span class="list-body">
                         <span class="list-title">{{ next_interview.interview_type }} interview</span>
-                        <span class="list-sub">{{ next_interview.scheduled_date|date:"l" }} at {{ next_interview.scheduled_date|time:"H:i" }} · {{ next_interview.interviewer|default:"No interviewer yet" }}</span>
+                        <span class="list-sub">{{ next_interview.scheduled_date|date:"l" }} at {{ next_interview.scheduled_date|time:"H:i" }} · {{ next_interview.assigned_interviewer|default:"No interviewer yet" }}</span>
                     </span>
                 </a>
             {% else %}

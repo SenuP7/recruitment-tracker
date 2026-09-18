@@ -79,7 +79,7 @@
                 <div class="card-body" style="padding-top: var(--space-2)">
                     <dl class="dl">
                         <div class="dl-row"><dt>Date</dt><dd class="mono">{{ context_iv.scheduled_date|date:"d M Y, H:i" }}</dd></div>
-                        <div class="dl-row"><dt>Interviewer</dt><dd>{{ context_iv.interviewer|default:"Unassigned" }}</dd></div>
+                        <div class="dl-row"><dt>Interviewer</dt><dd>{{ context_iv.assigned_interviewer|default:"Unassigned" }}</dd></div>
                     </dl>
                 </div>
             </a>

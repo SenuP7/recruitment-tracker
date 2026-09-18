@@ -44,6 +44,7 @@
                     <div class="list-main">
                         <strong>{{ interview.interview_type }} interview</strong>
                         <span class="faint">{{ interview.scheduled_date|date:"l j F, H:i" }}</span>
+                        {% if interview.location %}<span class="faint"><i data-lucide="map-pin"></i> {{ interview.location }}</span>{% endif %}
                     </div>
                 </li>
             {% endfor %}

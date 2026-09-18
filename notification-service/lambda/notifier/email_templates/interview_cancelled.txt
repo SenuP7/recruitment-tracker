@@ -1,0 +1,10 @@
+Hi {candidate_name},
+
+Your {interview_type} interview for the {job_title} role, scheduled for
+{scheduled_date}, has been cancelled.
+
+This doesn't necessarily mean anything about your application -- we'll be in
+touch about what happens next. If you'd like an update sooner, just reply.
+
+Thanks,
+The Recruitment Team

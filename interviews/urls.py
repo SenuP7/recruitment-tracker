@@ -14,6 +14,9 @@ from .views import (
     InterviewFeedbackDeleteView,
     FeedbackThreadView,
     StaffNotificationListView,
+    DelegateInterviewView,
+    DelegationRespondView,
+    DelegationWithdrawView,
 )
 
 
@@ -24,6 +27,9 @@ urlpatterns = [
     path("<int:pk>/", InterviewDetailView.as_view(), name="interview-detail"),
     path("create/", InterviewCreateView.as_view(), name="interview-create"),
     path("<int:pk>/edit/", InterviewUpdateView.as_view(), name="interview-update"),
+    path("<int:pk>/delegate/", DelegateInterviewView.as_view(), name="interview-delegate"),
+    path("delegation/<int:pk>/respond/", DelegationRespondView.as_view(), name="delegation-respond"),
+    path("delegation/<int:pk>/withdraw/", DelegationWithdrawView.as_view(), name="delegation-withdraw"),
     path("<int:pk>/delete/", InterviewDeleteView.as_view(), name="interview-delete"),
 
     path(
