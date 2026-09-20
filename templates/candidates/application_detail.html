@@ -161,8 +161,8 @@
             <div class="card-body">
                 <dl class="dl">
                     <div class="dl-row"><dt>Name</dt><dd>{{ application.candidate }}</dd></div>
-                    <div class="dl-row"><dt>Email</dt><dd class="mono">{{ application.candidate.email }}</dd></div>
-                    <div class="dl-row"><dt>Phone</dt><dd class="mono">{{ application.candidate.phone|default:"—" }}</dd></div>
+                    <div class="dl-row"><dt>Email</dt><dd class="mono" data-copy="{{ application.candidate.email }}">{{ application.candidate.email }}</dd></div>
+                    <div class="dl-row"><dt>Phone</dt><dd class="mono"{% if application.candidate.phone %} data-copy="{{ application.candidate.phone }}"{% endif %}>{{ application.candidate.phone|default:"—" }}</dd></div>
                 </dl>
             </div>
         </a>

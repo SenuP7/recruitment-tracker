@@ -127,6 +127,12 @@
                         </div>
                     </details>
                 {% endif %}
+                <button type="button" class="icon-btn" id="palette-open" title="Search everything (Ctrl K)" aria-label="Open the command palette">
+                    <i data-lucide="command"></i>
+                </button>
+                <button type="button" class="icon-btn" id="density-toggle" title="Compact rows" aria-pressed="false" aria-label="Toggle row density">
+                    <i data-lucide="rows-2"></i>
+                </button>
                 <button type="button" class="icon-btn" id="theme-toggle" aria-label="Toggle light and dark mode">
                     <i data-lucide="moon" class="icon-moon"></i>
                     <i data-lucide="sun" class="icon-sun"></i>
@@ -156,6 +162,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
 <script src="{% static 'js/app-shell.js' %}"></script>
+<script src="{% static 'js/shortcuts.js' %}"></script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>

@@ -111,7 +111,7 @@
             <div class="card-body">
                 <dl class="dl">
                     <div class="dl-row"><dt>Email</dt><dd><a class="mono" href="mailto:{{ candidate.email }}">{{ candidate.email }}</a></dd></div>
-                    <div class="dl-row"><dt>Phone</dt><dd class="mono">{{ candidate.phone|default:"—" }}</dd></div>
+                    <div class="dl-row"><dt>Phone</dt><dd class="mono"{% if candidate.phone %} data-copy="{{ candidate.phone }}"{% endif %}>{{ candidate.phone|default:"—" }}</dd></div>
                     <div class="dl-row"><dt>Department</dt><dd>{{ candidate.department|default:"—" }}</dd></div>
                     <div class="dl-row"><dt>Source</dt><dd>{{ candidate.get_source_display }}</dd></div>
                 </dl>

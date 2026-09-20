@@ -55,4 +55,9 @@
     {% if toolbar.query or toolbar.active_department or toolbar.active_type %}
         <a href="?{% if toolbar.active_tab %}tab={{ toolbar.active_tab }}{% endif %}" class="btn btn-ghost btn-sm toolbar-clear"><i data-lucide="x"></i> Clear</a>
     {% endif %}
+
+    {% if toolbar.can_export %}
+        {# Exports whatever the list is currently showing, filters and all. #}
+        <a href="{% url_replace export='csv' page='' %}" class="btn btn-ghost btn-sm toolbar-export" title="Download these rows as CSV"><i data-lucide="download"></i> Export</a>
+    {% endif %}
 </form>

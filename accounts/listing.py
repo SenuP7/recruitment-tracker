@@ -18,11 +18,73 @@ class Tab:
     filter: Q | None = None
 
 
+# A deliberate ceiling on an export. Nothing here should ever produce a file
+# this large, so hitting it means something is wrong -- better a truncated
+# file than a request that ties up a worker on a t3.micro.
+EXPORT_ROW_LIMIT = 5000
+
+# Excel and Sheets treat a leading =, +, - or @ as the start of a formula, so
+# a value a candidate typed could run when someone opens the file. Prefixing
+# with an apostrophe makes it text again.
+FORMULA_PREFIXES = (chr(61), chr(43), chr(45), chr(64), chr(9), chr(13))  # = + - @ tab cr
+
+
+def _csv_safe(value):
+    text = "" if value is None else str(value)
+    return "'" + text if text.startswith(FORMULA_PREFIXES) else text
+
+
 class ListToolbarMixin:
     search_fields = ()
     search_placeholder = "Search"
     sort_options = {}  # key -> (label, ordering tuple)
     default_sort = None
+
+    # ((column heading, attribute path or callable), ...). Left empty, the
+    # list simply doesn't offer an export and ?export=csv is ignored.
+    export_columns = ()
+    export_filename = "export"
+
+    def render_to_response(self, context, **response_kwargs):
+        if self.export_columns and self.request.GET.get("export") == "csv":
+            return self._csv_response()
+        return super().render_to_response(context, **response_kwargs)
+
+    def _csv_response(self):
+        """Exports exactly what the list is showing.
+
+        Built from self.get_queryset(), so the search, the active tab and any
+        queryset-level access scoping the view applies are all inherited. An
+        export that widened access would be a quiet way around the whole
+        permission model.
+        """
+        import csv
+
+        from django.http import HttpResponse
+        from django.utils import timezone
+
+        response = HttpResponse(content_type="text/csv")
+        stamp = timezone.now().strftime("%Y-%m-%d")
+        response["Content-Disposition"] = (
+            f'attachment; filename="{self.export_filename}-{stamp}.csv"'
+        )
+
+        writer = csv.writer(response)
+        writer.writerow([heading for heading, _ in self.export_columns])
+        for obj in self.get_queryset()[:EXPORT_ROW_LIMIT]:
+            writer.writerow([_csv_safe(self._export_value(obj, a)) for _, a in self.export_columns])
+        return response
+
+    @staticmethod
+    def _export_value(obj, accessor):
+        if callable(accessor):
+            return accessor(obj)
+        value = obj
+        for part in accessor.split("."):
+            value = getattr(value, part, None)
+            if value is None:
+                return ""
+        return value() if callable(value) else value
 
     def get_base_queryset(self):
         raise NotImplementedError
@@ -86,6 +148,7 @@ class ListToolbarMixin:
             "search_placeholder": self.search_placeholder,
             "sort_options": [(key, label) for key, (label, _) in self.sort_options.items()],
             "active_sort": self.active_sort,
+            "can_export": bool(self.export_columns),
             **self.get_extra_toolbar_context(),
         }
         return context

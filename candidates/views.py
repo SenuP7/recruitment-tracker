@@ -22,6 +22,7 @@ from cv_screening.models import CVMatchResult
 
 from accounts import audit
 from .invites import send_candidate_invite
+from .forms import CandidateForm
 from .models import Candidate, CandidateInvite, Application
 
 # Known candidate/application stages in pipeline order -- used to order tabs.
@@ -103,6 +104,18 @@ class CandidateListView(
     template_name = "candidates/candidate_list.html"
     context_object_name = "candidates"
     paginate_by = 25
+
+    export_filename = "candidates"
+    export_columns = (
+        ("First name", "first_name"),
+        ("Last name", "last_name"),
+        ("Email", "email"),
+        ("Phone", "phone"),
+        ("Department", "department"),
+        ("Status", "current_status"),
+        ("Source", "get_source_display"),
+        ("Added", lambda c: c.created_at.strftime("%Y-%m-%d")),
+    )
 
     permission_required = "candidates.view_candidate"
     raise_exception = True
@@ -285,15 +298,7 @@ class CandidateCreateView(
 ):
     model = Candidate
     template_name = "candidates/candidate_form.html"
-
-    fields = [
-        "first_name",
-        "last_name",
-        "email",
-        "phone",
-        "department",
-        "current_status",
-    ]
+    form_class = CandidateForm
 
     permission_required = "candidates.add_candidate"
     success_url = reverse_lazy("candidate-list")
@@ -309,15 +314,7 @@ class CandidateUpdateView(
 ):
     model = Candidate
     template_name = "candidates/candidate_form.html"
-
-    fields = [
-        "first_name",
-        "last_name",
-        "email",
-        "phone",
-        "department",
-        "current_status",
-    ]
+    form_class = CandidateForm
 
     permission_required = "candidates.change_candidate"
     success_url = reverse_lazy("candidate-list")
@@ -427,6 +424,16 @@ class ApplicationListView(
     template_name = "candidates/application_list.html"
     context_object_name = "applications"
     paginate_by = 25
+
+    export_filename = "applications"
+    export_columns = (
+        ("Candidate", lambda a: f"{a.candidate.first_name} {a.candidate.last_name}"),
+        ("Email", "candidate.email"),
+        ("Position", "position.title"),
+        ("Department", "position.department"),
+        ("Stage", "status"),
+        ("Applied", lambda a: a.applied_at.strftime("%Y-%m-%d")),
+    )
 
     permission_required = "candidates.view_application"
     raise_exception = True

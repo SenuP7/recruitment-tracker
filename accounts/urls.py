@@ -18,6 +18,7 @@ from .password_reset import PipelinePasswordResetForm
 from .views import (
     AuditLogView,
     GlobalSearchView,
+    QuickSearchView,
     PostLoginRedirectView,
     ProfileView,
     ThrottledLoginView,
@@ -105,6 +106,11 @@ urlpatterns = [
         name="audit-log",
     ),
 
+    path(
+        "search/quick/",
+        QuickSearchView.as_view(),
+        name="quick-search",
+    ),
     path(
         "search/",
         GlobalSearchView.as_view(),

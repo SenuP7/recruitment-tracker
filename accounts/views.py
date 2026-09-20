@@ -3,9 +3,10 @@ import logging
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.db.models import Q
 from django.shortcuts import redirect
+from django.urls import reverse
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 
@@ -16,7 +17,7 @@ from accounts.audit import AUDIT_RETENTION_DAYS
 from accounts.decorators import user_in_groups
 from accounts.listing import ListToolbarMixin, Tab
 from accounts.models import AuditEvent
-from candidates.models import Candidate
+from candidates.models import Application, Candidate
 from positions.models import Position
 
 
@@ -128,6 +129,77 @@ class GlobalSearchView(LoginRequiredMixin, TemplateView):
         context["candidates"] = candidates
         context["positions"] = positions
         return context
+
+class QuickSearchView(LoginRequiredMixin, View):
+    """JSON results for the command palette.
+
+    Gated exactly like GlobalSearchView: each category depends on its own
+    view permission, so the palette can never surface a record the page
+    behind it would refuse. The Candidate group holds no permissions at
+    all, so a candidate account gets an empty list rather than a leak.
+    """
+
+    LIMIT = 5
+
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get("q", "").strip()
+        if not query:
+            return JsonResponse({"results": []})
+
+        user = request.user
+        results = []
+
+        if user.has_perm("candidates.view_candidate"):
+            people = _multi_term_search(
+                Candidate.objects.all(), query, "first_name", "last_name", "email"
+            ).order_by("first_name", "last_name")[: self.LIMIT]
+            results += [
+                {
+                    "kind": "Candidate",
+                    "icon": "user",
+                    "label": f"{c.first_name} {c.last_name}",
+                    "detail": c.email,
+                    "url": reverse("candidate-detail", args=[c.pk]),
+                }
+                for c in people
+            ]
+
+        if user.has_perm("candidates.view_application"):
+            applications = _multi_term_search(
+                Application.objects.select_related("candidate", "position"),
+                query,
+                "candidate__first_name",
+                "candidate__last_name",
+                "position__title",
+            ).order_by("-applied_at")[: self.LIMIT]
+            results += [
+                {
+                    "kind": "Application",
+                    "icon": "file-text",
+                    "label": f"{a.candidate} — {a.position.title}",
+                    "detail": a.status,
+                    "url": reverse("application-detail", args=[a.pk]),
+                }
+                for a in applications
+            ]
+
+        if user.has_perm("positions.view_position"):
+            roles = _multi_term_search(Position.objects.all(), query, "title").order_by(
+                "title"
+            )[: self.LIMIT]
+            results += [
+                {
+                    "kind": "Position",
+                    "icon": "briefcase",
+                    "label": p.title,
+                    "detail": str(p.department),
+                    "url": reverse("position-detail", args=[p.pk]),
+                }
+                for p in roles
+            ]
+
+        return JsonResponse({"results": results})
+
 
 class ThrottledLoginView(auth_views.LoginView):
     """Sign-in with brute-force protection.

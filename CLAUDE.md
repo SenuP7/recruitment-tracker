@@ -46,7 +46,7 @@ Only commit when the user asks.
 - The empty override doesn't select SQLite by parsing a URL: the mere
   presence of a `DATABASE_URL` value picks the Postgres branch, which reads
   its connection details from `DB_*` (see `.env.example`).
-- Current suite: **362 tests, all passing** (2026-09-20).
+- Current suite: **375 tests, all passing** (2026-09-21).
 - The notification Lambda has its own pytest suite in
   `notification-service/tests`.
 - The user runs their own server on **port 8000** against the real Postgres.
@@ -202,6 +202,10 @@ Files:
   - `accounts/static/js/app-shell.js`: theme toggle, sidebar collapse,
     count-up, clickable `tr[data-href]` rows, `/` to focus search, re-init
     after HTMX swaps
+  - `accounts/static/js/shortcuts.js`: command palette (Ctrl K), `?`
+    shortcut overlay, `g` then `d/c/a/i/p` jumps, click-to-copy, row
+    density, recently viewed. All progressive — nothing here is the only
+    way to do anything, so the app is unchanged with JavaScript off.
   - `landing-webgl.js`: the aurora shader
   - `landing-reveal.js`
 - **Base template:** `templates/base.html` has the grouped sidebar with the
@@ -217,6 +221,30 @@ Files:
     and sort, via `accounts/listing.py` `ListToolbarMixin`. Tab counts come
     from one `aggregate(Count(filter=Q))` query.
   - Forms: sectioned, with a context rail.
+### Quality-of-life layer (2026-09-21)
+
+- **Command palette** — `Ctrl K`. Its "Go to" list is read from the sidebar
+  DOM rather than hardcoded, so it inherits permission gating for free: a
+  link the context processor hid cannot be offered. Live results come from
+  `accounts.views.QuickSearchView` (`/accounts/search/quick/`), gated
+  exactly like `GlobalSearchView` — per-category `view_*` permissions, so a
+  Candidate account (which holds none) gets an empty list.
+- **CSV export** lives in `ListToolbarMixin`, so any list gets it by
+  declaring `export_columns`. It builds from `self.get_queryset()`, which
+  means the search, the active tab and any queryset-level scoping the view
+  applies are all inherited — an export that widened access would be a quiet
+  way around the whole permission model, and a test pins that.
+- **Values starting `=`, `+`, `-`, `@`, tab or CR are prefixed with an
+  apostrophe** on export (`FORMULA_PREFIXES`). A spreadsheet treats those as
+  formulas, and candidate names and messages are free text an applicant
+  typed.
+- **Duplicate candidate email** now names the existing record and links to
+  it (`candidates/forms.py`). `Candidate.email` was always unique, so this
+  changes no behaviour — only the dead end the default message left.
+- **Sticky table headers** work because list tables aren't wrapped in
+  `.table-scroll-x`; the two detail templates that are wrapped won't stick,
+  which is fine.
+
 - **Template tags:** `accounts/templatetags/ui.py` has `url_replace`,
   `initials`, `percent_of`, `nonzero`, `score_pct`.
 - **Logout:** `LOGOUT_REDIRECT_URL = "/"`.
