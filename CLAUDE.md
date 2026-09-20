@@ -479,8 +479,27 @@ or if `settings.py` reads a variable the template never mentions.
 
 ### Deployment shape
 
-One Elastic Beanstalk **single-instance** environment (`t3.micro`, Python
-3.12 on AL2023, `ap-southeast-1`) with **CloudFront in front**. No domain:
+**The environment already exists** and predates this work: application
+`recruitment-tracker`, environment `recruitment-tracker-env` (`e-entm4uhcbt`),
+CNAME `recruitment-tracker-env.eba-prejxa8h.ap-southeast-1.elasticbeanstalk.com`,
+created by `eb create` on 2026-07-30. As of 2026-09-20 it still runs commit
+`e685185` from 4 August — 30 commits behind — and has reported "No Data"
+health since a failed config change on 17 August. `/` answers `OK` and
+`/accounts/login/` 404s, because that version is an early skeleton. Do not
+create a second application; deploy to this one.
+
+**`DATABASE_URL` is not set on it**, and all five `DB_*` values are therefore
+read by nothing — `settings.py` selects Postgres on the *presence* of
+`DATABASE_URL` alone. Production has been running on SQLite on the instance,
+wiped by every deploy, while RDS holds the real data. Setting it is the
+single most important environment property.
+
+One Elastic Beanstalk **single-instance** environment (`t3.micro`, **Python
+3.13** on AL2023, `ap-southeast-1`) with **CloudFront in front**. Python 3.12
+was the earlier recommendation, on the assumption of a fresh environment; you
+cannot change platform branch in place, and local development is 3.13 with
+the full suite passing, so matching it beats Django 5.0's official support
+matrix here. No domain:
 AWS will not issue a certificate for `*.elasticbeanstalk.com`, so CloudFront
 supplies both the hostname and a free managed certificate. Cost target is
 zero, which is why there is no load balancer — an ALB alone costs more than
@@ -506,6 +525,15 @@ everything else combined.
 - **CloudFront caching is disabled** on the default behaviour: every page is
   session-specific. `/static/*` is cached, which is safe only because
   manifest storage content-hashes every filename.
+- **`.gitattributes` forces LF** on `*.sh`, `.ebextensions/*.config` and
+  `.platform/**`. `core.autocrlf` is true on the development machine, and a
+  shell script checked out with CRLF fails on Amazon Linux with "bad
+  interpreter" — a failure that surfaces during a deploy, far from its cause.
+- **Deploying:** the EB CLI is not in the project venv (its pins conflict).
+  It lives in an isolated venv; `eb init` has been run and
+  `.elasticbeanstalk/config.yml` maps the `ui-redesign` branch to the
+  environment. `eb deploy` bundles from git HEAD, so `.env`, `db.sqlite3`,
+  `venv/` and `staticfiles/` are all excluded — verified.
 
 Required environment variables in production: `SECRET_KEY`,
 `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS` (with scheme),
