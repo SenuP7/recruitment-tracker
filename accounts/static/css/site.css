@@ -839,9 +839,15 @@ kbd { display: inline-block; padding: 1px 5px; border: 1px solid var(--border-st
 .copy-btn[data-copied="yes"] { color: var(--status-positive); }
 .copy-btn[data-copied="no"] { color: var(--text-tertiary); }
 
-/* ---- Table density and sticky headers ---------------------------------------- */
+/* ---- Table density ----------------------------------------------------------- */
 
-.data-table th { position: sticky; top: var(--topbar-h); z-index: 2; }
+/* No sticky headers. Every table in this app sits inside .table-wrap or
+   .table-scroll-x, both of which set overflow-x: auto -- and when one axis is
+   auto the other computes to auto too, making them scroll containers. A
+   sticky th then positions against the wrapper rather than the viewport, and
+   since the wrapper never scrolls vertically the header lands 56px down, on
+   top of the first rows. Making it work would mean giving the wrapper a fixed
+   height and its own scrollbar, which is a worse trade than not having it. */
 body[data-density="compact"] .data-table td { padding-top: 6px; padding-bottom: 6px; }
 body[data-density="compact"] .data-table th { padding-top: 6px; padding-bottom: 6px; }
 body[data-density="compact"] .avatar-sm { width: 24px; height: 24px; font-size: var(--text-2xs); }
@@ -856,7 +862,7 @@ body[data-density="compact"] .cell-sub { display: none; }
   .app-main, .content { margin: 0 !important; padding: 0 !important; max-width: none !important; }
   .card, .record-header { border: 1px solid #ccc !important; background: #fff !important; box-shadow: none !important; break-inside: avoid; }
   a[href]::after { content: ""; }
-  .data-table th { position: static; background: #f3f3f3 !important; }
+  .data-table th { background: #f3f3f3 !important; }
 }
 
 .toolbar-export { margin-left: auto; }
