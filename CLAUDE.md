@@ -159,6 +159,24 @@ automatic CV pass/fail decision (a recruiter now confirms outcomes).
   (gitignored). No AWS needed.
 - **AWS pipeline:** SQS (+DLQ) → Lambda → SES, with a DynamoDB audit log and a
   CloudWatch/SNS alarm on the DLQ. See `notification-service/README.md`.
+- **Deployed 2026-09-20** as CloudFormation stack
+  `recruitment-tracker-notifications` in `ap-southeast-1`. The queue URL is
+  set on the environment, and the stack's least-privilege
+  `RecruitmentTrackerNotificationPublish` policy is attached to
+  `aws-elasticbeanstalk-ec2-role`, so the app can publish and do nothing
+  else.
+- **Sender is `ansy.pppm@gmail.com`**, an SES *email* identity — no domain
+  is involved, which is what makes this work without one. SES is in
+  **sandbox**: it will only send to addresses that are themselves verified.
+  Verifying an address covers both directions, so the sender is also a valid
+  recipient.
+- **Two confirmations are needed once, by clicking a link:** the SES sender
+  verification, and the SNS subscription for the DLQ alarm. Until the first
+  is done, every send fails. Check with
+  `aws ses get-identity-verification-attributes --identities <address>`.
+- **Deliverability caveat:** sending as a `gmail.com` address fails SPF,
+  because Google's records don't authorise Amazon's servers. Mail usually
+  still arrives but often in spam. A domain is the only real fix.
 
 ## UI system
 
