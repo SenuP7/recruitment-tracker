@@ -60,6 +60,11 @@ if not DEBUG and not RUNNING_TESTS:
             "DJANGO_ALLOWED_HOSTS is empty, so every request would be rejected. "
             "Set it to your domain (and the load balancer health-check host)."
         )
+    if not os.environ.get("AWS_STORAGE_BUCKET_NAME"):
+        raise RuntimeError(
+            "AWS_STORAGE_BUCKET_NAME is unset, so every CV upload would fail at "
+            "the point of saving. Set it to the bucket holding CVs."
+        )
 
 # Application definition
 
@@ -148,7 +153,12 @@ else:
     }
 
 
-AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "recruitment-tracker-cvs-844274146451")
+# No default. The bucket name embeds the AWS account id, which does not
+# belong in a public repository -- it is not a credential, but it is free
+# reconnaissance, and it pairs with a leaked database host to narrow a
+# target. A deployment that forgets it fails at startup (see the guards
+# above) rather than silently addressing a bucket that isn't yours.
+AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "")
 AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "ap-southeast-1")
 AWS_DEFAULT_ACL = None
 AWS_S3_FILE_OVERWRITE = False
