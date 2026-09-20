@@ -321,6 +321,12 @@ and candidate pages never mix.
   recruiters plus the assigned interviewers.
 - **Deleting a candidate** deactivates the linked login, because `SET_NULL`
   would otherwise leave an account that can still sign in.
+- **An invite for an email that already has a login is refused with 409**
+  (`email_is_available()` in `AcceptInviteView`), rendering the same
+  "link no longer works" page with `email_taken`. Correct — it prevents a
+  candidate login colliding with a staff one — but it means an applicant
+  whose address matches an existing account cannot self-register, and that
+  is a support case, not a bug to fix.
 - **Login fork:** `LOGIN_REDIRECT_URL` points at
   `accounts.views.PostLoginRedirectView`, which sends candidates to the
   portal, staff to the dashboard, and anyone else to their profile.
@@ -583,6 +589,24 @@ everything else combined.
 - **CloudFront caching is disabled** on the default behaviour: every page is
   session-specific. `/static/*` is cached, which is safe only because
   manifest storage content-hashes every filename.
+- **A WAF is attached and cannot be removed.** The CloudFront console's
+  "single website" wizard silently creates a WebACL
+  (`CreatedByCloudFront-*`), and because the distribution is on a pricing
+  plan, `UpdateDistribution` refuses to clear `WebACLId`: *"Distributions
+  with a pricing plan subscription must have a web ACL resource."* Removing
+  it means cancelling the plan first, in the console.
+- **That WAF blocked every CV upload**, and the symptom is misleading: a
+  CloudFront 403 page reading "Request blocked", with `Server: CloudFront`
+  and `X-Cache: Error from cloudfront` — never reaching Django, so nothing
+  appears in the application logs. The cause is `SizeRestrictions_BODY` in
+  `AWSManagedRulesCommonRuleSet`, which blocks request bodies over **8 KB**
+  while the app allows 5 MB. Fixed 2026-09-20 by overriding that one rule to
+  `Count`. Rule changes take a minute or two to reach the edge, so retest
+  rather than concluding the fix failed.
+- **If uploads break again, check WAF before the application.** A `.docx` is
+  a ZIP, and binary bodies can trip other body-inspection rules
+  (`CrossSiteScripting_BODY` and friends) the same way. `aws wafv2
+  get-sampled-requests` names the matching rule.
 - **`.gitattributes` forces LF** on `*.sh`, `.ebextensions/*.config` and
   `.platform/**`. `core.autocrlf` is true on the development machine, and a
   shell script checked out with CRLF fails on Amazon Linux with "bad
