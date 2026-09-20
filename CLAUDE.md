@@ -476,8 +476,8 @@ in settings), so local work and tests are unaffected.
   added. `.platform/confighooks/predeploy/01_collectstatic.sh` now
   regenerates them on a config change; it exits 0 whatever happens, because
   blocking every future config update would be worse than the 500 it
-  prevents. A redeploy also fixes it. The favicon URL resolves per request for the
-  same reason.
+  prevents. A redeploy also fixes it. The favicon URL is resolved per request
+  rather than at import time, for the same manifest reason.
 - **Cache:** `DatabaseCache` in `candidflow_cache`. Run
   `manage.py createcachetable` in every environment. Throttling fails open if
   it's missing, so a forgotten table degrades protection rather than locking
