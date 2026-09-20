@@ -501,6 +501,11 @@ CNAME `recruitment-tracker-env.eba-prejxa8h.ap-southeast-1.elasticbeanstalk.com`
 created by `eb create` on 2026-07-30. Do not create a second application;
 deploy to this one.
 
+**The live site is `https://dmy7zm623g8ab.cloudfront.net`** (distribution
+`E93RL72H4YX1I`). The Elastic Beanstalk hostname answers 403 to everything
+except `/healthz/`, which is the origin lock working — reaching the site any
+other way is not possible, by design.
+
 **Current code was deployed 2026-09-20** and the environment is Green. Before
 that it ran commit `e685185` from 4 August, 30 commits behind, with "No Data"
 health since 17 August.
