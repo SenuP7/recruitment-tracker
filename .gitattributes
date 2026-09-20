@@ -1,0 +1,9 @@
+# These files are executed on Linux, by the Elastic Beanstalk instance.
+#
+# core.autocrlf is true on this machine, so without this a checkout gives
+# them CRLF endings and they fail on the instance with "bad interpreter" or
+# "$'\r': command not found" -- a failure that happens during a deploy, not
+# here, and reads like a platform fault.
+*.sh text eol=lf
+.ebextensions/*.config text eol=lf
+.platform/** text eol=lf
