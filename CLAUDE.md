@@ -221,6 +221,12 @@ Files:
     and sort, via `accounts/listing.py` `ListToolbarMixin`. Tab counts come
     from one `aggregate(Count(filter=Q))` query.
   - Forms: sectioned, with a context rail.
+- **Template tags:** `accounts/templatetags/ui.py` has `url_replace`,
+  `initials`, `percent_of`, `nonzero`, `score_pct`.
+- **Logout:** `LOGOUT_REDIRECT_URL = "/"`.
+- **Favicon:** the "flow mark" (two nested arcs) in `accounts/static/img/` as
+  svg, png and ico. `/favicon.ico` redirects there.
+
 ### Quality-of-life layer (2026-09-21)
 
 - **Command palette** — `Ctrl K`. Its "Go to" list is read from the sidebar
@@ -244,12 +250,6 @@ Files:
 - **Sticky table headers** work because list tables aren't wrapped in
   `.table-scroll-x`; the two detail templates that are wrapped won't stick,
   which is fine.
-
-- **Template tags:** `accounts/templatetags/ui.py` has `url_replace`,
-  `initials`, `percent_of`, `nonzero`, `score_pct`.
-- **Logout:** `LOGOUT_REDIRECT_URL = "/"`.
-- **Favicon:** the "flow mark" (two nested arcs) in `accounts/static/img/` as
-  svg, png and ico. `/favicon.ico` redirects there.
 
 ## Django gotchas hit in this codebase
 
