@@ -482,17 +482,31 @@ or if `settings.py` reads a variable the template never mentions.
 **The environment already exists** and predates this work: application
 `recruitment-tracker`, environment `recruitment-tracker-env` (`e-entm4uhcbt`),
 CNAME `recruitment-tracker-env.eba-prejxa8h.ap-southeast-1.elasticbeanstalk.com`,
-created by `eb create` on 2026-07-30. As of 2026-09-20 it still runs commit
-`e685185` from 4 August — 30 commits behind — and has reported "No Data"
-health since a failed config change on 17 August. `/` answers `OK` and
-`/accounts/login/` 404s, because that version is an early skeleton. Do not
-create a second application; deploy to this one.
+created by `eb create` on 2026-07-30. Do not create a second application;
+deploy to this one.
 
-**`DATABASE_URL` is not set on it**, and all five `DB_*` values are therefore
-read by nothing — `settings.py` selects Postgres on the *presence* of
-`DATABASE_URL` alone. Production has been running on SQLite on the instance,
-wiped by every deploy, while RDS holds the real data. Setting it is the
-single most important environment property.
+**Current code was deployed 2026-09-20** and the environment is Green. Before
+that it ran commit `e685185` from 4 August, 30 commits behind, with "No Data"
+health since 17 August.
+
+**That health outage and the first failed deploy had one cause, worth
+remembering.** Someone had attached a custom instance profile
+(`recruitment-tracker-eb-s3-role-v2.`, holding only `AmazonS3FullAccess`)
+directly to the EC2 instance, bypassing Elastic Beanstalk. EB's own
+`IamInstanceProfile` setting still read `aws-elasticbeanstalk-ec2-role`, so
+the console showed the right answer while the instance used something else.
+Without `AWSElasticBeanstalkWebTier` the instance could not report health or
+create log streams. Fixed with `aws ec2
+replace-iam-instance-profile-association`. **If health ever goes quiet again,
+compare the instance's actual profile against the environment's setting
+before anything else** — they are allowed to disagree, and nothing warns you.
+
+**`DATABASE_URL` had never been set on it**, and all five `DB_*` values were
+therefore read by nothing — `settings.py` selects Postgres on the *presence*
+of `DATABASE_URL` alone. Production had been running on SQLite on the
+instance, wiped by every deploy, while RDS held the real data. Set 2026-09-20;
+the deploy log's `No migrations to apply` is what proves the connection is
+real, since a fresh SQLite would have applied all thirty.
 
 One Elastic Beanstalk **single-instance** environment (`t3.micro`, **Python
 3.13** on AL2023, `ap-southeast-1`) with **CloudFront in front**. Python 3.12
