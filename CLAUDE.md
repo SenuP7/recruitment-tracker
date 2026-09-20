@@ -468,7 +468,15 @@ in settings), so local work and tests are unaffected.
 - **Startup guards:** with `DEBUG` off, a missing `SECRET_KEY` or empty
   `DJANGO_ALLOWED_HOSTS` raises rather than starting.
 - **Static files** use hashed names (manifest storage) only in deploys, so
-  `collectstatic` must run first. The favicon URL resolves per request for the
+  `collectstatic` must run first. **A configuration change wipes them.** It
+  re-extracts the source but doesn't run the `.ebextensions` container
+  commands, and `staticfiles/` is generated rather than committed — so it
+  disappears, every `{% static %}` lookup raises, and the whole site returns
+  500. That happened live on 2026-09-20 when `CLOUDFRONT_ORIGIN_SECRET` was
+  added. `.platform/confighooks/predeploy/01_collectstatic.sh` now
+  regenerates them on a config change; it exits 0 whatever happens, because
+  blocking every future config update would be worse than the 500 it
+  prevents. A redeploy also fixes it. The favicon URL resolves per request for the
   same reason.
 - **Cache:** `DatabaseCache` in `candidflow_cache`. Run
   `manage.py createcachetable` in every environment. Throttling fails open if
