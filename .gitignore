@@ -50,3 +50,8 @@ media/
 
 # Local notification-mode output (NOTIFICATIONS_LOCAL_MODE=True)
 local_notifications/
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
