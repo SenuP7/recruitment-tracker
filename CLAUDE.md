@@ -174,6 +174,11 @@ automatic CV pass/fail decision (a recruiter now confirms outcomes).
   verification, and the SNS subscription for the DLQ alarm. Until the first
   is done, every send fails. Check with
   `aws ses get-identity-verification-attributes --identities <address>`.
+- **Verified end to end 2026-09-20**, twice: once publishing from a
+  developer machine, and once by submitting the live password-reset form,
+  which is the path that matters — it proves the *instance role* can publish.
+  Both landed `SENT` in the audit table with an SES message id, and the
+  dead-letter queue stayed empty.
 - **Deliverability caveat:** sending as a `gmail.com` address fails SPF,
   because Google's records don't authorise Amazon's servers. Mail usually
   still arrives but often in spam. A domain is the only real fix.
