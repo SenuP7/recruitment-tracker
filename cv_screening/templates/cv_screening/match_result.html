@@ -22,7 +22,6 @@
         <div class="page-actions">
             <a class="btn btn-secondary" href="{% url 'cv_screening:view_cv' cv.id %}" target="_blank" rel="noopener"><i data-lucide="file-text"></i> Open CV</a>
             {% if cv.candidate %}<a class="btn btn-secondary" href="{% url 'candidate-detail' cv.candidate.pk %}"><i data-lucide="user"></i> Candidate</a>{% endif %}
-            <a class="btn btn-primary" href="{% url 'cv_screening:upload-cv' result.role_profile.id %}"><i data-lucide="upload"></i> Screen another CV</a>
         </div>
     </div>
 </section>

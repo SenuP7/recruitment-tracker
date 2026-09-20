@@ -256,3 +256,55 @@ class ProxySslHeaderTests(SimpleTestCase):
 
         self.assertIn('SECURE_PROXY_SSL_HEADER = ("HTTP_X_ORIGIN_VERIFY", CLOUDFRONT_ORIGIN_SECRET)', source)
         self.assertIn('SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")', source)
+
+
+TEMPLATE_URL_TAG = re.compile(r"{%\s*url\s+['\"]([^'\"]+)['\"]")
+
+
+class TemplateUrlNameTests(SimpleTestCase):
+    """Every {% url %} name in every template must resolve.
+
+    Django only raises NoReverseMatch when the template is actually
+    rendered, so deleting a route leaves a page that returns 500 the first
+    time somebody opens it -- with nothing failing at deploy time and
+    nothing in the test suite noticing.
+
+    That happened on 2026-09-20: the dead role-profile upload view was
+    removed along with its URL, but match_result.html still linked to it,
+    and the CV screening result page 500'd for every user. The reference
+    was missed because the check at the time only searched Python files.
+    """
+
+    @staticmethod
+    def registered_names():
+        from django.urls import get_resolver
+
+        def collect(resolver, prefix=""):
+            names = {prefix + key for key in resolver.reverse_dict if isinstance(key, str)}
+            for namespace, (_, sub_resolver) in resolver.namespace_dict.items():
+                names |= collect(sub_resolver, f"{prefix}{namespace}:")
+            return names
+
+        return collect(get_resolver())
+
+    def test_every_template_url_name_resolves(self):
+        known = self.registered_names()
+
+        broken = {}
+        for template in BASE_DIR.rglob("*.html"):
+            parts = template.parts
+            if "venv" in parts or "staticfiles" in parts or ".aws-sam" in parts:
+                continue
+            body = template.read_text(encoding="utf-8", errors="ignore")
+            for name in TEMPLATE_URL_TAG.findall(body):
+                if name not in known:
+                    broken.setdefault(name, set()).add(
+                        str(template.relative_to(BASE_DIR))
+                    )
+
+        self.assertEqual(
+            {name: sorted(files) for name, files in broken.items()},
+            {},
+            "these templates link to URL names that no longer exist, and will "
+            "raise NoReverseMatch the moment they are rendered",
+        )
