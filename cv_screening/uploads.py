@@ -13,7 +13,7 @@ ALLOWED_CV_EXTENSIONS = (".pdf", ".docx")
 # parser and stored under a name the browser will trust.
 FILE_SIGNATURES = {
     ".pdf": (b"%PDF-",),
-    ".docx": (b"PK", b"PK"),  # .docx is a zip container
+    ".docx": (b"PK\x03\x04", b"PK\x05\x06"),  # a zip container: entry, or empty
 }
 
 TOO_LARGE_MESSAGE = "CV file is too large. The maximum allowed size is 5 MB."

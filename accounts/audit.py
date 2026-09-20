@@ -46,6 +46,7 @@ CANDIDATE_UPDATED = "candidate.updated"
 CANDIDATE_DELETED = "candidate.deleted"
 CANDIDATE_INVITED = "candidate.invited"
 CV_UPLOADED = "candidate.cv_uploaded"
+CV_DOWNLOADED = "candidate.cv_downloaded"
 APPLICATION_CREATED = "application.created"
 APPLICATION_STATUS_CHANGED = "application.status_changed"
 APPLICATION_WITHDRAWN = "application.withdrawn"
@@ -82,6 +83,7 @@ ACTION_LABELS = {
     CANDIDATE_DELETED: "Deleted a candidate",
     CANDIDATE_INVITED: "Invited a candidate to the portal",
     CV_UPLOADED: "Uploaded a CV",
+    CV_DOWNLOADED: "Opened a CV",
     APPLICATION_CREATED: "Created an application",
     APPLICATION_STATUS_CHANGED: "Changed an application's stage",
     APPLICATION_WITHDRAWN: "Withdrew an application",

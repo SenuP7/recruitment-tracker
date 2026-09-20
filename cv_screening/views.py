@@ -5,170 +5,12 @@ from django.http import FileResponse
 
 from accounts import audit
 from accounts.decorators import RECRUITMENT_STAFF_GROUPS, group_required
-from .matching import extract_text, score_cv_against_role
-from .uploads import score_cv_safely
-from .models import CandidateCV, RoleKeywordProfile, CVMatchResult
-from candidates.models import Candidate
+from .uploads import score_cv_safely, validate_cv_file
+from .models import CandidateCV, CVMatchResult
 
 from django.shortcuts import redirect
 from candidates.models import Application
 
-
-@group_required(*RECRUITMENT_STAFF_GROUPS)
-def upload_cv(request, role_profile_id):
-
-    role_profile = get_object_or_404(
-        RoleKeywordProfile,
-        id=role_profile_id
-    )
-
-    candidates = Candidate.objects.all().order_by(
-        "first_name",
-        "last_name"
-    )
-
-    if request.method == "POST":
-
-        candidate_id = request.POST.get("candidate")
-        uploaded_file = request.FILES.get("cv_file")
-
-        # Candidate validation
-        if not candidate_id:
-            return render(
-                request,
-                "cv_screening/upload_form.html",
-                {
-                    "role_profile": role_profile,
-                    "candidates": candidates,
-                    "error": "Please select a candidate.",
-                }
-            )
-
-        # File validation
-        if not uploaded_file:
-            return render(
-                request,
-                "cv_screening/upload_form.html",
-                {
-                    "role_profile": role_profile,
-                    "candidates": candidates,
-                    "error": "Please select a CV file.",
-                }
-            )
-
-        # Maximum 5 MB
-        max_size = 5 * 1024 * 1024
-
-        if uploaded_file.size > max_size:
-            return render(
-                request,
-                "cv_screening/upload_form.html",
-                {
-                    "role_profile": role_profile,
-                    "candidates": candidates,
-                    "error": "CV file is too large. The maximum allowed size is 5 MB.",
-                }
-            )
-
-        # File extension validation
-        filename = uploaded_file.name.lower()
-
-        if not filename.endswith((".pdf", ".docx")):
-            return render(
-                request,
-                "cv_screening/upload_form.html",
-                {
-                    "role_profile": role_profile,
-                    "candidates": candidates,
-                    "error": "Invalid CV format. Please upload a PDF or DOCX file.",
-                }
-            )
-
-        # Candidate lookup
-        candidate = get_object_or_404(
-            Candidate,
-            id=candidate_id
-        )
-
-        # Role validation
-        if not role_profile.required_skills.exists():
-            return render(
-                request,
-                "cv_screening/upload_form.html",
-                {
-                    "role_profile": role_profile,
-                    "candidates": candidates,
-                    "error": "This role does not have any required skills configured.",
-                }
-            )
-
-        # Create CV
-        cv = CandidateCV.objects.create(
-            candidate=candidate,
-            file=uploaded_file,
-        )
-
-        # Extract CV text
-        try:
-            extract_text(cv)
-        except Exception:
-            cv.delete()
-
-            return render(
-                request,
-                "cv_screening/upload_form.html",
-                {
-                    "role_profile": role_profile,
-                    "candidates": candidates,
-                    "error": (
-                        "We could not read this CV. "
-                        "Please make sure the PDF or DOCX file is valid."
-                    ),
-                }
-            )
-
-        # Make sure text was actually extracted
-        if not cv.extracted_text.strip():
-            cv.delete()
-
-            return render(
-                request,
-                "cv_screening/upload_form.html",
-                {
-                    "role_profile": role_profile,
-                    "candidates": candidates,
-                    "error": (
-                        "No readable text was found in this CV. "
-                        "Please upload a text-based PDF or DOCX file."
-                    ),
-                }
-            )
-
-        # Score CV
-        result = score_cv_against_role(
-            cv,
-            role_profile
-        )
-
-        messages.success(request, "CV uploaded and scored successfully.")
-
-        return render(
-            request,
-            "cv_screening/match_result.html",
-            {
-                "cv": cv,
-                "result": result,
-            }
-        )
-
-    return render(
-        request,
-        "cv_screening/upload_form.html",
-        {
-            "role_profile": role_profile,
-            "candidates": candidates,
-        }
-    )
 
 @group_required(*RECRUITMENT_STAFF_GROUPS)
 def upload_application_cv(request, application_id):
@@ -196,6 +38,22 @@ def upload_application_cv(request, application_id):
 
         uploaded_file = request.FILES.get("cv_file")
 
+        # Exactly the rules the candidate portal and the public application
+        # form apply (cv_screening/uploads.py). A staff account is trusted to
+        # do its job; it is not a reason to let an arbitrary file into
+        # storage under a name a browser will act on.
+        error = validate_cv_file(uploaded_file)
+
+        if error:
+            return render(
+                request,
+                "cv_screening/application_upload.html",
+                {
+                    "application": application,
+                    "role_profile": role_profile,
+                    "error": error,
+                }
+            )
 
         cv = CandidateCV.objects.create(
             candidate=application.candidate,
@@ -303,6 +161,17 @@ def screening_result_detail(request, result_id):
 @group_required(*RECRUITMENT_STAFF_GROUPS)
 def view_cv(request, cv_id):
     cv = get_object_or_404(CandidateCV, id=cv_id)
+
+    # Any member of staff may open any CV -- that is deliberate, because
+    # recruiters and reviewers work across departments. Accountability comes
+    # from the record instead: a CV is the most sensitive thing here, and
+    # this was the one way to read one that left no trace.
+    audit.record(
+        audit.CV_DOWNLOADED,
+        actor=request.user,
+        request=request,
+        target=cv.candidate,
+    )
 
     response = FileResponse(
         cv.file.open("rb"),

@@ -1,5 +1,5 @@
 from django.contrib.auth.models import Group, User
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -473,10 +473,24 @@ class CVScreeningAccessControlTests(TestCase):
         self.assertTrue(CVMatchResult.objects.filter(id=self.result.id).exists())
 
     def test_candidate_group_cannot_reach_upload_form(self):
+        from accounts.models import Department
+        from candidates.models import Application
+        from positions.models import Position
+
+        position = Position.objects.create(
+            title="Access Test Role",
+            description="x",
+            department=Department.objects.create(name="Access Test Dept"),
+            screening_profile=self.role_profile,
+        )
+        application = Application.objects.create(
+            candidate=self.candidate, position=position
+        )
+
         client = Client()
         client.login(username="cv_access_candidate", password="pass12345")
         response = client.get(
-            reverse("cv_screening:upload-cv", args=[self.role_profile.id])
+            reverse("cv_screening:application-upload-cv", args=[application.id])
         )
         self.assertEqual(response.status_code, 403)
 
@@ -537,3 +551,130 @@ class CVScreeningFlashMessageTests(TestCase):
         self.assertEqual(response.status_code, 302)
         messages = [str(m) for m in get_messages(response.wsgi_request)]
         self.assertIn("CV screening result deleted successfully.", messages)
+
+class StaffCVUploadValidationTests(TestCase):
+    """The staff upload used to accept anything at all.
+
+    cv_screening/uploads.py exists precisely so staff uploads and candidate
+    uploads accept the same files, and the candidate paths call it -- but
+    this one went straight from request.FILES to storage with no size cap,
+    no extension check and no signature check, so a file that is not really
+    a PDF could be stored and later served under a name a browser trusts.
+    """
+
+    def setUp(self):
+        from accounts.models import Department
+        from candidates.models import Application
+        from positions.models import Position
+
+        self.group, _ = Group.objects.get_or_create(name="Recruiter")
+        self.user = User.objects.create_user("cv_upload_staff", password="pass12345")
+        self.user.groups.add(self.group)
+
+        self.candidate = Candidate.objects.create(
+            first_name="Upload",
+            last_name="Check",
+            email="upload.check@example.com",
+        )
+        skill = Skill.objects.create(name="Upload Check Skill")
+        profile = RoleKeywordProfile.objects.create(role_name="Upload Check Role")
+        profile.required_skills.add(skill)
+
+        position = Position.objects.create(
+            title="Upload Check Role",
+            description="x",
+            department=Department.objects.create(name="Upload Check Dept"),
+            screening_profile=profile,
+        )
+        self.application = Application.objects.create(
+            candidate=self.candidate, position=position
+        )
+
+        self.client = Client()
+        self.client.login(username="cv_upload_staff", password="pass12345")
+        self.url = reverse(
+            "cv_screening:application-upload-cv", args=[self.application.id]
+        )
+
+    def post(self, uploaded):
+        return self.client.post(self.url, {"cv_file": uploaded})
+
+    def test_a_file_that_is_not_really_a_pdf_is_refused(self):
+        response = self.post(
+            SimpleUploadedFile("cv.pdf", b"this is not a pdf", content_type="application/pdf")
+        )
+
+        self.assertContains(response, "doesn&#x27;t look like a real PDF")
+        self.assertEqual(CandidateCV.objects.filter(candidate=self.candidate).count(), 0)
+
+    def test_an_unsupported_extension_is_refused(self):
+        response = self.post(
+            SimpleUploadedFile("cv.exe", b"not-an-executable", content_type="application/octet-stream")
+        )
+
+        self.assertContains(response, "Unsupported file type")
+        self.assertEqual(CandidateCV.objects.filter(candidate=self.candidate).count(), 0)
+
+    def test_an_oversized_file_is_refused(self):
+        oversized = SimpleUploadedFile(
+            "cv.pdf", b"%PDF-" + b"0" * (5 * 1024 * 1024), content_type="application/pdf"
+        )
+
+        response = self.post(oversized)
+
+        self.assertContains(response, "too large")
+        self.assertEqual(CandidateCV.objects.filter(candidate=self.candidate).count(), 0)
+
+    def test_no_file_is_refused_rather_than_stored_empty(self):
+        # This used to create a CandidateCV row with no file at all.
+        response = self.client.post(self.url, {})
+
+        self.assertContains(response, "Please select a CV file")
+        self.assertEqual(CandidateCV.objects.filter(candidate=self.candidate).count(), 0)
+
+
+@override_settings(
+    STORAGES={
+        # Keep the test off S3: this is the only test that opens a stored
+        # file, and it should not need a network round trip to do it.
+        "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"
+        },
+    }
+)
+class CVDownloadAuditTests(TestCase):
+    """Opening a CV was the one way to read the most sensitive data in the
+    system that left no trace. Access is deliberately not restricted by
+    department, so the record is what makes it accountable."""
+
+    def setUp(self):
+        self.group, _ = Group.objects.get_or_create(name="Recruiter")
+        self.user = User.objects.create_user("cv_audit_staff", password="pass12345")
+        self.user.groups.add(self.group)
+
+        self.candidate = Candidate.objects.create(
+            first_name="Audit",
+            last_name="Check",
+            email="audit.check@example.com",
+        )
+        self.cv = CandidateCV.objects.create(
+            candidate=self.candidate,
+            file=SimpleUploadedFile("audit_check.docx", b"a stored document"),
+        )
+
+    def test_opening_a_cv_is_recorded(self):
+        from accounts import audit
+        from accounts.models import AuditEvent
+
+        client = Client()
+        client.login(username="cv_audit_staff", password="pass12345")
+
+        response = client.get(reverse("cv_screening:view_cv", args=[self.cv.id]))
+
+        self.assertEqual(response.status_code, 200)
+
+        event = AuditEvent.objects.filter(action=audit.CV_DOWNLOADED).first()
+        self.assertIsNotNone(event, "Opening a CV wrote no audit entry.")
+        self.assertEqual(event.actor_id, self.user.id)
+        self.assertEqual(event.target_label, str(self.candidate))

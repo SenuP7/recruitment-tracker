@@ -10,7 +10,7 @@
 <header class="page-header">
     <div class="page-header-text">
         <h1>Screen CV</h1>
-        <p class="page-subtitle">The score updates this application's stage automatically: 70%+ passes screening, under 40% fails it.</p>
+        <p class="page-subtitle">Scoring the CV moves this application to CV Screening. It does not pass or fail it &mdash; you confirm the outcome once you've read the CV.</p>
     </div>
 </header>
 
@@ -18,15 +18,19 @@
     <form method="post" enctype="multipart/form-data" class="form-card">
         {% csrf_token %}
 
+        {% if error %}
+            <div class="alert alert-error" role="alert"><i data-lucide="alert-circle"></i> {{ error }}</div>
+        {% endif %}
+
         <section class="form-section">
             <div class="form-section-intro">
                 <h2>CV file</h2>
-                <p>PDF, DOC, or DOCX.</p>
+                <p>PDF or DOCX, up to 5&nbsp;MB.</p>
             </div>
             <div class="field-grid">
                 <div class="field field-wide">
                     <label for="cv_file">Upload CV<span class="req">*</span></label>
-                    <input type="file" id="cv_file" name="cv_file" accept=".pdf,.doc,.docx" required>
+                    <input type="file" id="cv_file" name="cv_file" accept=".pdf,.docx" required>
                 </div>
             </div>
         </section>

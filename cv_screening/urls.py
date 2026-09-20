@@ -4,13 +4,6 @@ from . import views
 app_name = "cv_screening"
 
 urlpatterns = [
-    # Upload and screen a CV against a role
-    path(
-        "upload/<int:role_profile_id>/",
-        views.upload_cv,
-        name="upload-cv",
-    ),
-
     # List all screening results
     path(
         "results/",
