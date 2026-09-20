@@ -46,7 +46,7 @@ Only commit when the user asks.
 - The empty override doesn't select SQLite by parsing a URL: the mere
   presence of a `DATABASE_URL` value picks the Postgres branch, which reads
   its connection details from `DB_*` (see `.env.example`).
-- Current suite: **357 tests, all passing** (2026-09-20).
+- Current suite: **362 tests, all passing** (2026-09-20).
 - The notification Lambda has its own pytest suite in
   `notification-service/tests`.
 - The user runs their own server on **port 8000** against the real Postgres.
@@ -445,9 +445,17 @@ in settings), so local work and tests are unaffected.
 - **HTTPS:** `SECURE_SSL_REDIRECT`, HSTS (1 hour to start, raise via
   `DJANGO_HSTS_SECONDS`), secure + HttpOnly cookies, nosniff, same-origin
   referrer policy.
-- **Behind the load balancer:** `SECURE_PROXY_SSL_HEADER` reads
-  `X-Forwarded-Proto`. Without it the redirect loops. It is only safe because
-  the app is unreachable except through the balancer.
+- **How the origin learns the request was encrypted.** Not
+  `X-Forwarded-Proto`: CloudFront manages that header itself, and an origin
+  custom header of that name never reaches the origin. Setting it produced a
+  redirect loop in production — Django saw a plain request, redirected to
+  HTTPS, and arrived back at itself. `SECURE_PROXY_SSL_HEADER` therefore
+  reads `X-Origin-Verify` and matches `CLOUDFRONT_ORIGIN_SECRET`, which
+  carries the same fact: CloudFront only forwards after redirecting the
+  viewer to HTTPS. It is also the stronger signal, since `X-Forwarded-Proto`
+  can be forged by anyone who reaches the origin and the secret cannot.
+  Without the secret set — local work, tests, a direct origin — the
+  conventional header applies unchanged.
 - **`/healthz/` is answered by middleware**, not a view.
   `config.middleware.HealthCheckMiddleware` runs first and returns before
   `request.get_host()` is ever called. A load balancer checks its targets by

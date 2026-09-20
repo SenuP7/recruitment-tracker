@@ -250,12 +250,31 @@ LOGIN_REDIRECT_URL = "/accounts/after-login/"
 #
 # This is only safe because the app is never reachable except through that
 # load balancer -- if it were, a client could simply send the header itself.
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
 # CloudFront terminates TLS and sends this as an origin custom header, so the
 # origin can refuse anything that reached it another way. Unset means the
 # check is off, which is what local work and the test suite want.
 CLOUDFRONT_ORIGIN_SECRET = os.environ.get("CLOUDFRONT_ORIGIN_SECRET", "")
+
+# How the origin learns that the viewer's connection was encrypted.
+#
+# The obvious answer, an `X-Forwarded-Proto: https` origin custom header,
+# does not work behind CloudFront: CloudFront manages that header itself and
+# an origin custom header of the same name never reaches the origin. The
+# result is a redirect loop -- Django sees a plain request, redirects to
+# HTTPS, and arrives back at itself.
+#
+# The origin secret carries the same fact and does arrive. A request bearing
+# it came through CloudFront, and CloudFront only forwards after redirecting
+# the viewer to HTTPS, so the connection was encrypted end to end. It is also
+# the stronger signal: `X-Forwarded-Proto` can be forged by anyone who can
+# reach the origin, and this cannot.
+#
+# Without the secret -- local work, the test suite, an origin reached
+# directly -- the conventional header applies unchanged.
+if CLOUDFRONT_ORIGIN_SECRET:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_ORIGIN_VERIFY", CLOUDFRONT_ORIGIN_SECRET)
+else:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # On by default for a real deployment, off while DEBUG or under tests, where
 # a redirect would break every request.

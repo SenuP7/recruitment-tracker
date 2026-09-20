@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 
 from django.core.management import get_commands
-from django.test import SimpleTestCase, TestCase, override_settings
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CRON_CONFIG = BASE_DIR / ".ebextensions" / "cron.config"
@@ -194,3 +194,65 @@ class CloudFrontOriginTests(TestCase):
         response = self.client.get("/", HTTP_HOST="candidflow.example")
 
         self.assertNotEqual(response.status_code, 403)
+
+
+class ProxySslHeaderTests(SimpleTestCase):
+    """How the origin learns the viewer's connection was encrypted.
+
+    An `X-Forwarded-Proto: https` origin custom header does not survive
+    CloudFront -- it manages that header itself -- which produced a redirect
+    loop in production: Django saw a plain request, redirected to HTTPS, and
+    arrived back at itself. The origin secret carries the same fact and does
+    arrive, so it is what marks the request secure.
+    """
+
+    def _reload(self, secret):
+        # settings.py picks the header at import time, so exercise the same
+        # branch rather than asserting on whichever one this process loaded.
+        if secret:
+            return ("HTTP_X_ORIGIN_VERIFY", secret)
+        return ("HTTP_X_FORWARDED_PROTO", "https")
+
+    def test_the_secret_marks_a_request_secure(self):
+        header, value = self._reload("a-secret")
+
+        with override_settings(SECURE_PROXY_SSL_HEADER=(header, value)):
+            request = RequestFactory().get("/", **{header: value})
+
+            self.assertTrue(request.is_secure())
+
+    def test_a_request_without_the_secret_is_not_secure(self):
+        header, value = self._reload("a-secret")
+
+        with override_settings(SECURE_PROXY_SSL_HEADER=(header, value)):
+            request = RequestFactory().get("/")
+
+            self.assertFalse(request.is_secure())
+
+    def test_a_forged_forwarded_proto_does_not_mark_it_secure(self):
+        # The point of using the secret: X-Forwarded-Proto can be sent by
+        # anyone who can reach the origin directly. The secret cannot.
+        header, value = self._reload("a-secret")
+
+        with override_settings(SECURE_PROXY_SSL_HEADER=(header, value)):
+            request = RequestFactory().get("/", HTTP_X_FORWARDED_PROTO="https")
+
+            self.assertFalse(request.is_secure())
+
+    def test_without_a_secret_the_conventional_header_applies(self):
+        # Local work, the test suite, and an origin reached directly.
+        header, value = self._reload("")
+
+        self.assertEqual(header, "HTTP_X_FORWARDED_PROTO")
+
+        with override_settings(SECURE_PROXY_SSL_HEADER=(header, value)):
+            request = RequestFactory().get("/", HTTP_X_FORWARDED_PROTO="https")
+
+            self.assertTrue(request.is_secure())
+
+    def test_settings_wires_the_secret_branch(self):
+        # Guards the actual settings.py logic, not just this test's copy.
+        source = SETTINGS.read_text(encoding="utf-8")
+
+        self.assertIn('SECURE_PROXY_SSL_HEADER = ("HTTP_X_ORIGIN_VERIFY", CLOUDFRONT_ORIGIN_SECRET)', source)
+        self.assertIn('SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")', source)
