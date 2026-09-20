@@ -64,8 +64,13 @@ class SeedDemoTests(TestCase):
         rounds = Interview.objects.filter(application=application)
         self.assertEqual(rounds.filter(status="Completed").count(), 1)
         self.assertEqual(rounds.filter(status="Scheduled").count(), 1)
-        self.assertEqual(InterviewFeedback.objects.filter(parent__isnull=True).count(), 1)
-        self.assertEqual(InterviewFeedback.objects.filter(parent__isnull=False).count(), 1)
+        # Scoped to this application on purpose: the seeder also builds a
+        # six-applicant cohort on a second role, which has feedback of its
+        # own. A global count here would assert something the test does not
+        # actually care about.
+        worked_example = InterviewFeedback.objects.filter(interview__application=application)
+        self.assertEqual(worked_example.filter(parent__isnull=True).count(), 1)
+        self.assertEqual(worked_example.filter(parent__isnull=False).count(), 1)
 
         # The other two flows are represented too.
         self.assertTrue(PendingApplication.objects.filter(email__endswith="demo.candidflow.example").exists())
@@ -135,3 +140,72 @@ class SeedDemoTests(TestCase):
         message = str(refusal.exception)
         self.assertIn("--clear --yes", message)
         self.assertIn("deletes", message)
+
+
+class SeedDemoCohortTests(TestCase):
+    """The six-applicant cohort on the second role.
+
+    Its value is entirely in the spread: a pipeline where every candidate
+    scores the same, or sits at the same stage, demonstrates nothing about
+    what screening and stages are for.
+    """
+
+    def seed(self, *args):
+        call_command("seed_demo", *args, stdout=StringIO(), stderr=StringIO())
+
+    def test_the_cohort_spans_the_pipeline_with_varied_scores(self):
+        from positions.models import Position
+
+        self.seed()
+
+        position = Position.objects.get(title="Platform Engineer")
+        applications = Application.objects.filter(position=position)
+
+        self.assertEqual(applications.count(), 6)
+
+        # Several distinct stages, not six copies of one.
+        self.assertGreaterEqual(len({a.status for a in applications}), 5)
+
+        scores = set(
+            CVMatchResult.objects.filter(
+                cv__candidate__in=[a.candidate for a in applications]
+            ).values_list("score", flat=True)
+        )
+        self.assertEqual(
+            CVMatchResult.objects.filter(
+                cv__candidate__in=[a.candidate for a in applications]
+            ).count(),
+            6,
+            "every applicant needs a real scored CV, not a placeholder",
+        )
+        self.assertGreaterEqual(len(scores), 3, "the scores must actually differ")
+
+    def test_the_cohort_has_interviews_and_feedback(self):
+        from positions.models import Position
+
+        self.seed()
+
+        position = Position.objects.get(title="Platform Engineer")
+        rounds = Interview.objects.filter(application__position=position)
+
+        self.assertTrue(rounds.filter(status="Completed").exists())
+        self.assertTrue(rounds.filter(status="Scheduled").exists())
+        self.assertTrue(
+            InterviewFeedback.objects.filter(interview__in=rounds, parent__isnull=True).exists()
+        )
+
+    def test_clear_removes_the_cohort_too(self):
+        from positions.models import Position
+
+        self.seed()
+        self.assertTrue(Position.objects.filter(title="Platform Engineer").exists())
+
+        self.seed("--clear")
+
+        self.assertFalse(
+            Position.objects.filter(title="Platform Engineer").exists(),
+            "the cohort must be tagged like everything else, or --clear leaves it behind",
+        )
+        self.assertFalse(
+            Candidate.objects.filter(email__endswith="demo.candidflow.example").exists()
+        )

@@ -161,6 +161,7 @@ class Command(BaseCommand):
             candidate, application = self.create_candidate(position, staff)
             self.create_interviews(application, staff)
             self.create_extras(position, staff)
+            cohort_position, cohort = self.create_cohort(staff)
             pending = self.create_pending(position)
             invite = CandidateInvite.issue(candidate)
 
@@ -316,17 +317,20 @@ class Command(BaseCommand):
         self.attach_cv(candidate, position)
         return candidate, application
 
-    def attach_cv(self, candidate, position):
+    def attach_cv(self, candidate, position, cv_text=None, filename=None):
         """A real .docx, so the screening score comes out of the same code
         path a genuine upload goes through."""
         import docx
 
+        cv_text = cv_text or CV_TEXT
+        filename = filename or "maya-reyes-cv.docx"
+
         document = docx.Document()
-        for line in CV_TEXT.strip().splitlines():
+        for line in cv_text.strip().splitlines():
             document.add_paragraph(line)
         buffer = io.BytesIO()
         document.save(buffer)
-        content = ContentFile(buffer.getvalue(), name="maya-reyes-cv.docx")
+        content = ContentFile(buffer.getvalue(), name=filename)
 
         cv = CandidateCV(candidate=candidate)
         try:
@@ -340,11 +344,11 @@ class Command(BaseCommand):
             )
             self.stdout.write("  Falling back to local media/ for the demo CV.")
             local = FileSystemStorage(location=settings.BASE_DIR / "media")
-            name = local.save("cvs/maya-reyes-cv.docx", content)
+            name = local.save(f"cvs/{filename}", content)
             cv.file.name = name
             cv.save()
 
-        cv.extracted_text = CV_TEXT
+        cv.extracted_text = cv_text
         cv.save(update_fields=["extracted_text"])
         score_cv_against_role(cv, position.screening_profile)
         return cv
@@ -400,6 +404,111 @@ class Command(BaseCommand):
             reason="I'm at a conference that week -- could you take this one?",
             actor=staff["Technical Interviewer"],
         )
+
+    def create_cohort(self, staff):
+        """A second role with six applicants spread across the pipeline.
+
+        Every CV is scored through the real code path, and each one is
+        written to match the profile differently -- a pipeline where
+        everyone scores 100% shows a viewer nothing about what screening is
+        for. The data lives in _demo_cohort.py; only the wiring is here.
+        """
+        from . import _demo_cohort as data
+
+        skills = {
+            name: Skill.objects.get_or_create(name=name)[0]
+            for name in data.ROLE_REQUIRED + data.ROLE_NICE_TO_HAVE
+        }
+        profile = RoleKeywordProfile.objects.create(
+            role_name=f"{DEMO_TAG} {data.ROLE_TITLE}"
+        )
+        profile.required_skills.set([skills[n] for n in data.ROLE_REQUIRED])
+        profile.nice_to_have_skills.set([skills[n] for n in data.ROLE_NICE_TO_HAVE])
+
+        department, _ = Department.objects.get_or_create(name="Engineering")
+        position = Position.objects.create(
+            title=data.ROLE_TITLE,
+            description=f"{DEMO_TAG} {data.ROLE_DESCRIPTION}",
+            minimum_experience=3,
+            department=department,
+            screening_profile=profile,
+            is_open=True,
+        )
+
+        now = timezone.now()
+        created = []
+
+        for spec in data.COHORT:
+            applied = now - timedelta(days=spec["applied_days_ago"])
+            candidate = Candidate.objects.create(
+                first_name=spec["first_name"],
+                last_name=spec["last_name"],
+                email=f"{spec['handle']}@{DEMO_EMAIL_DOMAIN}",
+                phone=spec["phone"],
+                department=department,
+                current_status=spec["status"],
+                source="public",
+                terms_accepted_at=applied,
+            )
+            application = Application.objects.create(
+                candidate=candidate,
+                position=position,
+                status=spec["status"],
+                applicant_message=spec["message"],
+            )
+            # applied_at is auto_now_add, so it has to be set after the fact.
+            Application.objects.filter(pk=application.pk).update(applied_at=applied)
+
+            self.attach_cv(
+                candidate,
+                position,
+                cv_text=spec["cv"],
+                filename=f"{spec['handle']}-cv.docx",
+            )
+
+            for round_spec in spec["interviews"]:
+                self.create_cohort_interview(application, staff, round_spec, now)
+
+            created.append(candidate)
+
+        return position, created
+
+    def create_cohort_interview(self, application, staff, spec, now):
+        """One interview round for a cohort applicant, with feedback when the
+        round has already happened."""
+        if "days_ago" in spec:
+            when = now - timedelta(days=spec["days_ago"])
+        else:
+            when = now + timedelta(days=spec["days_in"], hours=3)
+
+        interview = Interview.objects.create(
+            application=application,
+            interview_type=spec["type"],
+            scheduled_date=when,
+            status=spec["status"],
+            assigned_interviewer=staff[spec["role"]],
+            created_by=staff["Recruiter"],
+            location="Meeting room 3, or remote",
+        )
+
+        if not spec.get("comments"):
+            return interview
+
+        root = InterviewFeedback.objects.create(
+            interview=interview,
+            author=staff[spec["role"]],
+            rating=spec["rating"],
+            recommendation=spec["recommendation"] or "",
+            comments=spec["comments"],
+        )
+        if spec.get("reply"):
+            InterviewFeedback.objects.create(
+                interview=interview,
+                parent=root,
+                author=staff[spec["reply_role"]],
+                comments=spec["reply"],
+            )
+        return interview
 
     def create_extras(self, position, staff):
         """A few other applications so the pipeline chart and list filters
