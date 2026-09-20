@@ -1,15 +1,8 @@
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
-from django.http import HttpResponse
 from django.templatetags.static import static
 from django.views.generic import RedirectView
-
-
-def health_check(request):
-    """Hit over plain HTTP by the load balancer, so it's exempt from the
-    HTTPS redirect (see SECURE_REDIRECT_EXEMPT)."""
-    return HttpResponse("OK")
 
 
 class FaviconRedirectView(RedirectView):
@@ -27,7 +20,8 @@ urlpatterns = [
     # Movable via DJANGO_ADMIN_PATH: the default path is scanned constantly.
     path(f"{settings.ADMIN_PATH}/", admin.site.urls),
 
-    path("healthz/", health_check, name="health-check"),
+    # /healthz/ is answered by config.middleware.HealthCheckMiddleware,
+    # before the Host header is validated. It deliberately has no route.
     path("favicon.ico", FaviconRedirectView.as_view(), name="favicon"),
 
     path("accounts/", include("accounts.urls")),

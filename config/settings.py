@@ -81,6 +81,11 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # First on purpose: it answers /healthz/ before the Host header is
+    # validated, because a load balancer checks the instance by IP.
+    'config.middleware.HealthCheckMiddleware',
+    # Then the origin lock, before anything can act on an unverified request.
+    'config.middleware.CloudFrontOriginMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -246,6 +251,11 @@ LOGIN_REDIRECT_URL = "/accounts/after-login/"
 # This is only safe because the app is never reachable except through that
 # load balancer -- if it were, a client could simply send the header itself.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# CloudFront terminates TLS and sends this as an origin custom header, so the
+# origin can refuse anything that reached it another way. Unset means the
+# check is off, which is what local work and the test suite want.
+CLOUDFRONT_ORIGIN_SECRET = os.environ.get("CLOUDFRONT_ORIGIN_SECRET", "")
 
 # On by default for a real deployment, off while DEBUG or under tests, where
 # a redirect would break every request.

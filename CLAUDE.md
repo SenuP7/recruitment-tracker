@@ -46,7 +46,7 @@ Only commit when the user asks.
 - The empty override doesn't select SQLite by parsing a URL: the mere
   presence of a `DATABASE_URL` value picks the Postgres branch, which reads
   its connection details from `DB_*` (see `.env.example`).
-- Current suite: **337 tests, all passing** (2026-09-18).
+- Current suite: **357 tests, all passing** (2026-09-20).
 - The notification Lambda has its own pytest suite in
   `notification-service/tests`.
 - The user runs their own server on **port 8000** against the real Postgres.
@@ -108,9 +108,18 @@ time the portal replaces what they lost.)
 - **Feedback isn't restricted to the assigned interviewer**, and that is
   deliberate (user's decision, 2026-09-18): rounds get covered at short
   notice, and every entry records its author anyway.
-- **Security page claims only what's verified.** No HTTPS redirect, HSTS or
-  secure-cookie settings exist yet; add them at deployment and then update
-  `templates/marketing/security.html`.
+- **Interviews aren't department-scoped outside the dashboard**, and that is
+  deliberate too (user's decision, 2026-09-20). `InterviewListView` and
+  `InterviewDetailView` gate on `interviews.view_interview` only, so a
+  Technical Interviewer scoped to one department on the dashboard can still
+  open any interview by URL. Same reasoning as feedback. Don't "fix" it.
+- **Any staff account can open any CV**, for the same reason — recruiters
+  and reviewers work across departments. Accountability is the audit record
+  (`CV_DOWNLOADED`), not a restriction.
+- **Security page claims only what's verified.** It now describes the real
+  transport security (HTTPS at the CDN, the origin refusing anything else,
+  HSTS, secure cookies). If the CloudFront layer is ever removed, that copy
+  becomes false and has to change with it.
 
 Closed since: candidate self-service scoping (the portal), and the
 automatic CV pass/fail decision (a recruiter now confirms outcomes).
@@ -190,8 +199,6 @@ Files:
 - **Logout:** `LOGOUT_REDIRECT_URL = "/"`.
 - **Favicon:** the "flow mark" (two nested arcs) in `accounts/static/img/` as
   svg, png and ico. `/favicon.ico` redirects there.
-- **Unused templates:** `candidates/cv_form.html` and `cv_list.html` aren't
-  referenced anywhere. The user hasn't decided whether to delete them.
 
 ## Django gotchas hit in this codebase
 
@@ -339,8 +346,9 @@ holds the views, `candidates/applications.py` the logic that matters.
   is copied to `Application.applicant_message` and shown to recruiters.
 - **`Candidate.source`** is `staff` or `public`, shown on the candidate record.
 - **Housekeeping:** `candidates.applications.purge_expired_pending()` deletes
-  unconfirmed submissions and their CVs. Nothing calls it yet — it needs a
-  cron or management command before launch.
+  unconfirmed submissions and their CVs, via `manage.py
+  purge_pending_applications` on a weekly timer. See The scheduled
+  housekeeping below.
 
 ## Two sign-in doors
 
@@ -421,10 +429,9 @@ application, so applying is what creates one.
 
 - `manage.py purge_pending_applications [--days N] [--dry-run]` deletes
   unconfirmed public applications and their CVs once their link expired more
-  than `PENDING_RETENTION_DAYS` (30) ago. **This has to run on a schedule** —
-  cron, an Elastic Beanstalk periodic task or an EventBridge rule — because
-  the privacy notice promises that deletion. Confirmed applications are
-  candidate records by then and are never touched.
+  than `PENDING_RETENTION_DAYS` (30) ago. It runs weekly from the instance
+  crontab, because the privacy notice promises that deletion. Confirmed
+  applications are candidate records by then and are never touched.
 - `manage.py check_notifications [--send EMAIL]` reports whether email is
   live, in local mode, or off, and can put one test message through the
   configured path. With email off, nobody can confirm an application, accept
@@ -441,8 +448,15 @@ in settings), so local work and tests are unaffected.
 - **Behind the load balancer:** `SECURE_PROXY_SSL_HEADER` reads
   `X-Forwarded-Proto`. Without it the redirect loops. It is only safe because
   the app is unreachable except through the balancer.
-- **`/healthz/` is exempt** from the redirect (`SECURE_REDIRECT_EXEMPT`), or a
-  plain-HTTP health check gets a 301 and the instance is marked unhealthy.
+- **`/healthz/` is answered by middleware**, not a view.
+  `config.middleware.HealthCheckMiddleware` runs first and returns before
+  `request.get_host()` is ever called. A load balancer checks its targets by
+  address, so Host is the instance's private IP — never in `ALLOWED_HOSTS`,
+  and unknowable in advance — and Django would answer 400, the target would
+  read as unhealthy, and the environment would cycle instances while every
+  setting looked correct. Running first also keeps the HTTPS redirect off it;
+  `SECURE_REDIRECT_EXEMPT` stays as a second line of defence. The path
+  deliberately has no URL route.
 - **Startup guards:** with `DEBUG` off, a missing `SECRET_KEY` or empty
   `DJANGO_ALLOWED_HOSTS` raises rather than starting.
 - **Static files** use hashed names (manifest storage) only in deploys, so
@@ -454,6 +468,44 @@ in settings), so local work and tests are unaffected.
   everyone out.
 - **Admin path** is `DJANGO_ADMIN_PATH` (default `admin`).
 - **Logging** goes to stdout at INFO.
+
+**Variable names are `DJANGO_`-prefixed** (`DJANGO_DEBUG`,
+`DJANGO_ALLOWED_HOSTS`), and `.env.example` is the only record of what a
+deployment must set. A `.env` carrying the older bare `DEBUG`/`ALLOWED_HOSTS`
+names silently leaves both unset, which trips the startup guard and the app
+does not boot at all. `config/test_deployment.py` now fails if `.env.example`
+defines a key twice (dotenv keeps the last one, so an empty duplicate wins)
+or if `settings.py` reads a variable the template never mentions.
+
+### Deployment shape
+
+One Elastic Beanstalk **single-instance** environment (`t3.micro`, Python
+3.12 on AL2023, `ap-southeast-1`) with **CloudFront in front**. No domain:
+AWS will not issue a certificate for `*.elasticbeanstalk.com`, so CloudFront
+supplies both the hostname and a free managed certificate. Cost target is
+zero, which is why there is no load balancer — an ALB alone costs more than
+everything else combined.
+
+- **`.ebextensions/instance.config`** pins the environment type, instance
+  type, 7-day CloudWatch log retention, and a 1 GB swap file (1 GB of RAM
+  isn't enough for `pip install` of this requirement set; the deploy dies
+  with a bare "Killed").
+- **`ALLOWED_HOSTS` is wildcarded** (`.cloudfront.net`,
+  `.ap-southeast-1.elasticbeanstalk.com`) because the real hostnames don't
+  exist until AWS creates them. Both are needed: CloudFront forwards the
+  viewer's Host for pages, and sends the origin's own hostname for
+  `/static/*`, which has no origin request policy.
+- **`config.middleware.CloudFrontOriginMiddleware`** refuses any request
+  that didn't come through CloudFront, matching `CLOUDFRONT_ORIGIN_SECRET`
+  against the `X-Origin-Verify` origin custom header with
+  `compare_digest`. Without it the elasticbeanstalk.com hostname would serve
+  the whole site over plain HTTP and the certificate would be decorative.
+  Empty secret means the check is off, which is what local work and tests
+  want. `/healthz/` never reaches it — `HealthCheckMiddleware` runs first —
+  and a test asserts that, because otherwise every deploy would roll back.
+- **CloudFront caching is disabled** on the default behaviour: every page is
+  session-specific. `/static/*` is cached, which is safe only because
+  manifest storage content-hashes every filename.
 
 Required environment variables in production: `SECRET_KEY`,
 `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS` (with scheme),
@@ -476,8 +528,14 @@ until every one is known to be HTTPS); the admin moves off `/admin/` via
 
 ## Uploads
 
-- Validated by **file signature** as well as extension
-  (`cv_screening/uploads.py`): a `.pdf` that isn't a PDF is refused.
+- **All three upload paths call `validate_cv_file()`** — the candidate
+  portal, the public application form, and the staff "Screen CV" button.
+  The staff one didn't until 2026-09-20: it went straight from
+  `request.FILES` to storage with no size cap, no extension check and no
+  signature check, which is the whole thing `cv_screening/uploads.py` exists
+  to prevent. If a fourth upload path is ever added, it calls this too.
+- Validated by **file signature** as well as extension: a `.pdf` that isn't
+  a PDF is refused.
 - `score_cv_safely()` is the only way CVs get scored. A malformed PDF used to
   return a 500 on all three upload paths; now the file is kept, the failure is
   logged, and the person is told it couldn't be read.
@@ -494,6 +552,10 @@ until every one is known to be HTTPS); the admin moves off `/admin/` via
 - **Immutable:** `save()` refuses to rewrite an existing row.
 - **Labels are snapshots**, so entries survive the actor or target being
   deleted.
+- **Opening a CV is recorded** (`CV_DOWNLOADED`, from
+  `cv_screening.views.view_cv`). It's the most sensitive data here and was
+  the one way to read it that left no trace. `CV_UPLOADED` is defined but
+  not yet written anywhere.
 - **IP and user agent are kept for authentication events only** — personal
   data, and only useful there.
 - **Readable by** Leadership Manager, Administrator and superusers.
@@ -556,8 +618,39 @@ Rules (all decided with the user, all tested in `interviews/test_delegation.py`)
 
 Interviews also carry `location` and `meeting_link`, which candidates see.
 
-## Housekeeping commands (all need scheduling)
+## The scheduled housekeeping
 
-- `purge_pending_applications` — unconfirmed public applications (30 days).
-- `purge_audit_events` — audit entries (730 days).
-- `expire_delegations` — pending offers close to the interview (48 hours).
+Three commands do work nothing else does, so they run on a timer:
+
+- `expire_delegations` — hourly. Pending offers within 48 hours of the
+  interview revert to the assigned interviewer. The only one with a same-day
+  effect: without it an interview arrives with nobody expecting to run it.
+- `purge_pending_applications` — Sundays. Unconfirmed public applications and
+  their CVs after 30 days, which is what the privacy notice promises.
+- `purge_audit_events` — Sundays. Audit entries past 730 days.
+
+**`cron.yaml` is the wrong tool here.** Elastic Beanstalk periodic tasks only
+exist on a *worker* environment, and there the daemon POSTs to a URL rather
+than running a command. This is a web tier (`WSGIPath` in
+`.ebextensions/django.config`), so a `cron.yaml` would do nothing, silently.
+
+`.ebextensions/cron.config` installs a real crontab instead, and
+`scripts/housekeeping/` holds one script per command over a shared `_lib.sh`.
+The parts worth knowing:
+
+- **cron has none of the environment properties.** The deploy copies
+  `/opt/elasticbeanstalk/deployment/env` (which only exists during a deploy)
+  to `candidflow_env`, root-only because it holds the database password.
+  Without it a job would run on the development `SECRET_KEY` and no
+  `DATABASE_URL`.
+- **The executable bit** is set at deploy time (`chmod +x`), because git on
+  Windows doesn't carry it.
+- **Output** goes to `/var/log/candidflow-housekeeping.log`, one start line
+  and one exit status per run, rotated weekly.
+- **`config/test_deployment.py`** asserts the schedule and the scripts still
+  name real management commands, so a rename can't quietly stop the
+  deletions.
+- **Known limit:** the crontab lands on every instance. Correct for one; on
+  two or more, all of them fire. The purges are safe (re-deleting does
+  nothing), but `expire_delegations` could notify twice. Move to EventBridge
+  Scheduler before scaling out.

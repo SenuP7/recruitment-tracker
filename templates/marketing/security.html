@@ -76,7 +76,8 @@
     <h2>Infrastructure</h2>
     <ul>
         <li>Candidflow runs on Amazon Web Services in the Asia Pacific (Singapore) region.</li>
-        <li>HTTPS is provided by the hosting environment.</li>
+        <li>Every page is served over HTTPS. Traffic is encrypted at a content delivery network, and the application itself refuses any request that did not arrive through it, so there is no unencrypted way in.</li>
+        <li>Browsers are told to use HTTPS for this site and not to try plain HTTP again. Session and sign-in cookies are marked secure, so a browser will not send them over an unencrypted connection, and they are not readable by scripts on the page.</li>
         <li>The web application sends notification emails through a separate, isolated pipeline. The application's only permission there is to add a message to a queue, so it can't read the email log or send email directly.</li>
         <li>Failed email deliveries are retried, then moved to a separate queue that raises an alert.</li>
     </ul>
