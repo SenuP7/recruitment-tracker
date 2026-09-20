@@ -3,7 +3,11 @@ version = 0.1
 [default.deploy.parameters]
 stack_name = "recruitment-tracker-notifications"
 region = "ap-southeast-1"
-capabilities = "CAPABILITY_IAM"
+# NAMED, not plain CAPABILITY_IAM: the stack creates a managed policy with
+# an explicit name (RecruitmentTrackerNotificationPublish), which the README
+# and the EB role attachment both refer to. CloudFormation refuses to create
+# a named IAM resource without this.
+capabilities = "CAPABILITY_NAMED_IAM"
 confirm_changeset = true
 resolve_s3 = true
 # SenderEmail has no default deliberately -- pass --parameter-overrides

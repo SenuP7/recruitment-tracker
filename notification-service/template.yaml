@@ -123,7 +123,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       ManagedPolicyName: RecruitmentTrackerNotificationPublish
-      Description: >
+      Description: >-
         Least-privilege policy for the Django/EB app: sqs:SendMessage on the
         notification queue only. Attach this to the EB instance role manually
         (see README) -- deliberately not auto-attached since the EB role's name
