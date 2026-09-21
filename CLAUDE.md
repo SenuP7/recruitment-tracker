@@ -46,7 +46,7 @@ Only commit when the user asks.
 - The empty override doesn't select SQLite by parsing a URL: the mere
   presence of a `DATABASE_URL` value picks the Postgres branch, which reads
   its connection details from `DB_*` (see `.env.example`).
-- Current suite: **375 tests, all passing** (2026-09-21).
+- Current suite: **382 tests, all passing** (2026-09-21).
 - The notification Lambda has its own pytest suite in
   `notification-service/tests`.
 - The user runs their own server on **port 8000** against the real Postgres.
@@ -182,6 +182,32 @@ automatic CV pass/fail decision (a recruiter now confirms outcomes).
 - **Deliverability caveat:** sending as a `gmail.com` address fails SPF,
   because Google's records don't authorise Amazon's servers. Mail usually
   still arrives but often in spam. A domain is the only real fix.
+- **The sandbox is not the only thing that gates a recipient.** Until
+  2026-09-21 the Lambda's IAM policy scoped `ses:SendEmail` to
+  `identity/${SenderEmail}`, which looks like least privilege and is a trap:
+  in the sandbox the recipient must itself be a verified identity, and SES
+  authorises the call against *that* identity too. So the only address able
+  to receive mail from this app was the sender's own — a fully verified
+  recipient still got `AccessDenied` naming its own identity ARN, which
+  reads like an SES verification problem and is not one. The policy now uses
+  `identity/*` with a `ses:FromAddress` condition, which keeps the property
+  that matters (this function cannot send *as* anyone else) without
+  restricting who may receive. **If mail stops arriving for one address but
+  not another, read the `error_message` in the audit table before touching
+  SES.**
+- **A failed send raises no alarm.** `AccessDenied` is a permanent failure,
+  so the handler logs `FAILED` to DynamoDB and returns normally; SQS deletes
+  the message, nothing reaches the DLQ, and the DLQ alarm never fires. That
+  is right for a poison pill and it means **the audit table is the only
+  place a missing email shows up**. The DLQ alarm covers transient failures
+  only.
+- **`AlertEmail` in `samconfig.toml` must match the deployed stack.** An SNS
+  email subscription cannot be updated in place: change that parameter and
+  CloudFormation deletes the confirmed subscription and creates an
+  unconfirmed one, so DLQ alerts go nowhere until somebody clicks the link.
+  The stale `PendingConfirmation` entry on the topic is the fingerprint of
+  that having already happened once. It was pointing at a different address
+  from the live stack and was corrected 2026-09-21.
 
 ## UI system
 
@@ -639,6 +665,12 @@ everything else combined.
   `.platform/**`. `core.autocrlf` is true on the development machine, and a
   shell script checked out with CRLF fails on Amazon Linux with "bad
   interpreter" — a failure that surfaces during a deploy, far from its cause.
+- **`requirements.txt` must stay UTF-8.** It was UTF-16 until 2026-09-21 —
+  the signature of a Windows PowerShell 5.1 `>` redirect, which defaults to
+  UTF-16LE. pip happens to cope with the BOM, so it never broke anything and
+  never announced itself either. Rewritten as plain ASCII; if it ever comes
+  back full of NUL bytes, something regenerated it with `>` or `Out-File`
+  instead of `Set-Content -Encoding utf8`.
 - **Deploying:** the EB CLI is not in the project venv (its pins conflict).
   It lives in an isolated venv; `eb init` has been run and
   `.elasticbeanstalk/config.yml` maps the `ui-redesign` branch to the
@@ -677,6 +709,16 @@ until every one is known to be HTTPS); the admin moves off `/admin/` via
 - `score_cv_safely()` is the only way CVs get scored. A malformed PDF used to
   return a 500 on all three upload paths; now the file is kept, the failure is
   logged, and the person is told it couldn't be read.
+- **PDFs are parsed with `pypdf`, never `PyPDF2`** (swapped 2026-09-21).
+  PyPDF2 was discontinued at 3.0.1 and carries a published denial-of-service:
+  a crafted PDF sends `extract_text()` into an infinite loop, pinning a CPU
+  core until the worker dies. **`score_cv_safely()` is no defence against
+  it** — that catches exceptions, and a loop never raises one, so the usual
+  "malformed files are handled" reasoning does not apply. On a single
+  instance a few uploads are the whole site, and the uploads come from
+  outside the organisation, so this is the most exposed dependency here.
+  `cv_screening/test_pdf_parsing.py` fails if PyPDF2 returns, and parses a
+  real hand-built PDF so an upgrade can't quietly stop extraction working.
 
 ## Audit log
 
