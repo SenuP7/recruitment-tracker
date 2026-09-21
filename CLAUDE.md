@@ -305,7 +305,36 @@ deleted after. If one lingers in either database, it's safe to delete.
 
 ## Public site (`marketing` app)
 
-Dark-only, uses `landing.css`; separate from the app shell in `base.html`.
+Uses `landing.css`; separate from the app shell in `base.html`.
+
+**Theming (added 2026-09-21).** It was dark-only, which read as a broken
+toggle: a candidate could set light inside Candidflow, then hit `/careers/`
+and watch it flip back. `landing.css` now carries a light theme, scoped to
+`body.public-page` and driven by the **same `candidflow-theme` localStorage
+key the app shell writes**, so one choice covers both and there is no second
+preference to keep in sync. Three things worth knowing:
+
+- **The landing page (`body.home-page`) stays dark on purpose.** It runs a
+  fixed full-viewport WebGL aurora behind translucent panels; that shader is
+  authored for a dark backdrop and a light body would show through every
+  panel. The toggle is therefore **hidden** on the landing page — a control
+  that visibly does nothing when clicked is the very impression this change
+  existed to remove. The preference is still settable from every other public
+  page, and is honoured the moment the visitor leaves the landing page.
+- **Surfaces are tokens, not literals.** 25 hardcoded `rgba(6, 20, 27, …)` /
+  `rgba(17, 33, 32, …)` values became `--panel`, `--panel-soft`,
+  `--panel-alt`, `--panel-head`, `--panel-hover`, `--nav-bg` and the
+  `--shadow-*` set, so the light theme is a redefinition rather than thirty
+  more overrides. Add a new public surface with a token, not a literal, or it
+  will be invisible in light mode.
+- **The public pages load no JavaScript except the theme toggle**, which is
+  inline and standalone. It is deliberately **not** `app-shell.js`: that
+  script expects sidebar, search and notification markup that does not exist
+  here. Icons are inline SVG so the marketing pages still pull in no CDN
+  script. The `@media print` block keeps its literal colours.
+- Verified at 0.6 scale in a real browser plus a computed-contrast sweep:
+  worst ratio 5.52:1 across 12 colour pairs, so every combination clears
+  WCAG AA.
 - **Pages:** `/` landing, `/help/`, `/status/`, `/security/`,
   `/privacy/`, `/terms/`, `/cookies/`, `/accessibility/`,
   `/candidate-notice/`. Plus `robots.txt` (disallows every app path),
