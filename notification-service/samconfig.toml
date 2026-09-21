@@ -12,7 +12,13 @@ confirm_changeset = true
 resolve_s3 = true
 # SenderEmail has no default deliberately -- pass --parameter-overrides
 # SenderEmail=you@example.com on first deploy, or answer the guided prompt.
-parameter_overrides = "AlertEmail=abdullah.racip@gmail.com"
+# This must match the AlertEmail already on the deployed stack. An SNS email
+# subscription cannot be updated in place: change this value and CloudFormation
+# deletes the confirmed subscription and creates a new one, which then sits
+# unconfirmed until somebody clicks the link in that inbox -- so DLQ alerts go
+# nowhere in the meantime, silently. A stale PendingConfirmation entry on the
+# topic is the fingerprint of that having happened before.
+parameter_overrides = "AlertEmail=ansy.pppm@gmail.com"
 
 [default.build.parameters]
 cached = true

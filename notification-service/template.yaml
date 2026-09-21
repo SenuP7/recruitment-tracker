@@ -105,7 +105,27 @@ Resources:
               Action:
                 - ses:SendEmail
                 - ses:SendRawEmail
-              Resource: !Sub arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${SenderEmail}
+              # Scoped by who we send AS, not who we send TO.
+              #
+              # Naming the sender identity in Resource looks tighter and was
+              # the original shape, but it silently broke delivery to everyone
+              # else: in the SES sandbox the recipient must itself be a
+              # verified identity, and SES authorises the call against that
+              # recipient identity too. The result was that the only address
+              # in the world able to receive mail from this app was the
+              # sender's own -- a verified recipient still got AccessDenied
+              # naming its own identity ARN, which reads like an SES problem
+              # and isn't one.
+              #
+              # The FromAddress condition keeps the property that actually
+              # matters: this function cannot send as anybody but SenderEmail.
+              # The wildcard only widens which identities it may send to, and
+              # the account's own verified identities are the only things it
+              # can match.
+              Resource: !Sub arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*
+              Condition:
+                StringEquals:
+                  ses:FromAddress: !Ref SenderEmail
         - Statement:
             - Sid: WriteAuditLog
               Effect: Allow
