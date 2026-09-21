@@ -63,7 +63,7 @@ UNREADABLE_MESSAGE = (
 def score_cv_safely(cv, role_profile):
     """Scores a CV without letting a malformed file take the request down.
 
-    PyPDF2 raises on truncated, encrypted or image-only PDFs, and python-docx
+    pypdf raises on truncated, encrypted or image-only PDFs, and python-docx
     raises on a zip that isn't really a document. Neither is a server error:
     the file is stored either way and a recruiter can still open it.
 

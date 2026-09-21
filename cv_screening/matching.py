@@ -11,7 +11,7 @@ doc, Approach 3 (Keyword + Synonym Taxonomy) is the sprint's chosen MVP.
 import re
 
 import docx
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from .models import CandidateCV, CVMatchResult, RoleKeywordProfile, Skill, Synonym
 
