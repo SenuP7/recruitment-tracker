@@ -7,3 +7,8 @@
 *.sh text eol=lf
 .ebextensions/*.config text eol=lf
 .platform/** text eol=lf
+
+# The Playwright QA suite is development tooling. export-ignore keeps it out
+# of `git archive`, which is what builds the Elastic Beanstalk deploy bundle,
+# so none of it (including its Django settings override) ships to the server.
+qa-scripts/** export-ignore

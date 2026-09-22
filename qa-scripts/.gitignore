@@ -1,0 +1,10 @@
+# Dependencies and browsers are installed per machine (npm install).
+node_modules/
+
+# Playwright output: screenshots, videos and traces of failures, and the HTML report.
+test-results/
+playwright-report/
+blob-report/
+
+# The throwaway database and uploaded CVs, rebuilt on every run.
+.qa-data/
