@@ -1,4 +1,6 @@
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
+# Our subclass: sends signed-out visitors to sign in instead of a bare 403.
+from accounts.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Avg, Count, Q
 from django.urls import reverse_lazy

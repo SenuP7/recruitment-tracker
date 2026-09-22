@@ -144,13 +144,20 @@ class AnonymousAccessTests(TestCase):
         )
 
     def test_anonymous_user_cannot_reach_candidate_list(self):
-        """CandidateListView sets raise_exception=True, so anonymous
-        users get a 403 here rather than a redirect (that's existing,
-        pre-existing, intentional behaviour on this view -- unrelated to
-        the logout bug -- unlike ProfileView above, which redirects)."""
+        """Signed-out visitors are sent to sign in, like ProfileView above.
+
+        This used to assert a 403: CandidateListView sets raise_exception=True,
+        and Django's PermissionRequiredMixin applied that to anonymous users
+        too. That left a signed-out staff member (8-hour idle sessions) on a
+        dead-end page with no way to sign in. accounts.mixins.
+        PermissionRequiredMixin now redirects them; signed-in users without
+        the permission still get 403 (accounts/test_sign_in_redirects.py).
+        """
         client = Client()
         response = client.get(reverse("candidate-list"))
-        self.assertEqual(response.status_code, 403)
+        self.assertRedirects(
+            response, f"{reverse('login')}?next={reverse('candidate-list')}"
+        )
 
 
 class GlobalSearchTests(TestCase):

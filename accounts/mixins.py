@@ -1,5 +1,33 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import PermissionRequiredMixin as DjangoPermissionRequiredMixin
+from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
+
+
+class PermissionRequiredMixin(DjangoPermissionRequiredMixin):
+    """Django's PermissionRequiredMixin, except signed-out visitors are sent
+    to sign in rather than shown a 403.
+
+    With raise_exception = True, Django answers *every* failure with 403 --
+    including a visitor who simply isn't signed in, and including views that
+    list LoginRequiredMixin first, because both mixins read the same
+    raise_exception flag. Staff sessions expire after 8 idle hours, so that
+    made a bookmarked candidate or interview link a dead end with no way to
+    sign in, while the dashboard and CV screening redirected properly (the
+    same reasoning as GroupRequiredMixin below).
+
+    Signed-in users without the permission still get 403, unchanged.
+    Found by the Playwright QA suite, 2026-09-22.
+    """
+
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return redirect_to_login(
+                self.request.get_full_path(),
+                self.get_login_url(),
+                self.get_redirect_field_name(),
+            )
+        return super().handle_no_permission()
 
 
 class GroupRequiredMixin(LoginRequiredMixin):
