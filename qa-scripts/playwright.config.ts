@@ -1,14 +1,5 @@
-import path from 'path';
 import { defineConfig, devices } from '@playwright/test';
-import { BASE_URL, PASSWORD, PORT } from './support/constants';
-
-const REPO = path.resolve(__dirname, '..');
-
-// The project's own virtualenv, so the server runs on exactly the Django the
-// app is developed against. QA_PYTHON overrides it (e.g. in CI).
-const PYTHON =
-  process.env.QA_PYTHON ??
-  path.join(REPO, 'venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+import { BASE_URL, PASSWORD, PORT, PYTHON } from './support/constants';
 
 export default defineConfig({
   testDir: './tests',

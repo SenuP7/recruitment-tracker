@@ -60,15 +60,26 @@ which overrides only what must never be shared with a real environment:
 
 | Real setting | In QA |
 |---|---|
-| `db.sqlite3` (your dev database) or RDS Postgres | a fresh `qa-scripts/.qa-data/qa.sqlite3`, **deleted and rebuilt every run** |
-| S3 — which the app uses even locally | local disk, `qa-scripts/.qa-data/media/` |
+| `db.sqlite3` (your dev database) or RDS Postgres | `qa-scripts/.qa-data/<port>/qa.sqlite3`, **reset to the same demo data at the start of every run** |
+| S3 — which the app uses even locally | local disk, `qa-scripts/.qa-data/<port>/media/` |
 | SQS → Lambda → SES | local mode: emails rendered to `local_notifications/`, which is how the suite reads the confirmation link |
 
 `config/settings.py` is not modified. The server refuses port 8000, which is
 reserved for your own server against the real database.
 
-Demo data comes from `manage.py seed_demo`, with `--with-permissions`, which
-applies the production permission matrix.
+**Every run starts from the same data**, however it's launched.
+`support/fixtures.ts` runs `server/reset_qa_data.py` once at the start of each
+run: it empties every table, clears the sign-in throttling cache, and loads
+`manage.py seed_demo --with-permissions` (the production permission matrix).
+
+That matters because **VS Code's extension keeps one QA server running across
+many runs** when *Show browser* is on — a reset tied to server start would
+happen once, and the second run would find a screening outcome already
+decided and a delegation already answered. So you can run one test, one
+feature, or everything, in any order, as often as you like.
+
+Every spec imports `test` and `expect` from `../support/fixtures`, not from
+`@playwright/test`; a new spec must do the same, or it will skip the reset.
 
 ## Defects this suite found (both fixed)
 

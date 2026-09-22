@@ -9,7 +9,7 @@
  *   2. A candidate never sees interview feedback, CV match scores, interviewer
  *      names, or any sign of other applicants.
  */
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 import { CANDIDATE, INTERVIEWER_NAMES, STAFF } from '../support/constants';
 import { idFromHref, signInCandidate, signInStaff } from '../support/helpers';
 

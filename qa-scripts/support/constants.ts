@@ -3,6 +3,17 @@
  * server seeds with and the password the tests type can never drift apart.
  */
 
+import path from 'path';
+
+export const QA_ROOT = path.resolve(__dirname, '..');
+const REPO = path.resolve(QA_ROOT, '..');
+
+// The project's own virtualenv, so QA runs on exactly the Django the app is
+// developed against. QA_PYTHON overrides it (e.g. in CI).
+export const PYTHON =
+  process.env.QA_PYTHON ??
+  path.join(REPO, 'venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+
 export const PORT = Number(process.env.QA_PORT ?? 8001);
 export const BASE_URL = `http://127.0.0.1:${PORT}`;
 

@@ -7,7 +7,7 @@
  * without the permission can't add candidates.
  */
 import fs from 'fs';
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 import { CANDIDATE, STAFF } from '../support/constants';
 import { signInStaff } from '../support/helpers';
 
@@ -75,7 +75,13 @@ test.describe('Feature 4: Candidates and applications', () => {
     ]);
 
     expect(download.suggestedFilename()).toMatch(/^candidates-.*\.csv$/);
-    const csv = fs.readFileSync((await download.path())!, 'utf-8');
+    // saveAs, not download.path(): with "Show browser" on, the VS Code
+    // extension drives a browser it connected to remotely, and path() is
+    // unavailable then. saveAs works in both modes, and keeps the exported
+    // file in test-results/ as evidence.
+    const saved = test.info().outputPath(download.suggestedFilename());
+    await download.saveAs(saved);
+    const csv = fs.readFileSync(saved, 'utf-8');
     const [header, ...rows] = csv.trim().split(/\r?\n/);
 
     expect(header).toContain('First name');

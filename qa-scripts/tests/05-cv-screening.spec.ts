@@ -7,7 +7,7 @@
  * without it are never offered the choice. (This is the GDPR Article 22
  * position the public privacy notice describes.)
  */
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 import { STAFF } from '../support/constants';
 import { signInStaff } from '../support/helpers';
 

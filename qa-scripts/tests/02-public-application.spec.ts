@@ -10,7 +10,7 @@
  * The journey test below follows a real applicant end to end, including the
  * step that happens in their inbox (read from local_notifications/).
  */
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 import { CANDIDATE, STAFF } from '../support/constants';
 import { buildPdf, readConfirmationPath, signInStaff, uniqueEmail } from '../support/helpers';
 

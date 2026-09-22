@@ -6,7 +6,7 @@
  * accounts, and both do so only AFTER the password is verified, so neither
  * page can be used to discover which accounts exist.
  */
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 import { CANDIDATE, PASSWORD, STAFF } from '../support/constants';
 import { signInCandidate, signInStaff } from '../support/helpers';
 

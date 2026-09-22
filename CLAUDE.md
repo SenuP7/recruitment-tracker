@@ -891,9 +891,20 @@ candidates/applications, CV screening, and interviews/feedback/delegation.
   S3 (settings.py uses S3 even locally), and local-mode email. It never
   touches `db.sqlite3`, RDS, S3, SQS or SES, and refuses port 8000.
   `config/settings.py` is not modified for it.
-- **Every run starts clean**, which is what makes it repeatable: application
-  rate limits live in the database, and a screening outcome or a delegation
-  can only be answered once.
+- **Every run starts clean — per run, not per server start.** VS Code's
+  Playwright extension (with *Show browser* on) keeps one QA server alive
+  across many runs, so a reset at server start happened once and the next
+  run failed on a screening outcome already decided and a delegation already
+  answered. `support/fixtures.ts` has an automatic worker-scoped fixture that
+  runs `server/reset_qa_data.py` (flush, clear the throttling cache, reseed)
+  at the start of every run. Specs import `test`/`expect` from
+  `support/fixtures`, never `@playwright/test`, or they skip the reset.
+- **`.qa-data/` is per port** (`.qa-data/8001/`), so a second QA server can't
+  collide with one the extension is holding open (WinError 32 on Windows).
+- **Under *Show browser* the browser is remote**, so `download.path()` is
+  unavailable; use `download.saveAs()`. Verified by running the suite through
+  `playwright run-server` + `PW_TEST_CONNECT_WS_ENDPOINT` against one
+  long-lived server, three runs in a row.
 - **The confirmation email is read from `local_notifications/`**, so the
   journey test covers the step an applicant takes in their inbox.
 - **One worker, in order** (`workers: 1`): tests share one database and some

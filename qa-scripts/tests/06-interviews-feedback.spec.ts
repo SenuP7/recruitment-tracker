@@ -10,7 +10,8 @@
  * upcoming Technical round that the Technical Interviewer has offered to the
  * Department Chief.
  */
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 import { CANDIDATE, STAFF } from '../support/constants';
 import { signInStaff } from '../support/helpers';
 
