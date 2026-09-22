@@ -125,6 +125,38 @@ class SeedDemoTests(TestCase):
         # The portal needs none, so the Candidate group stays empty.
         self.assertEqual(Group.objects.get(name="Candidate").permissions.count(), 0)
 
+    def test_every_seeded_role_gets_real_permissions(self):
+        """Every role a demo login signs into must hold permissions.
+
+        seed_demo used to keep its own copy of the matrix, which never gained
+        Department Chief or Administrator, so both logins reached the
+        dashboard and hit 403 on every page past it. It now runs
+        assign_role_permissions, so the two can't drift again.
+        """
+        self.seed("--with-permissions")
+
+        for name in ("Recruiter", "HR Interviewer", "Technical Interviewer", "Senior Reviewer",
+                     "Leadership Manager", "Department Chief", "Administrator"):
+            self.assertGreater(Group.objects.get(name=name).permissions.count(), 0, name)
+
+        chief = User.objects.get(username="demo.chief")
+        admin = User.objects.get(username="demo.admin")
+        self.assertTrue(chief.has_perm("interviews.view_interview"))
+        self.assertTrue(admin.has_perm("candidates.add_candidate"))
+
+    def test_seeded_permissions_match_the_production_command_exactly(self):
+        """Nothing left to drift: --with-permissions gives each role exactly
+        what assign_role_permissions gives it."""
+        self.seed("--with-permissions")
+        seeded = {g.name: set(g.permissions.values_list("codename", flat=True)) for g in Group.objects.all()}
+
+        for group in Group.objects.all():
+            group.permissions.clear()
+        call_command("assign_role_permissions", stdout=StringIO())
+        production = {g.name: set(g.permissions.values_list("codename", flat=True)) for g in Group.objects.all()}
+
+        self.assertEqual(seeded, production)
+
     @override_settings(DATABASES={"default": {"ENGINE": "django.db.backends.postgresql", "NAME": "x"}})
     def test_it_refuses_a_non_sqlite_database_without_confirmation(self):
         with self.assertRaises(CommandError) as refusal:

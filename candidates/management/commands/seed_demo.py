@@ -50,48 +50,8 @@ STAFF = [
     ("demo.admin", "Adaeze", "Nwosu", "Administrator"),
 ]
 
-# Mirrors accounts/management/commands/assign_role_permissions.py, with one
-# deliberate difference: the Candidate group gets nothing. Candidates use the
-# portal, which scopes by their own record and needs no model permissions.
-PERMISSION_MATRIX = {
-    "Recruiter": {
-        "candidate": ["add", "change", "delete", "view"],
-        "candidatecv": ["add", "change", "delete", "view"],
-        "application": ["add", "change", "delete", "view"],
-        "position": ["add", "change", "delete", "view"],
-        "interview": ["add", "change", "delete", "view"],
-        "interviewfeedback": ["view"],
-    },
-    "HR Interviewer": {
-        "candidate": ["view"],
-        "application": ["view"],
-        "position": ["view"],
-        "interview": ["view", "change"],
-        "interviewfeedback": ["add", "change", "view"],
-    },
-    "Technical Interviewer": {
-        "candidate": ["view"],
-        "application": ["view"],
-        "position": ["view"],
-        "interview": ["view", "change"],
-        "interviewfeedback": ["add", "change", "view"],
-    },
-    "Senior Reviewer": {
-        "candidate": ["view", "change"],
-        "application": ["view", "change"],
-        "position": ["view"],
-        "interview": ["view"],
-        "interviewfeedback": ["view"],
-    },
-    "Leadership Manager": {
-        "candidate": ["view", "change"],
-        "application": ["view", "change"],
-        "position": ["view"],
-        "interview": ["view"],
-        "interviewfeedback": ["view"],
-    },
-    "Candidate": {},
-}
+# The role groups seed_demo signs people into, in the order STAFF lists them.
+ROLE_GROUPS = [group for *_, group in STAFF]
 
 CV_TEXT = """Maya Reyes
 Backend Engineer
@@ -215,17 +175,24 @@ class Command(BaseCommand):
     # -- permissions ----------------------------------------------------
 
     def apply_permissions(self):
-        for group_name, models in PERMISSION_MATRIX.items():
-            group, _ = Group.objects.get_or_create(name=group_name)
-            group.permissions.clear()
-            for model_name, actions in models.items():
-                for action in actions:
-                    permission = Permission.objects.filter(
-                        codename=f"{action}_{model_name}"
-                    ).first()
-                    if permission:
-                        group.permissions.add(permission)
-            self.stdout.write(f"  {group_name}: {group.permissions.count()} permissions")
+        """Applies the production permission matrix by running
+        assign_role_permissions itself.
+
+        This used to keep its own copy of the matrix. The copy drifted: when
+        Department Chief and Administrator were added to the real command they
+        never reached this one, so --with-permissions left both roles with
+        zero permissions and every page past the dashboard answered 403 (the
+        Playwright QA suite found it, 2026-09-22; it is the likely cause of the
+        same symptom in production on 2026-09-20). Calling the command means
+        there is nothing left to drift. It also empties the Candidate group,
+        which the portal requires.
+        """
+        from django.core.management import call_command
+
+        call_command("assign_role_permissions", stdout=io.StringIO())
+        for name in ROLE_GROUPS:
+            group = Group.objects.get(name=name)
+            self.stdout.write(f"  {name}: {group.permissions.count()} permissions")
 
     # -- data -----------------------------------------------------------
 
@@ -608,8 +575,8 @@ class Command(BaseCommand):
 
         if not options["with_permissions"]:
             empty = [
-                name for name in PERMISSION_MATRIX
-                if name != "Candidate" and not Group.objects.filter(name=name).exclude(permissions=None).exists()
+                name for name in ROLE_GROUPS
+                if not Group.objects.filter(name=name).exclude(permissions=None).exists()
             ]
             if empty:
                 write(self.style.WARNING(
