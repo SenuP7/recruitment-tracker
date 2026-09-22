@@ -46,7 +46,10 @@ Only commit when the user asks.
 - The empty override doesn't select SQLite by parsing a URL: the mere
   presence of a `DATABASE_URL` value picks the Postgres branch, which reads
   its connection details from `DB_*` (see `.env.example`).
-- Current suite: **382 tests, all passing** (2026-09-21).
+- Current suite: **387 tests, all passing** (2026-09-22).
+- **Browser QA:** `qa-scripts/` is a Playwright suite (42 tests, six core
+  features) run from VS Code's Playwright extension or `npm test`. See
+  Playwright QA suite below.
 - The notification Lambda has its own pytest suite in
   `notification-service/tests`.
 - The user runs their own server on **port 8000** against the real Postgres.
@@ -71,8 +74,15 @@ for g in Group.objects.all():
     print(g.name, [f'{p.content_type.app_label}.{p.codename}' for p in g.permissions.all()])
 ```
 
-- **CRUD views** use `PermissionRequiredMixin(raise_exception=True)`, which
-  returns 403.
+- **CRUD views** use `accounts.mixins.PermissionRequiredMixin` with
+  `raise_exception=True` — **our subclass, not Django's.** Signed-in users
+  without the permission get 403 (rendered by `templates/403.html`);
+  signed-out visitors are redirected to sign in. Django's own mixin applies
+  `raise_exception` to anonymous users too, and because `LoginRequiredMixin`
+  reads the same flag, listing it first doesn't help — so candidates,
+  applications, positions and interviews used to hand an expired session a
+  bare 403 with no way back in. Import `PermissionRequiredMixin` from
+  `accounts.mixins`, never `django.contrib.auth.mixins`.
 - **Staff-only areas** (dashboard, CV screening, applicant lists on position
   pages) use `accounts.decorators.RECRUITMENT_STAFF_GROUPS` and
   `user_in_groups()`. That covers the 5 non-Candidate roles; superusers
@@ -497,9 +507,13 @@ python manage.py seed_demo --clear              # remove it again
   emails, `[demo]` in the position description and profile name), and each run
   clears the previous demo first. It never touches other records.
 - **Guards:** refuses to run against anything but local SQLite unless `--yes`.
-  Group permissions are only touched with `--with-permissions`, which applies
-  the same matrix as `assign_role_permissions` except that the Candidate group
-  is left empty (the portal needs no model permissions).
+  Group permissions are only touched with `--with-permissions`, which **runs
+  `assign_role_permissions` itself** (it also empties the Candidate group).
+  Until 2026-09-22 it kept its own copy of the matrix; the copy never gained
+  Department Chief or Administrator, so both demo logins held zero
+  permissions — very likely the cause of the same symptom in production on
+  2026-09-20. `test_seeded_permissions_match_the_production_command_exactly`
+  fails if a separate matrix ever reappears.
 - **The password is generated per run and printed**, never stored in the repo.
   Set `CANDIDFLOW_DEMO_PASSWORD` to pick your own. Clear the demo afterwards
   with `--clear --yes`; don't leave it in a real database.
@@ -863,3 +877,32 @@ The parts worth knowing:
   two or more, all of them fire. The purges are safe (re-deleting does
   nothing), but `expire_delegations` could notify twice. Move to EventBridge
   Scheduler before scaling out.
+
+## Playwright QA suite (`qa-scripts/`)
+
+Browser end-to-end tests for six core features: sign-in, public applications
+(the full apply → email → confirm → portal journey), the candidate portal,
+candidates/applications, CV screening, and interviews/feedback/delegation.
+42 tests, about 70 seconds. `qa-scripts/README.md` has the run instructions.
+
+- **Fully isolated.** `server/run_qa_server.py` boots Django with
+  `server/qa_settings.py`, which swaps in a throwaway SQLite file
+  (`qa-scripts/.qa-data/`, deleted every run), local-disk storage instead of
+  S3 (settings.py uses S3 even locally), and local-mode email. It never
+  touches `db.sqlite3`, RDS, S3, SQS or SES, and refuses port 8000.
+  `config/settings.py` is not modified for it.
+- **Every run starts clean**, which is what makes it repeatable: application
+  rate limits live in the database, and a screening outcome or a delegation
+  can only be answered once.
+- **The confirmation email is read from `local_notifications/`**, so the
+  journey test covers the step an applicant takes in their inbox.
+- **One worker, in order** (`workers: 1`): tests share one database and some
+  change it.
+- **Every test keeps a screenshot** (`screenshot: 'on'`), for the project
+  report; `npm run report` shows them.
+- **Excluded from deploys:** `.gitattributes` marks `qa-scripts/**`
+  `export-ignore`, so `git archive` — which builds the Elastic Beanstalk
+  bundle — leaves it out.
+- **It found two real defects on its first runs** (both fixed 2026-09-22):
+  the anonymous-403 behaviour described under Access control, and
+  `seed_demo`'s drifted permission matrix described under Demo data.
